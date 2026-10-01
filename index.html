@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,350 +6,913 @@
 <title>PONG // ARCADE</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-
-:root{
-  --cream:#f2e8c9;
-  --red:#d94a3a;
-  --dark:#171713;
-  --green:#203f32;
-  --gold:#d5ad54;
-}
+:root{--cream:#f2e8c9;--red:#d94a3a;--dark:#171713;--green:#203f32;--gold:#d5ad54}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#11110f;color:var(--cream)}
-body{
-  display:flex;align-items:center;justify-content:center;
-  font-family:VT323,monospace;
-  background:
-    radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%);
-}
-body:after{
-  content:"";position:fixed;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.09) 0px,rgba(0,0,0,.09) 1px,transparent 2px,transparent 4px);
-  mix-blend-mode:multiply;opacity:.45;
-}
-.machine{
-  width:min(1120px,95vw);
-  background:#25241e;
-  border:8px solid #0b0b09;
-  box-shadow:0 22px 70px #000, inset 0 0 0 3px #464338;
-  padding:26px 30px 24px;
-}
-.marquee{
-  text-align:center;
-  padding:5px 0 19px;
-  border-bottom:4px solid #0c0c0a;
-}
-.marquee h1{
-  margin:0;
-  font-family:"Press Start 2P",monospace;
-  font-size:clamp(20px,3.3vw,38px);
-  letter-spacing:2px;
-  color:var(--red);
-  text-shadow:3px 3px 0 #501e19;
-}
-.marquee p{
-  margin:11px 0 0;
-  font-size:22px;
-  letter-spacing:4px;
-  color:#c8bfa5;
-}
+body{display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%)}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.09) 0,rgba(0,0,0,.09) 1px,transparent 2px,transparent 4px);mix-blend-mode:multiply;opacity:.45}
+.machine{width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
+.marquee{text-align:center;padding:5px 0 15px;border-bottom:4px solid #0c0c0b}
+.marquee h1{margin:0;font-family:"Press Start 2P",monospace;font-size:clamp(20px,3.3vw,38px);color:var(--red);text-shadow:3px 3px 0 #501e19}
+.marquee p{margin:10px 0 0;font-size:21px;letter-spacing:4px;color:#c8bfa5}
+
 .screen-frame{
-  margin:22px auto 0;
-  padding:15px;
-  max-width:1000px;
-  background:#080807;
-  border:4px solid #4b493d;
-  box-shadow:inset 0 0 0 4px #161612,0 7px 0 #0a0a08;
-}
-.screen{
   position:relative;
-  background:#182b23;
   overflow:hidden;
 }
-canvas{
-  display:block;
-  width:100%;
-  height:auto;
-  aspect-ratio:16/9;
-  image-rendering:auto;
+.screen-frame:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.34;
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,.018) 0px,
+      rgba(255,255,255,.018) 1px,
+      transparent 1px,
+      transparent 3px),
+    repeating-linear-gradient(87deg,
+      rgba(0,0,0,.045) 0px,
+      rgba(0,0,0,.045) 1px,
+      transparent 1px,
+      transparent 5px);
+  mix-blend-mode:overlay;
 }
-.scanlines{
-  position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,rgba(0,0,0,.14) 4px);
-  opacity:.55;
+.screen-frame:after{
+  content:"";
+  position:absolute;
+  inset:4px;
+  pointer-events:none;
+  border:1px solid rgba(205,198,168,.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.45),
+    inset 0 4px 14px rgba(255,255,255,.025),
+    inset 0 -7px 18px rgba(0,0,0,.18);
 }
-.glass{
-  position:absolute;inset:0;pointer-events:none;
-  box-shadow:inset 0 0 70px rgba(0,0,0,.5);
-}
-.below{
-  max-width:1000px;margin:18px auto 0;
-  display:flex;justify-content:space-between;align-items:center;gap:18px;
-}
-.instructions{
-  font-size:20px;color:#bdb59e;letter-spacing:1px;
-}
-.instructions b{color:var(--cream)}
-.controls{display:flex;gap:9px}
-button,select{
-  font:20px VT323,monospace;
-  color:var(--cream);background:#333229;
-  border:2px solid #5a574a;padding:7px 13px;
-  cursor:pointer;
-}
+
+.screen-frame{margin:20px auto 0;padding:15px;max-width:1000px;background:#080807;border:4px solid #4b493d;box-shadow:inset 0 0 0 4px #161612,0 7px 0 #0a0a08}
+.screen{position:relative;background:#182b23;overflow:hidden}
+canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
+.scanlines{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.14) 4px);opacity:.55}
+.glass{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px rgba(0,0,0,.5)}
+.below{max-width:1000px;margin:16px auto 0;display:flex;justify-content:space-between;align-items:center;gap:15px}
+.instructions{font-size:20px;color:#bdb59e;letter-spacing:1px}.instructions b{color:var(--cream)}
+.controls{display:flex;gap:8px}
+button,select{font:20px VT323,monospace;color:var(--cream);background:#333229;border:2px solid #5a574a;padding:7px 13px;cursor:pointer}
 button:hover,select:hover{background:#403f35}
 button:active{transform:translateY(1px)}
-.footer{
-  margin-top:20px;text-align:center;color:#777365;
-  font-size:17px;letter-spacing:2px;
-}
-@media(max-width:700px){
-  .machine{padding:15px 13px}
-  .screen-frame{padding:8px;margin-top:14px}
-  .below{align-items:flex-start;flex-direction:column}
-  .controls{width:100%}
-  button,select{flex:1}
-  .instructions{font-size:18px}
-}
+.footer{margin-top:16px;text-align:center;color:#777365;font-size:17px;letter-spacing:2px}
+@media(max-width:700px){.machine{padding:15px 13px}.screen-frame{padding:8px;margin-top:14px}.below{align-items:flex-start;flex-direction:column}.controls{width:100%}.controls>*{flex:1}.instructions{font-size:18px}}
 </style>
 </head>
 <body>
 <main class="machine">
-  <header class="marquee">
-    <h1>PONG</h1>
-    <p>PLAYER VS COMPUTER</p>
-  </header>
-
-  <section class="screen-frame">
-    <div class="screen">
-      <canvas id="game" width="960" height="540"></canvas>
-      <div class="scanlines"></div>
-      <div class="glass"></div>
-    </div>
-  </section>
-
-  <section class="below">
-    <div class="instructions">
-      MOVE: <b>W A S D</b> &nbsp; / &nbsp; <b>ARROW KEYS</b> &nbsp; · &nbsp; MOUSE
-    </div>
-    <div class="controls">
-      <select id="difficulty" aria-label="Difficulty">
-        <option value="0.65">EASY</option>
-        <option value="0.82" selected>NORMAL</option>
-        <option value="0.98">HARD</option>
-      </select>
-      <button id="pause">PAUSE</button>
-      <button id="reset">NEW GAME</button>
-    </div>
-  </section>
-
-  <div class="footer">FIRST TO 7 &nbsp;•&nbsp; INSERT COIN? &nbsp; NOPE — JUST PLAY</div>
+<header class="marquee"><h1>PONG</h1><p>PLAYER VS COMPUTER</p></header>
+<section class="screen-frame"><div class="screen">
+<canvas id="game" width="960" height="540"></canvas><div class="scanlines"></div><div class="glass"></div>
+</div></section>
+<section class="below">
+<div class="instructions"><b>WASD</b> / <b>ARROWS</b> MOVE &nbsp;·&nbsp; <b>SPACE</b> ROTATE PADDLE</div>
+<div class="controls"><select id="difficulty"><option value=".58">EASY</option><option value=".76" selected>NORMAL</option><option value=".92">HARD</option></select><button id="pause">PAUSE</button><button id="reset">NEW GAME</button></div>
+</section>
+<div class="footer">FIRST TO 7 &nbsp;•&nbsp; EVERY ROUND HAS A NEW TWIST</div>
 </main>
 
 <script>
 (() => {
-const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
-const W=960,H=540;
-const P={w:15,h:105}, player={x:55,y:H/2-P.h/2}, cpu={x:W-70,y:H/2-P.h/2};
-const ball={x:W/2,y:H/2,r:7,vx:430,vy:90};
-let scoreP=0,scoreC=0,paused=false,over=false,ready=.7;
-let keys={},mouse=false,last=performance.now();
-const difficulty=document.getElementById("difficulty");
+"use strict";
 
-function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
-function resetBall(dir){
-  ball.x=W/2;ball.y=H/2;
-  let angle=(Math.random()-.5)*.9;
-  let speed=430;
-  ball.vx=dir*speed*Math.cos(angle);
-  ball.vy=speed*Math.sin(angle);
-  ready=.7;
-}
-function reset(){
-  scoreP=scoreC=0;
-  player.y=cpu.y=H/2-P.h/2;
-  document.body.dataset.score="";
-  over=false;paused=false;
-  document.getElementById("pause").textContent="PAUSE";
-  resetBall(Math.random()<.5?-1:1);
-}
-function score(who){
-  if(who==="p"){
-    scoreP++;
-    if(scoreP>=7){over=true;paused=true}
-    else resetBall(1);
-  }else{
-    scoreC++;
-    if(scoreC>=7){over=true;paused=true}
-    else resetBall(-1);
-  }
-}
-function hit(p){
-  return ball.x+ball.r>p.x&&ball.x-ball.r<p.x+P.w&&
-         ball.y+ball.r>p.y&&ball.y-ball.r<p.y+P.h;
-}
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-window.onkeydown=e=>{
-  keys[e.key.toLowerCase()]=true;
-  if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase()))e.preventDefault();
-  if(e.key===" "&&!e.repeat)togglePause();
-  if(e.key.toLowerCase()==="r")reset();
+const W = canvas.width;
+const H = canvas.height;
+const WALL = 18;
+
+const P = { w: 15, h: 105 };
+
+const makePaddle = (x, y) => ({
+  x, y,
+  angle: 0,
+  startAngle: 0,
+  targetAngle: 0,
+  rotationTime: 0,
+  rotationDuration: 0,
+  rotating: false,
+  power: 0,
+  hitCooldown: 0
+});
+
+const player = makePaddle(62.5, H / 2);
+const cpu = makePaddle(W - 62.5, H / 2);
+
+const ball = {
+  x: W / 2,
+  y: H / 2,
+  r: 10,
+  vx: 390,
+  vy: 0,
+  super: 0,
+  trail: []
 };
-window.onkeyup=e=>keys[e.key.toLowerCase()]=false;
 
-canvas.addEventListener("pointerdown",e=>{mouse=true;moveMouse(e)});
-canvas.addEventListener("pointermove",e=>{if(mouse)moveMouse(e)});
-canvas.addEventListener("pointerup",()=>mouse=false);
-canvas.addEventListener("pointercancel",()=>mouse=false);
+let scoreP = 0;
+let scoreC = 0;
+let round = 1;
+let paused = false;
+let over = false;
+let ready = 0.8;
+let last = performance.now();
+let keys = {};
+let twist = "normal";
+let bumperCooldowns = [0, 0, 0];
+let roundMessage = "";
+let serveDirection = 1;
 
-function moveMouse(e){
-  const r=canvas.getBoundingClientRect();
-  const x=(e.clientX-r.left)/r.width*W;
-  const y=(e.clientY-r.top)/r.height*H;
-  player.x=clamp(x-P.w/2,24,W/2-P.w-24);
-  player.y=clamp(y-P.h/2,18,H-P.h-18);
+const diff = document.getElementById("difficulty");
+const pauseButton = document.getElementById("pause");
+
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+function chooseTwist() {
+  const options = ["normal", "gravity", "bumpers", "speed"];
+  twist = options[(round - 1) % options.length];
+
+  const messages = {
+    normal: "CLASSIC PONG",
+    gravity: "GRAVITY WELL",
+    bumpers: "BUMPER MAYHEM",
+    speed: "TURBO COURT"
+  };
+
+  roundMessage = messages[twist];
+  bumperCooldowns = [0, 0, 0];
 }
-function togglePause(){
-  if(over)return;
-  paused=!paused;
-  document.getElementById("pause").textContent=paused?"RESUME":"PAUSE";
+
+function resetBall(dir) {
+  ball.x = W / 2;
+  ball.y = H / 2;
+  ball.trail.length = 0;
+  ball.super = 0;
+
+  serveDirection = dir;
+  const angle = (Math.random() - 0.5) * 0.65;
+  const speed = 390;
+
+  ball.vx = dir * speed * Math.cos(angle);
+  ball.vy = speed * Math.sin(angle);
+  ready = 0.8;
 }
-document.getElementById("pause").onclick=togglePause;
-document.getElementById("reset").onclick=reset;
 
-function update(dt){
-  if(paused||over)return;
-  if(ready>0){ready-=dt;return}
+function reset() {
+  scoreP = 0;
+  scoreC = 0;
+  round = 1;
+  paused = false;
+  over = false;
 
-  let x=0,y=0;
-  if(keys.a||keys.arrowleft)x--;
-  if(keys.d||keys.arrowright)x++;
-  if(keys.w||keys.arrowup)y--;
-  if(keys.s||keys.arrowdown)y++;
-  let len=Math.hypot(x,y)||1;
-  player.x+=x/len*560*dt;
-  player.y+=y/len*560*dt;
+  player.x = 62.5;
+  player.y = H / 2;
+  player.angle = 0;
+  player.hitCooldown = 0;
 
-  // Player can roam freely in X/Y, but never crosses the centre line.
-  player.x=clamp(player.x,24,W/2-P.w-24);
-  player.y=clamp(player.y,18,H-P.h-18);
+  cpu.x = W - 62.5;
+  cpu.y = H / 2;
+  cpu.angle = 0;
+  cpu.hitCooldown = 0;
 
-  // The computer has its own paddle and is independently controlled by AI.
-  // It is also confined to its half of the table.
-  const d=Number(difficulty.value);
-  const target=ball.y-P.h/2;
-  const reaction=510*d;
-  const distance=target-cpu.y;
-  cpu.y+=clamp(distance,-reaction*dt,reaction*dt);
-  cpu.y=clamp(cpu.y,18,H-P.h-18);
+  chooseTwist();
+  resetBall(Math.random() < 0.5 ? -1 : 1);
+  pauseButton.textContent = "PAUSE";
+}
 
-  ball.x+=ball.vx*dt;
-  ball.y+=ball.vy*dt;
+function nextRound() {
+  round++;
+  if (round > 12) round = 1;
+  chooseTwist();
+}
 
-  if(ball.y-ball.r<18){ball.y=18+ball.r;ball.vy=Math.abs(ball.vy)}
-  if(ball.y+ball.r>H-18){ball.y=H-18-ball.r;ball.vy=-Math.abs(ball.vy)}
+function point(side) {
+  if (side === "p") scoreP++;
+  else scoreC++;
 
-  if(ball.vx<0&&hit(player)){
-    ball.x=player.x+P.w+ball.r;
-    let offset=(ball.y-(player.y+P.h/2))/(P.h/2);
-    let speed=Math.min(Math.hypot(ball.vx,ball.vy)*1.035,900);
-    let angle=offset*.95;
-    ball.vx=Math.cos(angle)*speed;
-    ball.vy=Math.sin(angle)*speed;
+  if (scoreP >= 7 || scoreC >= 7) {
+    over = true;
+    paused = true;
+    return;
   }
 
-  if(ball.vx>0&&hit(cpu)){
-    ball.x=cpu.x-ball.r;
-    let offset=(ball.y-(cpu.y+P.h/2))/(P.h/2);
-    let speed=Math.min(Math.hypot(ball.vx,ball.vy)*1.035,900);
-    let angle=Math.PI-offset*.95;
-    ball.vx=Math.cos(angle)*speed;
-    ball.vy=Math.sin(angle)*speed;
-  }
-
-  if(ball.x<-30)score("c");
-  if(ball.x>W+30)score("p");
+  nextRound();
+  resetBall(side === "p" ? 1 : -1);
 }
 
-function draw(){
-  ctx.clearRect(0,0,W,H);
+function togglePause() {
+  if (over) return;
+  paused = !paused;
+  pauseButton.textContent = paused ? "RESUME" : "PAUSE";
+}
 
-  // CRT green-black screen.
-  ctx.fillStyle="#193127";ctx.fillRect(0,0,W,H);
+pauseButton.onclick = togglePause;
+document.getElementById("reset").onclick = reset;
 
-  // Very subtle old-school screen vignette.
-  const v=ctx.createRadialGradient(W/2,H/2,90,W/2,H/2,650);
-  v.addColorStop(0,"rgba(49,83,61,.15)");
-  v.addColorStop(1,"rgba(0,0,0,.42)");
-  ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+window.onkeydown = (e) => {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
 
-  // Field markings.
-  ctx.strokeStyle="rgba(218,224,188,.34)";
-  ctx.lineWidth=3;
-  ctx.strokeRect(18,18,W-36,H-36);
+  if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) {
+    e.preventDefault();
+  }
 
-  ctx.setLineDash([7,12]);
-  ctx.beginPath();ctx.moveTo(W/2,18);ctx.lineTo(W/2,H-18);ctx.stroke();
+  if (k === " " && !e.repeat) rotate(player);
+  if (k === "r") reset();
+};
+
+window.onkeyup = (e) => {
+  keys[e.key.toLowerCase()] = false;
+};
+
+function rotate(p) {
+  if (p.rotating) return;
+
+  p.startAngle = p.angle;
+  p.targetAngle = p.angle + Math.PI / 2;
+  p.rotationDuration = 0.38;
+  p.rotationTime = 0.38;
+  p.rotating = true;
+}
+
+function updateRotation(p, dt) {
+  p.power = Math.max(0, p.power - dt);
+  p.hitCooldown = Math.max(0, p.hitCooldown - dt);
+
+  if (!p.rotating) return;
+
+  p.rotationTime -= dt;
+
+  const t = clamp(1 - p.rotationTime / p.rotationDuration, 0, 1);
+
+  // Fast ease with a small, soft overshoot that settles at exactly 90 degrees.
+  const ease = 1 - Math.pow(1 - t, 3);
+  const bounce = Math.sin(t * Math.PI * 1.15) * 0.045 * (1 - t);
+  p.angle = p.startAngle + (p.targetAngle - p.startAngle) * (ease + bounce);
+
+  if (p.rotationTime <= 0) {
+    p.angle = p.targetAngle;
+    p.rotating = false;
+    p.power = 0.10;
+  }
+}
+
+function paddleHalfExtents(p) {
+  const c = Math.cos(p.angle);
+  const s = Math.sin(p.angle);
+
+  return {
+    x: (P.w / 2) * Math.abs(c) + (P.h / 2) * Math.abs(s),
+    y: (P.w / 2) * Math.abs(s) + (P.h / 2) * Math.abs(c)
+  };
+}
+
+function clampPaddle(p, side) {
+  const ext = paddleHalfExtents(p);
+
+  const minX = WALL + ext.x;
+  const maxX = W / 2 - WALL - ext.x;
+
+  if (side === "player") {
+    p.x = clamp(p.x, minX, maxX);
+  } else {
+    p.x = clamp(p.x, W / 2 + WALL + ext.x, W - WALL - ext.x);
+  }
+
+  const minY = WALL + ext.y;
+  const maxY = H - WALL - ext.y;
+  p.y = clamp(p.y, minY, maxY);
+}
+
+function updatePaddleMovement(dt) {
+  let dx = 0;
+  let dy = 0;
+
+  if (keys.a || keys.arrowleft) dx--;
+  if (keys.d || keys.arrowright) dx++;
+  if (keys.w || keys.arrowup) dy--;
+  if (keys.s || keys.arrowdown) dy++;
+
+  const length = Math.hypot(dx, dy);
+  if (length > 0) {
+    dx /= length;
+    dy /= length;
+  }
+
+  const moveSpeed = 480;
+  player.x += dx * moveSpeed * dt;
+  player.y += dy * moveSpeed * dt;
+  clampPaddle(player, "player");
+
+  const difficulty = Number(diff.value);
+  const targetY = ball.y;
+
+  const chaseSpeed = 360 + difficulty * 120;
+  const difference = targetY - cpu.y;
+
+  if (Math.abs(difference) > 2) {
+    cpu.y += clamp(difference, -chaseSpeed * dt, chaseSpeed * dt);
+  }
+
+  // CPU can use the same rotation mechanic.
+  if (
+    !cpu.rotating &&
+    ball.vx > 0 &&
+    ball.x > W * 0.67 &&
+    Math.abs(ball.y - cpu.y) > P.h * 0.23 &&
+    Math.random() < difficulty * 0.24
+  ) {
+    rotate(cpu);
+  }
+
+  clampPaddle(cpu, "cpu");
+}
+
+function limitBallSpeed(maxSpeed) {
+  const speed = Math.hypot(ball.vx, ball.vy);
+  if (speed <= maxSpeed || speed === 0) return;
+
+  const scale = maxSpeed / speed;
+  ball.vx *= scale;
+  ball.vy *= scale;
+}
+
+function worldToPaddleLocal(x, y, p, angle = p.angle) {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const rx = x - p.x;
+  const ry = y - p.y;
+
+  return {
+    x: rx * c + ry * s,
+    y: -rx * s + ry * c
+  };
+}
+
+function paddleLocalToWorld(x, y, p, angle = p.angle) {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+
+  return {
+    x: p.x + x * c - y * s,
+    y: p.y + x * s + y * c
+  };
+}
+
+// Returns the first time t in [0,1] where a segment enters the
+// paddle rectangle expanded by the ball radius. This turns the ball's
+// circular collider into a conservative Minkowski-expanded rectangle,
+// eliminating the common "fast ball clips through thin paddle" failure.
+function sweptExpandedPaddleHit(x0, y0, x1, y1, p, angle = p.angle, extra = 0) {
+  const a = worldToPaddleLocal(x0, y0, p, angle);
+  const b = worldToPaddleLocal(x1, y1, p, angle);
+
+  const minX = -P.w / 2 - ball.r - extra;
+  const maxX =  P.w / 2 + ball.r + extra;
+  const minY = -P.h / 2 - ball.r - extra;
+  const maxY =  P.h / 2 + ball.r + extra;
+
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+
+  let tEnter = 0;
+  let tExit = 1;
+
+  function slab(origin, delta, min, max) {
+    if (Math.abs(delta) < 1e-12) {
+      return origin >= min && origin <= max;
+    }
+
+    let tA = (min - origin) / delta;
+    let tB = (max - origin) / delta;
+    if (tA > tB) [tA, tB] = [tB, tA];
+
+    tEnter = Math.max(tEnter, tA);
+    tExit = Math.min(tExit, tB);
+    return tEnter <= tExit;
+  }
+
+  if (!slab(a.x, dx, minX, maxX)) return null;
+  if (!slab(a.y, dy, minY, maxY)) return null;
+  if (tEnter > tExit || tExit < 0 || tEnter > 1) return null;
+
+  return clamp(tEnter, 0, 1);
+}
+
+function circleRectangleNormalAt(x, y, p, angle = p.angle) {
+  const local = worldToPaddleLocal(x, y, p, angle);
+
+  const halfW = P.w / 2;
+  const halfH = P.h / 2;
+
+  const closestX = clamp(local.x, -halfW, halfW);
+  const closestY = clamp(local.y, -halfH, halfH);
+
+  let nxLocal = local.x - closestX;
+  let nyLocal = local.y - closestY;
+  const distance = Math.hypot(nxLocal, nyLocal);
+
+  if (distance < 1e-8) {
+    const gaps = [
+      { x: -1, y: 0, d: local.x + halfW },
+      { x:  1, y: 0, d: halfW - local.x },
+      { x: 0, y: -1, d: local.y + halfH },
+      { x: 0, y:  1, d: halfH - local.y }
+    ];
+    gaps.sort((a, b) => a.d - b.d);
+    nxLocal = gaps[0].x;
+    nyLocal = gaps[0].y;
+  } else {
+    nxLocal /= distance;
+    nyLocal /= distance;
+  }
+
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+
+  return {
+    nx: nxLocal * c - nyLocal * s,
+    ny: nxLocal * s + nyLocal * c,
+    localY: local.y,
+    distance
+  };
+}
+
+function paddleCollisionData(p, prevX, prevY, prevAngle) {
+  // Check the ball's whole path against the paddle at several orientations.
+  // This matters because the paddle itself can rotate a noticeable amount
+  // during a single animation frame.
+  const samples = [prevAngle, (prevAngle + p.angle) * 0.5, p.angle];
+
+  let earliest = null;
+  let hitAngle = p.angle;
+
+  for (const angle of samples) {
+    const t = sweptExpandedPaddleHit(
+      prevX, prevY, ball.x, ball.y, p, angle, 1.5
+    );
+
+    if (t !== null && (earliest === null || t < earliest)) {
+      earliest = t;
+      hitAngle = angle;
+    }
+  }
+
+  // Also catch a stationary ball that starts already overlapped.
+  if (earliest === null) {
+    const local = worldToPaddleLocal(ball.x, ball.y, p, p.angle);
+    const inside =
+      local.x >= -P.w / 2 - ball.r &&
+      local.x <=  P.w / 2 + ball.r &&
+      local.y >= -P.h / 2 - ball.r &&
+      local.y <=  P.h / 2 + ball.r;
+
+    if (!inside) return null;
+    earliest = 1;
+    hitAngle = p.angle;
+  }
+
+  return { t: earliest, angle: hitAngle };
+}
+
+function reflectOffPaddle(p, isPlayer, prevX, prevY, prevAngle) {
+  if (!p.rotating && p.hitCooldown > 0) return false;
+
+  const hit = paddleCollisionData(p, prevX, prevY, prevAngle);
+  if (!hit) return false;
+
+  // Move the ball back to the first contact point along its swept path.
+  // Then push it exactly one radius away from the paddle before reflecting.
+  const contactX = prevX + (ball.x - prevX) * hit.t;
+  const contactY = prevY + (ball.y - prevY) * hit.t;
+  ball.x = contactX;
+  ball.y = contactY;
+
+  const { nx, ny, localY, distance } =
+    circleRectangleNormalAt(ball.x, ball.y, p, hit.angle);
+
+  let approach = ball.vx * nx + ball.vy * ny;
+
+  // A rotating paddle can sweep into the ball. Account for the paddle surface
+  // velocity so rotation itself can generate a valid collision.
+  if (approach >= 0) {
+    if (!p.rotating) return false;
+
+    const rotationRate =
+      (p.targetAngle - p.startAngle) / Math.max(p.rotationDuration, 0.001);
+
+    const relX = ball.x - p.x;
+    const relY = ball.y - p.y;
+
+    const surfaceVX = -rotationRate * relY;
+    const surfaceVY =  rotationRate * relX;
+
+    const relativeApproach =
+      (ball.vx - surfaceVX) * nx +
+      (ball.vy - surfaceVY) * ny;
+
+    if (relativeApproach >= 0) return false;
+    approach = relativeApproach;
+  }
+
+  // Guaranteed separation from the actual paddle surface.
+  ball.x += nx * (ball.r + 2.0);
+  ball.y += ny * (ball.r + 2.0);
+
+  // Reflect against the paddle's real normal.
+  const vDotN = ball.vx * nx + ball.vy * ny;
+  if (vDotN < 0) {
+    ball.vx -= 2 * vDotN * nx;
+    ball.vy -= 2 * vDotN * ny;
+  } else {
+    ball.vx -= 2 * approach * nx;
+    ball.vy -= 2 * approach * ny;
+  }
+
+  // Controlled english.
+  const impact = clamp(localY / (P.h / 2), -1, 1);
+  const tangentX = -ny;
+  const tangentY = nx;
+  const tangentKick = impact * 100;
+
+  ball.vx += tangentX * tangentKick;
+  ball.vy += tangentY * tangentKick;
+
+  let speed = Math.hypot(ball.vx, ball.vy) || 360;
+  speed = Math.min(speed * 1.012, 735);
+
+  if (p.rotating || p.power > 0) {
+    speed = Math.min(speed * 1.16, 840);
+    ball.super = 0.50;
+  }
+
+  const current = Math.hypot(ball.vx, ball.vy) || 1;
+  const scale = speed / current;
+  ball.vx *= scale;
+  ball.vy *= scale;
+
+  // During rotation there is intentionally NO contact cooldown.
+  if (!p.rotating) p.hitCooldown = 0.06;
+
+  return true;
+}
+
+function handleBumpers(dt) {
+  if (twist !== "bumpers") return;
+
+  const bumpers = [
+    { x: W * 0.34, y: H * 0.29, r: 18 },
+    { x: W * 0.66, y: H * 0.71, r: 18 },
+    { x: W * 0.50, y: H * 0.50, r: 15 }
+  ];
+
+  bumperCooldowns = bumperCooldowns.map(v => Math.max(0, v - dt));
+
+  bumpers.forEach((b, i) => {
+    if (bumperCooldowns[i] > 0) return;
+
+    const dx = ball.x - b.x;
+    const dy = ball.y - b.y;
+    const distance = Math.hypot(dx, dy);
+    const minimum = b.r + ball.r;
+
+    if (distance >= minimum || distance < 0.0001) return;
+
+    const nx = dx / distance;
+    const ny = dy / distance;
+    const approach = ball.vx * nx + ball.vy * ny;
+
+    if (approach >= 0) return;
+
+    ball.x = b.x + nx * (minimum + 0.75);
+    ball.y = b.y + ny * (minimum + 0.75);
+
+    ball.vx -= 2 * approach * nx;
+    ball.vy -= 2 * approach * ny;
+
+    const speed = Math.min(Math.max(Math.hypot(ball.vx, ball.vy) * 1.14, 670), 840);
+    const current = Math.hypot(ball.vx, ball.vy) || 1;
+    const scale = speed / current;
+
+    ball.vx *= scale;
+    ball.vy *= scale;
+    ball.super = 0.40;
+
+    bumperCooldowns[i] = 0.10;
+  });
+}
+
+function applyGravity(dt) {
+  if (twist !== "gravity") return;
+
+  const gx = W / 2;
+  const gy = H / 2;
+  const radius = 72;
+
+  const dx = gx - ball.x;
+  const dy = gy - ball.y;
+  const distance = Math.hypot(dx, dy);
+
+  if (distance < 0.001 || distance >= radius) return;
+
+  const falloff = 1 - distance / radius;
+  const inward = 115 * falloff;
+  const tangential = 78 * falloff;
+
+  ball.vx += (dx / distance) * inward * dt;
+  ball.vy += (dy / distance) * inward * dt;
+
+  ball.vx += (-dy / distance) * tangential * dt;
+  ball.vy += (dx / distance) * tangential * dt;
+}
+
+function updatePhysics(dt, previousPaddleAngles) {
+  applyGravity(dt);
+  limitBallSpeed(twist === "speed" ? 780 : 735);
+
+  const prevX = ball.x;
+  const prevY = ball.y;
+  const prevPlayerAngle = previousPaddleAngles.player;
+  const prevCpuAngle = previousPaddleAngles.cpu;
+
+  ball.x += ball.vx * dt;
+  ball.y += ball.vy * dt;
+
+  // Court walls.
+  if (ball.y - ball.r < WALL) {
+    ball.y = WALL + ball.r;
+    if (ball.vy < 0) ball.vy = -ball.vy;
+  } else if (ball.y + ball.r > H - WALL) {
+    ball.y = H - WALL - ball.r;
+    if (ball.vy > 0) ball.vy = -ball.vy;
+  }
+
+  handleBumpers(dt);
+
+  reflectOffPaddle(player, true, prevX, prevY, prevPlayerAngle);
+  reflectOffPaddle(cpu, false, prevX, prevY, prevCpuAngle);
+
+  ball.trail.push({ x: ball.x, y: ball.y });
+  if (ball.trail.length > 22) ball.trail.shift();
+
+  ball.super = Math.max(0, ball.super - dt);
+}
+
+function update(dt) {
+  if (paused || over) return;
+
+  if (ready > 0) {
+    ready -= dt;
+    updatePaddleMovement(dt);
+    updateRotation(player, dt);
+    updateRotation(cpu, dt);
+    return;
+  }
+
+  // High-resolution simulation: the paddle and ball both advance in
+  // small slices, so neither can teleport through the other.
+  const steps = Math.min(30, Math.max(1, Math.ceil(dt / 0.0015)));
+  const stepDt = dt / steps;
+
+  for (let i = 0; i < steps; i++) {
+    const previousPaddleAngles = {
+      player: player.angle,
+      cpu: cpu.angle
+    };
+
+    updatePaddleMovement(stepDt);
+    updateRotation(player, stepDt);
+    updateRotation(cpu, stepDt);
+
+    updatePhysics(stepDt, previousPaddleAngles);
+
+    if (ball.x < -35) {
+      point("c");
+      break;
+    }
+
+    if (ball.x > W + 35) {
+      point("p");
+      break;
+    }
+  }
+}
+
+function drawPaddle(p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.angle);
+
+  ctx.fillStyle = "#e8dfbd";
+  ctx.fillRect(-P.w / 2, -P.h / 2, P.w, P.h);
+
+  ctx.fillStyle = "rgba(255,255,255,.18)";
+  ctx.fillRect(-P.w / 2 + 2, -P.h / 2 + 3, 3, P.h - 6);
+
+  ctx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = "#193127";
+  ctx.fillRect(0, 0, W, H);
+
+  const vignette = ctx.createRadialGradient(W / 2, H / 2, 90, W / 2, H / 2, 650);
+  vignette.addColorStop(0, "rgba(49,83,61,.15)");
+  vignette.addColorStop(1, "rgba(0,0,0,.42)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = "rgba(218,224,188,.34)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
+
+  ctx.setLineDash([7, 12]);
+  ctx.beginPath();
+  ctx.moveTo(W / 2, WALL);
+  ctx.lineTo(W / 2, H - WALL);
+  ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.beginPath();ctx.arc(W/2,H/2,65,0,Math.PI*2);ctx.strokeStyle="rgba(218,224,188,.15)";ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(W / 2, H / 2, 65, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(218,224,188,.15)";
+  ctx.stroke();
 
-  // Center score.
-  ctx.fillStyle="#e9dfbd";
-  ctx.font='42px "Press Start 2P"';
-  ctx.textAlign="center";
-  ctx.fillText(scoreP,W*.43,67);
-  ctx.fillText(scoreC,W*.57,67);
+  if (twist === "gravity") {
+    const gx = W / 2;
+    const gy = H / 2;
+    const radius = 72;
 
-  // Player and computer labels.
-  ctx.font='17px VT323';
-  ctx.letterSpacing="2px";
-  ctx.fillStyle="#cfc6a7";
-  ctx.fillText("PLAYER",W*.25,35);
-  ctx.fillText("CPU",W*.75,35);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(gx, gy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(76,125,104,.10)";
+    ctx.fill();
 
-  // Paddles.
-  ctx.fillStyle="#e8dfbd";
-  ctx.fillRect(player.x,player.y,P.w,P.h);
-  ctx.fillRect(cpu.x,cpu.y,P.w,P.h);
+    ctx.strokeStyle = "rgba(198,218,177,.48)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 8]);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-  // Paddle highlights/shadows.
-  ctx.fillStyle="rgba(255,255,255,.18)";
-  ctx.fillRect(player.x+2,player.y+3,3,P.h-6);
-  ctx.fillRect(cpu.x+2,cpu.y+3,3,P.h-6);
-
-  // Ball.
-  ctx.fillStyle="#f3e9c6";
-  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();
-
-  // Tiny CRT bloom.
-  ctx.shadowColor="#dbe7c0";ctx.shadowBlur=8;
-  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r-1,0,Math.PI*2);ctx.fill();
-  ctx.shadowBlur=0;
-
-  if(ready>0&&!paused&&!over){
-    ctx.fillStyle="#d9d0b1";
-    ctx.font='24px "Press Start 2P"';
-    ctx.fillText("READY",W/2,H-48);
+    ctx.beginPath();
+    ctx.arc(gx, gy, 13 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(218,224,188,.55)";
+    ctx.fill();
+    ctx.restore();
   }
 
-  if(paused||over){
-    ctx.fillStyle="rgba(9,17,13,.72)";
-    ctx.fillRect(0,0,W,H);
-    ctx.fillStyle="#eee4c4";
-    ctx.font='30px "Press Start 2P"';
-    ctx.fillText(over?(scoreP>scoreC?"YOU WIN":"CPU WINS"):"PAUSED",W/2,H/2-8);
-    ctx.font='20px VT323';
-    ctx.fillStyle="#c3b99b";
-    ctx.fillText(over?"PRESS NEW GAME":"PRESS PAUSE TO RESUME",W/2,H/2+32);
+  if (twist === "bumpers") {
+    [
+      { x: W * 0.34, y: H * 0.29, r: 18 },
+      { x: W * 0.66, y: H * 0.71, r: 18 },
+      { x: W * 0.50, y: H * 0.50, r: 15 }
+    ].forEach(b => {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = "#d5ad54";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r - 6, 0, Math.PI * 2);
+      ctx.fillStyle = "#514b35";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r - 11, 0, Math.PI * 2);
+      ctx.fillStyle = "#e5d59b";
+      ctx.fill();
+    });
+  }
+
+  for (let i = 0; i < ball.trail.length; i++) {
+    const t = i / ball.trail.length;
+    const p = ball.trail[i];
+
+    ctx.globalAlpha = t * 0.18;
+    ctx.fillStyle = "#e9dfbd";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ball.r * t * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+
+  if (twist === "speed") {
+    ctx.strokeStyle = "rgba(230,221,184,.13)";
+    ctx.lineWidth = 1;
+
+    for (let i = 1; i < 7; i++) {
+      ctx.beginPath();
+      ctx.moveTo(
+        ball.x - ball.vx * 0.004 * i,
+        ball.y - ball.vy * 0.004 * i
+      );
+      ctx.lineTo(
+        ball.x - ball.vx * 0.007 * i,
+        ball.y - ball.vy * 0.007 * i
+      );
+      ctx.stroke();
+    }
+  }
+
+  drawPaddle(player);
+  drawPaddle(cpu);
+
+  ctx.fillStyle = "#e9dfbd";
+  ctx.font = '42px "Press Start 2P"';
+  ctx.textAlign = "center";
+  ctx.fillText(scoreP, W * 0.43, 67);
+  ctx.fillText(scoreC, W * 0.57, 67);
+
+  ctx.font = "17px VT323";
+  ctx.fillStyle = "#cfc6a7";
+  ctx.fillText("PLAYER", W * 0.25, 35);
+  ctx.fillText("CPU", W * 0.75, 35);
+
+  if (ball.super > 0) {
+    ctx.save();
+    ctx.strokeStyle = "#fff0bd";
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.65;
+    ctx.shadowColor = "#e4bd5e";
+    ctx.shadowBlur = 18;
+
+    ctx.beginPath();
+    ctx.arc(
+      ball.x,
+      ball.y,
+      ball.r + 10 + Math.sin(performance.now() / 40) * 3,
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  ctx.fillStyle = "#f3e9c6";
+  ctx.shadowColor = "#dbe7c0";
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.font = '17px "Press Start 2P"';
+  ctx.fillStyle = "rgba(232,223,189,.72)";
+  ctx.fillText("ROUND " + round + "  —  " + roundMessage, W / 2, H - 25);
+
+  if (ready > 0 && !paused && !over) {
+    ctx.fillStyle = "#d9d0b1";
+    ctx.font = '23px "Press Start 2P"';
+    ctx.fillText("READY", W / 2, H / 2 + 120);
+  }
+
+  if (paused || over) {
+    ctx.fillStyle = "rgba(9,17,13,.74)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "#eee4c4";
+    ctx.font = '30px "Press Start 2P"';
+    ctx.fillText(
+      over ? (scoreP > scoreC ? "YOU WIN" : "CPU WINS") : "PAUSED",
+      W / 2,
+      H / 2 - 8
+    );
+
+    ctx.font = "20px VT323";
+    ctx.fillStyle = "#c3b99b";
+    ctx.fillText(
+      over ? "PRESS NEW GAME" : "PRESS PAUSE TO RESUME",
+      W / 2,
+      H / 2 + 32
+    );
   }
 }
 
-function loop(t){
-  const dt=Math.min((t-last)/1000,.035);last=t;
-  update(dt);draw();requestAnimationFrame(loop);
+function loop(t) {
+  const dt = Math.min((t - last) / 1000, 0.03);
+  last = t;
+
+  update(dt);
+  draw();
+
+  requestAnimationFrame(loop);
 }
-reset();requestAnimationFrame(loop);
+
+reset();
+requestAnimationFrame(loop);
+
 })();
 </script>
 </body>
