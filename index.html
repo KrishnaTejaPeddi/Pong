@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PONG // ARCADE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+:root{
+  --cream:#f2e8c9;
+  --red:#d94a3a;
+  --dark:#171713;
+  --green:#203f32;
+  --gold:#d5ad54;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#11110f;color:var(--cream)}
+body{
+  display:flex;align-items:center;justify-content:center;
+  font-family:VT323,monospace;
+  background:
+    radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%);
+}
+body:after{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.09) 0px,rgba(0,0,0,.09) 1px,transparent 2px,transparent 4px);
+  mix-blend-mode:multiply;opacity:.45;
+}
+.machine{
+  width:min(1120px,95vw);
+  background:#25241e;
+  border:8px solid #0b0b09;
+  box-shadow:0 22px 70px #000, inset 0 0 0 3px #464338;
+  padding:26px 30px 24px;
+}
+.marquee{
+  text-align:center;
+  padding:5px 0 19px;
+  border-bottom:4px solid #0c0c0a;
+}
+.marquee h1{
+  margin:0;
+  font-family:"Press Start 2P",monospace;
+  font-size:clamp(20px,3.3vw,38px);
+  letter-spacing:2px;
+  color:var(--red);
+  text-shadow:3px 3px 0 #501e19;
+}
+.marquee p{
+  margin:11px 0 0;
+  font-size:22px;
+  letter-spacing:4px;
+  color:#c8bfa5;
+}
+.screen-frame{
+  margin:22px auto 0;
+  padding:15px;
+  max-width:1000px;
+  background:#080807;
+  border:4px solid #4b493d;
+  box-shadow:inset 0 0 0 4px #161612,0 7px 0 #0a0a08;
+}
+.screen{
+  position:relative;
+  background:#182b23;
+  overflow:hidden;
+}
+canvas{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:16/9;
+  image-rendering:auto;
+}
+.scanlines{
+  position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,rgba(0,0,0,.14) 4px);
+  opacity:.55;
+}
+.glass{
+  position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 0 70px rgba(0,0,0,.5);
+}
+.below{
+  max-width:1000px;margin:18px auto 0;
+  display:flex;justify-content:space-between;align-items:center;gap:18px;
+}
+.instructions{
+  font-size:20px;color:#bdb59e;letter-spacing:1px;
+}
+.instructions b{color:var(--cream)}
+.controls{display:flex;gap:9px}
+button,select{
+  font:20px VT323,monospace;
+  color:var(--cream);background:#333229;
+  border:2px solid #5a574a;padding:7px 13px;
+  cursor:pointer;
+}
+button:hover,select:hover{background:#403f35}
+button:active{transform:translateY(1px)}
+.footer{
+  margin-top:20px;text-align:center;color:#777365;
+  font-size:17px;letter-spacing:2px;
+}
+@media(max-width:700px){
+  .machine{padding:15px 13px}
+  .screen-frame{padding:8px;margin-top:14px}
+  .below{align-items:flex-start;flex-direction:column}
+  .controls{width:100%}
+  button,select{flex:1}
+  .instructions{font-size:18px}
+}
+</style>
+</head>
+<body>
+<main class="machine">
+  <header class="marquee">
+    <h1>PONG</h1>
+    <p>PLAYER VS COMPUTER</p>
+  </header>
+
+  <section class="screen-frame">
+    <div class="screen">
+      <canvas id="game" width="960" height="540"></canvas>
+      <div class="scanlines"></div>
+      <div class="glass"></div>
+    </div>
+  </section>
+
+  <section class="below">
+    <div class="instructions">
+      MOVE: <b>W A S D</b> &nbsp; / &nbsp; <b>ARROW KEYS</b> &nbsp; · &nbsp; MOUSE
+    </div>
+    <div class="controls">
+      <select id="difficulty" aria-label="Difficulty">
+        <option value="0.65">EASY</option>
+        <option value="0.82" selected>NORMAL</option>
+        <option value="0.98">HARD</option>
+      </select>
+      <button id="pause">PAUSE</button>
+      <button id="reset">NEW GAME</button>
+    </div>
+  </section>
+
+  <div class="footer">FIRST TO 7 &nbsp;•&nbsp; INSERT COIN? &nbsp; NOPE — JUST PLAY</div>
+</main>
+
+<script>
+(() => {
+const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
+const W=960,H=540;
+const P={w:15,h:105}, player={x:55,y:H/2-P.h/2}, cpu={x:W-70,y:H/2-P.h/2};
+const ball={x:W/2,y:H/2,r:7,vx:430,vy:90};
+let scoreP=0,scoreC=0,paused=false,over=false,ready=.7;
+let keys={},mouse=false,last=performance.now();
+const difficulty=document.getElementById("difficulty");
+
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function resetBall(dir){
+  ball.x=W/2;ball.y=H/2;
+  let angle=(Math.random()-.5)*.9;
+  let speed=430;
+  ball.vx=dir*speed*Math.cos(angle);
+  ball.vy=speed*Math.sin(angle);
+  ready=.7;
+}
+function reset(){
+  scoreP=scoreC=0;
+  player.y=cpu.y=H/2-P.h/2;
+  document.body.dataset.score="";
+  over=false;paused=false;
+  document.getElementById("pause").textContent="PAUSE";
+  resetBall(Math.random()<.5?-1:1);
+}
+function score(who){
+  if(who==="p"){
+    scoreP++;
+    if(scoreP>=7){over=true;paused=true}
+    else resetBall(1);
+  }else{
+    scoreC++;
+    if(scoreC>=7){over=true;paused=true}
+    else resetBall(-1);
+  }
+}
+function hit(p){
+  return ball.x+ball.r>p.x&&ball.x-ball.r<p.x+P.w&&
+         ball.y+ball.r>p.y&&ball.y-ball.r<p.y+P.h;
+}
+
+window.onkeydown=e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase()))e.preventDefault();
+  if(e.key===" "&&!e.repeat)togglePause();
+  if(e.key.toLowerCase()==="r")reset();
+};
+window.onkeyup=e=>keys[e.key.toLowerCase()]=false;
+
+canvas.addEventListener("pointerdown",e=>{mouse=true;moveMouse(e)});
+canvas.addEventListener("pointermove",e=>{if(mouse)moveMouse(e)});
+canvas.addEventListener("pointerup",()=>mouse=false);
+canvas.addEventListener("pointercancel",()=>mouse=false);
+
+function moveMouse(e){
+  const r=canvas.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width*W;
+  const y=(e.clientY-r.top)/r.height*H;
+  player.x=clamp(x-P.w/2,24,W/2-P.w-24);
+  player.y=clamp(y-P.h/2,18,H-P.h-18);
+}
+function togglePause(){
+  if(over)return;
+  paused=!paused;
+  document.getElementById("pause").textContent=paused?"RESUME":"PAUSE";
+}
+document.getElementById("pause").onclick=togglePause;
+document.getElementById("reset").onclick=reset;
+
+function update(dt){
+  if(paused||over)return;
+  if(ready>0){ready-=dt;return}
+
+  let x=0,y=0;
+  if(keys.a||keys.arrowleft)x--;
+  if(keys.d||keys.arrowright)x++;
+  if(keys.w||keys.arrowup)y--;
+  if(keys.s||keys.arrowdown)y++;
+  let len=Math.hypot(x,y)||1;
+  player.x+=x/len*560*dt;
+  player.y+=y/len*560*dt;
+
+  // Player can roam freely in X/Y, but never crosses the centre line.
+  player.x=clamp(player.x,24,W/2-P.w-24);
+  player.y=clamp(player.y,18,H-P.h-18);
+
+  // The computer has its own paddle and is independently controlled by AI.
+  // It is also confined to its half of the table.
+  const d=Number(difficulty.value);
+  const target=ball.y-P.h/2;
+  const reaction=510*d;
+  const distance=target-cpu.y;
+  cpu.y+=clamp(distance,-reaction*dt,reaction*dt);
+  cpu.y=clamp(cpu.y,18,H-P.h-18);
+
+  ball.x+=ball.vx*dt;
+  ball.y+=ball.vy*dt;
+
+  if(ball.y-ball.r<18){ball.y=18+ball.r;ball.vy=Math.abs(ball.vy)}
+  if(ball.y+ball.r>H-18){ball.y=H-18-ball.r;ball.vy=-Math.abs(ball.vy)}
+
+  if(ball.vx<0&&hit(player)){
+    ball.x=player.x+P.w+ball.r;
+    let offset=(ball.y-(player.y+P.h/2))/(P.h/2);
+    let speed=Math.min(Math.hypot(ball.vx,ball.vy)*1.035,900);
+    let angle=offset*.95;
+    ball.vx=Math.cos(angle)*speed;
+    ball.vy=Math.sin(angle)*speed;
+  }
+
+  if(ball.vx>0&&hit(cpu)){
+    ball.x=cpu.x-ball.r;
+    let offset=(ball.y-(cpu.y+P.h/2))/(P.h/2);
+    let speed=Math.min(Math.hypot(ball.vx,ball.vy)*1.035,900);
+    let angle=Math.PI-offset*.95;
+    ball.vx=Math.cos(angle)*speed;
+    ball.vy=Math.sin(angle)*speed;
+  }
+
+  if(ball.x<-30)score("c");
+  if(ball.x>W+30)score("p");
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // CRT green-black screen.
+  ctx.fillStyle="#193127";ctx.fillRect(0,0,W,H);
+
+  // Very subtle old-school screen vignette.
+  const v=ctx.createRadialGradient(W/2,H/2,90,W/2,H/2,650);
+  v.addColorStop(0,"rgba(49,83,61,.15)");
+  v.addColorStop(1,"rgba(0,0,0,.42)");
+  ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+
+  // Field markings.
+  ctx.strokeStyle="rgba(218,224,188,.34)";
+  ctx.lineWidth=3;
+  ctx.strokeRect(18,18,W-36,H-36);
+
+  ctx.setLineDash([7,12]);
+  ctx.beginPath();ctx.moveTo(W/2,18);ctx.lineTo(W/2,H-18);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();ctx.arc(W/2,H/2,65,0,Math.PI*2);ctx.strokeStyle="rgba(218,224,188,.15)";ctx.stroke();
+
+  // Center score.
+  ctx.fillStyle="#e9dfbd";
+  ctx.font='42px "Press Start 2P"';
+  ctx.textAlign="center";
+  ctx.fillText(scoreP,W*.43,67);
+  ctx.fillText(scoreC,W*.57,67);
+
+  // Player and computer labels.
+  ctx.font='17px VT323';
+  ctx.letterSpacing="2px";
+  ctx.fillStyle="#cfc6a7";
+  ctx.fillText("PLAYER",W*.25,35);
+  ctx.fillText("CPU",W*.75,35);
+
+  // Paddles.
+  ctx.fillStyle="#e8dfbd";
+  ctx.fillRect(player.x,player.y,P.w,P.h);
+  ctx.fillRect(cpu.x,cpu.y,P.w,P.h);
+
+  // Paddle highlights/shadows.
+  ctx.fillStyle="rgba(255,255,255,.18)";
+  ctx.fillRect(player.x+2,player.y+3,3,P.h-6);
+  ctx.fillRect(cpu.x+2,cpu.y+3,3,P.h-6);
+
+  // Ball.
+  ctx.fillStyle="#f3e9c6";
+  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();
+
+  // Tiny CRT bloom.
+  ctx.shadowColor="#dbe7c0";ctx.shadowBlur=8;
+  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r-1,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+
+  if(ready>0&&!paused&&!over){
+    ctx.fillStyle="#d9d0b1";
+    ctx.font='24px "Press Start 2P"';
+    ctx.fillText("READY",W/2,H-48);
+  }
+
+  if(paused||over){
+    ctx.fillStyle="rgba(9,17,13,.72)";
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="#eee4c4";
+    ctx.font='30px "Press Start 2P"';
+    ctx.fillText(over?(scoreP>scoreC?"YOU WIN":"CPU WINS"):"PAUSED",W/2,H/2-8);
+    ctx.font='20px VT323';
+    ctx.fillStyle="#c3b99b";
+    ctx.fillText(over?"PRESS NEW GAME":"PRESS PAUSE TO RESUME",W/2,H/2+32);
+  }
+}
+
+function loop(t){
+  const dt=Math.min((t-last)/1000,.035);last=t;
+  update(dt);draw();requestAnimationFrame(loop);
+}
+reset();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
