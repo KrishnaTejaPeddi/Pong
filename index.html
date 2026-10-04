@@ -6,7 +6,7 @@
 <title>PONG // ARCADE</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-:root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54}
+:root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54;--phos:#3f8a5c}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#11110f;color:var(--cream)}
 body{display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%)}
@@ -22,15 +22,36 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .scan{background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.14) 4px);opacity:.55}
 .glass{box-shadow:inset 0 0 70px rgba(0,0,0,.5)}
 .nocrt .scan,.nocrt .glass{display:none}
-.below{max-width:1000px;margin:16px auto 0;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
-.instructions{font-size:20px;color:#bdb59e;letter-spacing:1px}.instructions b{color:var(--cream)}
-.controls{display:flex;gap:8px;flex-wrap:wrap}
-button,select{font:20px VT323,monospace;color:var(--cream);background:#333229;border:2px solid #5a574a;padding:7px 13px;cursor:pointer}
-button:hover,select:hover{background:#403f35}
-.tweaks{max-width:1000px;margin:12px auto 0;display:none;gap:22px;flex-wrap:wrap;font-size:20px;color:#bdb59e;letter-spacing:1px}
-.tweaks label{display:flex;align-items:center;gap:8px}
-.tweaks input{accent-color:#d94a3a;width:150px}
-.tweaks output{min-width:2.2em;color:var(--cream)}
+
+/* ---------- control deck under the screen ---------- */
+.deck{max-width:1000px;margin:18px auto 0;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 24px;border:3px solid #0b0b09;border-radius:8px;
+  background:radial-gradient(circle at 11px 11px,#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at calc(100% - 11px) 11px,#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at 11px calc(100% - 11px),#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at calc(100% - 11px) calc(100% - 11px),#7c7867 0 3px,#2a2923 4px,transparent 5px),linear-gradient(#1c1b15,#12110d);
+  box-shadow:inset 0 0 0 2px #3b392f,inset 0 10px 20px rgba(0,0,0,.45),0 4px 0 #0a0a08}
+.keys{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
+.kg{display:flex;align-items:center;gap:4px}
+.kc{display:inline-block;min-width:30px;height:30px;line-height:27px;padding:0 7px;text-align:center;font:10px "Press Start 2P",monospace;color:var(--cream);background:linear-gradient(#4d4b3f,#2f2e25);border:1px solid #0b0b09;border-radius:5px;box-shadow:0 3px 0 #0b0b09,inset 0 1px 0 rgba(255,255,255,.16)}
+.kc.wide{min-width:82px}
+.kg em{font-style:normal;font-size:19px;letter-spacing:1px;color:#9d957d;margin-left:8px}
+.ctl{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.pick{display:flex;align-items:center;gap:10px;padding:5px 6px 5px 14px;background:#0b0b09;border:2px solid #4b493d;border-radius:7px;box-shadow:inset 0 2px 6px #000}
+.pick span{font:9px "Press Start 2P",monospace;letter-spacing:1px;color:var(--gold)}
+.pick select{appearance:none;-webkit-appearance:none;font:20px VT323,monospace;color:var(--cream);cursor:pointer;padding:8px 36px 8px 12px;border:1px solid #5a574a;border-radius:4px;
+  background:#201f19 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0h12L6 8z' fill='%23d5ad54'/%3E%3C/svg%3E") no-repeat right 12px center}
+.pick select:hover{background-color:#2a2922}
+.pick option{background:#201f19;color:var(--cream)}
+.abtn{display:flex;align-items:center;gap:11px;font:12px "Press Start 2P",monospace;letter-spacing:1px;color:#1a1208;cursor:pointer;border:0;border-radius:7px;padding:14px 24px;
+  background:linear-gradient(#f4dc95,#d5ad54 55%,#b88a34);text-shadow:0 1px 0 rgba(255,255,255,.35);
+  box-shadow:0 5px 0 #7a5a1c,0 9px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .08s,box-shadow .08s,filter .12s}
+.abtn:hover{filter:brightness(1.08)}
+.abtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7a5a1c,0 3px 6px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.55)}
+.abtn .ico{width:12px;height:14px;background:linear-gradient(90deg,#1a1208 0 35%,transparent 35% 65%,#1a1208 65%)}
+.abtn.paused .ico{background:#1a1208;clip-path:polygon(0 0,100% 50%,0 100%)}
+.tweaks{max-width:1000px;margin:14px auto 0;display:none;gap:26px;flex-wrap:wrap;align-items:center;padding:12px 20px;background:#0b0b09;border:2px solid #4b493d;border-radius:7px;box-shadow:inset 0 2px 8px #000}
+.tweaks label{display:flex;align-items:center;gap:12px;font:9px "Press Start 2P",monospace;letter-spacing:1px;color:var(--gold)}
+.tweaks output{min-width:2.4em;font:20px VT323,monospace;color:var(--cream)}
+.tweaks input[type=range]{-webkit-appearance:none;appearance:none;width:160px;height:8px;border-radius:4px;background:#1c1b15;border:1px solid #4b493d;outline:none}
+.tweaks input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:24px;border-radius:3px;border:1px solid #0b0b09;background:linear-gradient(#f4dc95,#b88a34);box-shadow:0 2px 0 #7a5a1c;cursor:pointer}
+.tweaks input[type=range]::-moz-range-thumb{width:16px;height:22px;border-radius:3px;border:1px solid #0b0b09;background:linear-gradient(#f4dc95,#b88a34);box-shadow:0 2px 0 #7a5a1c;cursor:pointer}
 .footer{margin-top:16px;text-align:center;color:#777365;font-size:17px;letter-spacing:2px}
 
 /* ---------- menus & screens (sizes use cqw so everything scales with the screen) ---------- */
@@ -39,6 +60,7 @@ button:hover,select:hover{background:#403f35}
 .sc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .sc>*{position:relative;z-index:1}
 .sc>.shade{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(8,14,11,.45) 0,rgba(5,9,7,.9) 100%)}
+.ui.retro .shade{background:rgba(0,0,0,.1)}
 .sc>.rec,.sc>.hint,.sc>.ver{position:absolute}
 @keyframes fade{from{opacity:0;transform:translateY(1cqw)}to{opacity:1;transform:none}}
 @keyframes drop{from{opacity:0;transform:translateY(-4cqw) scale(1.15)}to{opacity:1;transform:none}}
@@ -46,85 +68,89 @@ button:hover,select:hover{background:#403f35}
 @keyframes blink{50%{opacity:.3}}
 @keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 
-.kicker{font-family:"Press Start 2P",monospace;font-size:1.15cqw;letter-spacing:.7cqw;color:var(--gold);animation:fade .8s both}
-.logo{font-family:"Press Start 2P",monospace;font-size:15cqw;line-height:1;font-weight:normal;margin:1.2cqw 0 .8cqw;letter-spacing:1cqw;color:var(--red);text-shadow:.7cqw .7cqw 0 #501e19,0 0 3.5cqw rgba(217,74,58,.55);animation:drop .9s cubic-bezier(.2,1.2,.3,1) both,glow 3.2s ease-in-out .9s infinite}
-/* Lightweight CRT title card: a solid black retro plaque keeps the logo readable without adding another canvas layer. */
-.title-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:.3cqw 0 1.2cqw;padding:1.2cqw 4.2cqw 1.5cqw;background:#050505;border:.35cqw solid #2e2d27;box-shadow:.55cqw .55cqw 0 #000,0 0 0 .25cqw rgba(255,255,255,.035),inset 0 0 0 .22cqw #171713;animation:cardIn .55s cubic-bezier(.2,.9,.2,1) both;overflow:hidden}
-.title-card:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent .55cqw,rgba(255,255,255,.035) .7cqw);opacity:.45;pointer-events:none}
-.title-card:after{content:"";position:absolute;left:-25%;right:-25%;top:-30%;height:18%;background:rgba(255,255,255,.045);transform:rotate(-3deg);animation:cardSweep 5s linear 1s infinite;pointer-events:none}
-@keyframes cardIn{from{opacity:0;transform:translateY(-.8cqw) scale(.96)}to{opacity:1;transform:none}}
-@keyframes cardSweep{from{top:-30%}to{top:125%}}
-.title-card .logo{margin:0}
-.ov-title-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.15cqw 3.8cqw 1.35cqw;margin-bottom:.6cqw;background:#050505;border:.35cqw solid #2e2d27;box-shadow:.5cqw .5cqw 0 #000,0 0 0 .25cqw rgba(255,255,255,.035),inset 0 0 0 .22cqw #171713;overflow:hidden;animation:resultCardIn .6s cubic-bezier(.2,.9,.2,1) both}
-.ov-title-card:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent .55cqw,rgba(255,255,255,.035) .7cqw);opacity:.4;pointer-events:none}
-.ov-title-card:after{content:"";position:absolute;left:-30%;width:160%;height:14%;top:-25%;background:rgba(255,255,255,.045);transform:rotate(-3deg);animation:cardSweep 4.5s linear .4s infinite;pointer-events:none}
-@keyframes resultCardIn{from{opacity:0;transform:translateY(-.7cqw) scale(.97)}to{opacity:1;transform:none}}
-.ov-title-card .ov-title{position:relative;z-index:1}
+/* retro black box with a phosphor-green double border */
+.bx{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 2.4cqw rgba(60,200,110,.18)}
 
-.tag{font-size:2.3cqw;letter-spacing:.4cqw;color:#c8bfa5;margin-bottom:2.2cqw;animation:fade 1s .5s both}
+.kick{padding:.7cqw 2cqw;animation:fade .8s both}
+.kicker{font-family:"Press Start 2P",monospace;font-size:1.1cqw;letter-spacing:.7cqw;color:var(--gold)}
+.logobox{padding:1.2cqw 3cqw 1.8cqw;margin:1.1cqw 0;animation:drop .9s cubic-bezier(.2,1.2,.3,1) both}
+.logo{font-family:"Press Start 2P",monospace;font-size:14cqw;line-height:1;font-weight:normal;margin:0;letter-spacing:1cqw;color:var(--red);text-shadow:.7cqw .7cqw 0 #501e19,0 0 3.5cqw rgba(217,74,58,.55);animation:glow 3.2s ease-in-out .9s infinite}
+.tagbox{padding:.6cqw 2cqw;margin-bottom:1.8cqw;animation:fade 1s .5s both}
+.tag{font-size:2.2cqw;letter-spacing:.4cqw;color:#c8bfa5}
 .menu{display:flex;flex-direction:column;align-items:center;animation:fade .8s .7s both}
 .menu.h{flex-direction:row;gap:1.2cqw}
-.mi{position:relative;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;min-width:26cqw;border:.3cqw solid #5a574a;background:rgba(20,22,18,.75);color:#bdb59e;cursor:pointer;transition:all .12s;user-select:none}
-.mi.sel{color:#171713;background:var(--cream);border-color:var(--cream);transform:scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
+.mi{position:relative;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;min-width:26cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;transition:all .12s;user-select:none}
+.mi.sel{color:#000;background:var(--cream);border-color:var(--cream);transform:scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
 .mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0}
 .menu.h .mi{min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
 .menu.h .mi.sel:before{display:none}
-.rec{left:2.5cqw;bottom:2cqw;font-size:1.9cqw;color:#9d957d}
-.hint{left:0;right:0;bottom:2cqw;font-size:1.9cqw;color:#8d856f;animation:blink 2.2s infinite}
-.ver{right:2.5cqw;bottom:2cqw;font-size:1.9cqw;color:#6d6853}
+.rec,.hint,.ver{padding:.5cqw 1.1cqw;font-size:1.8cqw;color:#9bd8b0}
+.rec{left:2.5cqw;bottom:2cqw}
+.sc>.hint{left:50%;transform:translateX(-50%);bottom:2cqw;animation:blink 2.2s infinite}
+.ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
 
-.panel{width:88cqw;background:rgba(14,18,15,.93);border:.4cqw solid #4b493d;box-shadow:inset 0 0 0 .3cqw #161612,0 1cqw 4cqw #000;padding:1.8cqw 2.4cqw;animation:fade .35s both}
-.panel.narrow{width:40cqw}
+.panel{width:88cqw;background:rgba(0,0,0,.96);border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 3cqw rgba(0,0,0,.8);padding:1.8cqw 2.4cqw;animation:fade .35s both}
+.panel.narrow{width:44cqw}
 .ph{font-family:"Press Start 2P",monospace;font-size:2.3cqw;font-weight:normal;color:var(--red);text-shadow:.3cqw .3cqw 0 #501e19;margin:0 0 1.2cqw;letter-spacing:.3cqw}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:2.6cqw;text-align:left}
-.gh{font-family:"Press Start 2P",monospace;font-size:.95cqw;color:var(--gold);letter-spacing:.2cqw;margin:.8cqw 0 .4cqw;border-bottom:.2cqw solid #3a382e;padding-bottom:.5cqw}
+.gh{font-family:"Press Start 2P",monospace;font-size:.95cqw;color:var(--gold);letter-spacing:.2cqw;margin:.8cqw 0 .4cqw;border-bottom:.2cqw solid #1f4d33;padding-bottom:.5cqw}
 .row{display:flex;justify-content:space-between;align-items:center;font-size:2.3cqw;padding:.25cqw 1cqw;color:#bdb59e;cursor:pointer;border-left:.4cqw solid transparent}
 .row.sel{background:rgba(242,232,201,.09);border-left-color:var(--red);color:var(--cream)}
 .val{display:flex;align-items:center;justify-content:space-between;gap:.8cqw;min-width:17cqw}
 .val b{font-weight:normal;text-align:center;flex:1}
 .ar{font-style:normal;color:var(--gold);padding:0 .8cqw;cursor:pointer;user-select:none;opacity:.35}
 .row.sel .ar{opacity:1}
+.row.big{width:32cqw;margin:.45cqw;padding:.8cqw 1.2cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;font-size:2.2cqw;transition:all .12s}
+.row.big .val{min-width:13cqw}
+.row.big.sel{background:var(--cream);color:#000;border-color:var(--cream);transform:scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
+.row.big.sel .ar{color:#000}
 .sdesc{height:2.6cqw;font-size:2.1cqw;color:var(--gold);text-align:center;margin-top:.9cqw}
 .psub{font-size:2.2cqw;color:#c8bfa5;margin-bottom:1.4cqw;line-height:1.1}
-.panel.narrow .mi{min-width:28cqw}
-.kv{display:flex;justify-content:space-between;font-size:2.2cqw;border-bottom:.15cqw dotted #3a382e;padding:.3cqw 0}
+.panel.narrow .mi{min-width:32cqw}
+.kv{display:flex;justify-content:space-between;font-size:2.2cqw;border-bottom:.15cqw dotted #1f4d33;padding:.3cqw 0}
 .kv b{font-weight:normal;color:var(--cream)}
 .tip{font-size:2cqw;color:#bdb59e;margin:.5cqw 0;line-height:1.05}
 .how{grid-template-columns:.8fr 1.6fr}
-.tw{display:grid;grid-template-columns:1fr 1fr;gap:.7cqw 1.2cqw;max-height:29cqw;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#5a574a transparent;padding-right:.6cqw}
-.tw>div{background:rgba(0,0,0,.25);padding:.6cqw .9cqw}
+.tw{display:grid;grid-template-columns:1fr 1fr;gap:.7cqw 1.2cqw;max-height:29cqw;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#3f8a5c transparent;padding-right:.6cqw}
+.tw>div{background:rgba(31,77,51,.2);padding:.6cqw .9cqw}
 .tw b{display:block;font-family:"Press Start 2P",monospace;font-weight:normal;font-size:.9cqw;color:var(--gold);margin-bottom:.35cqw}
 .tw span{font-size:1.9cqw;color:#bdb59e;line-height:1}
 
-.ov-title{font-family:"Press Start 2P",monospace;font-size:6.5cqw;letter-spacing:.8cqw;animation:pop .7s both}
+.sc.over .bx{margin-bottom:.7cqw}
+.ovt{padding:.8cqw 2.6cqw;animation:pop .7s both}
+.ov-title{font-family:"Press Start 2P",monospace;font-size:5.8cqw;letter-spacing:.8cqw}
 .win .ov-title{color:#ffd877;text-shadow:.5cqw .5cqw 0 #5a4313,0 0 4cqw rgba(255,216,119,.6)}
 .lose .ov-title{color:var(--red);text-shadow:.5cqw .5cqw 0 #501e19,0 0 4cqw rgba(217,74,58,.5)}
-.ov-sub{font-size:2.3cqw;letter-spacing:.5cqw;color:#c8bfa5;margin:.5cqw 0 1cqw;animation:fade .6s .3s both}
-.ov-score{display:flex;align-items:center;gap:2.5cqw;animation:fade .6s .45s both}
+.ovs{padding:.35cqw 1.6cqw;animation:fade .6s .3s both}
+.ov-sub{font-size:2.2cqw;letter-spacing:.5cqw;color:#c8bfa5}
+.ovsc{padding:.7cqw 3cqw;animation:fade .6s .45s both}
+.ov-score{display:flex;align-items:center;gap:2.5cqw}
 .nm{font-family:"Press Start 2P",monospace;font-size:1.1cqw;color:#9d957d;letter-spacing:.2cqw}
-.ov-score b{font-family:"Press Start 2P",monospace;font-size:5.5cqw;font-weight:normal}
+.ov-score b{font-family:"Press Start 2P",monospace;font-size:5cqw;font-weight:normal}
 .dash{font-size:4cqw;color:#5a574a}
 .hi{color:var(--cream)}.lo{color:#6d6853}
-.ov-mid{display:flex;align-items:center;gap:2.6cqw;margin:1.2cqw 0;animation:fade .6s .6s both}
-.rank{width:11.5cqw;height:11.5cqw;border:.5cqw solid;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.4);animation:pop .6s .9s both}
+.ov-mid{display:flex;align-items:center;gap:2.4cqw;margin:.2cqw 0 .7cqw;animation:fade .6s .6s both}
+.rank{width:10.5cqw;height:10.5cqw;border-width:.5cqw;border-style:solid;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;animation:pop .6s .9s both}
 .rank small{font-family:"Press Start 2P",monospace;font-size:.85cqw;letter-spacing:.2cqw;color:#9d957d}
-.rank b{font-family:"Press Start 2P",monospace;font-size:6cqw;font-weight:normal;line-height:1.1}
+.rank b{font-family:"Press Start 2P",monospace;font-size:5.4cqw;font-weight:normal;line-height:1.1}
 .rk-S{color:#ffd877;border-color:#ffd877;box-shadow:0 0 3cqw rgba(255,216,119,.5)}
 .rk-A{color:#8be0a0;border-color:#8be0a0;box-shadow:0 0 2.4cqw rgba(139,224,160,.4)}
 .rk-B{color:#9cc9ff;border-color:#9cc9ff}
 .rk-C{color:#ffb35c;border-color:#ffb35c}
 .rk-D{color:#ff6b5a;border-color:#ff6b5a}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.8cqw}
-.stat{background:rgba(0,0,0,.4);border:.2cqw solid #3a382e;padding:.9cqw 1.5cqw;min-width:15cqw;text-align:left}
+.stat{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .2cqw #000,inset 0 0 0 .32cqw #1f4d33;padding:.9cqw 1.5cqw;min-width:15cqw;text-align:left}
 .stat small{display:block;font-family:"Press Start 2P",monospace;font-size:.8cqw;letter-spacing:.12cqw;color:#9d957d;margin-bottom:.55cqw}
 .stat b{font-family:"Press Start 2P",monospace;font-size:1.8cqw;font-weight:normal;color:var(--cream)}
-.chips{display:flex;gap:.45cqw;justify-content:center;flex-wrap:wrap;margin-bottom:.9cqw;max-width:80cqw;animation:fade .6s .8s both}
+.chipsbox{padding:.6cqw 1.2cqw;max-width:80cqw;animation:fade .6s .8s both}
+.chips{display:flex;gap:.45cqw;justify-content:center;flex-wrap:wrap}
 .chip{width:2cqw;height:2cqw;font-family:"Press Start 2P",monospace;font-size:.8cqw;display:flex;align-items:center;justify-content:center;color:#10150f}
 .chip.p{background:#8be0a0}.chip.c{background:#e0675a}
-.recl{font-size:1.9cqw;color:#9d957d;margin-bottom:1.1cqw;animation:fade .6s .9s both}
+.recbox{padding:.4cqw 1.4cqw;animation:fade .6s .9s both}
+.recl{font-size:1.9cqw;color:#9bd8b0}
 .badge{font-family:"Press Start 2P",monospace;font-size:.9cqw;letter-spacing:.2cqw;color:#10150f;background:var(--gold);padding:.35cqw .8cqw;margin-left:1cqw;animation:blink 1s infinite}
 
-@media(max-width:700px){.machine{padding:15px 13px}.screen-frame{padding:8px}.controls{width:100%}.controls>*{flex:1}.instructions{font-size:18px}}
+@media(max-width:700px){.machine{padding:15px 13px}.screen-frame{padding:8px}.deck{padding:14px}.keys{gap:12px}.kg em{display:none}}
 </style>
 </head>
 <body>
@@ -136,9 +162,17 @@ button:hover,select:hover{background:#403f35}
 <canvas id="fx" width="960" height="540"></canvas>
 <div class="scan"></div><div class="glass"></div>
 </div></section>
-<section class="below">
-<div class="instructions"><b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/RELEASE · <b>ESC</b> PAUSE · <b>H</b> HITBOXES</div>
-<div class="controls"><select id="mode"></select><select id="difficulty"><option value="easy">EASY</option><option value="normal" selected>NORMAL</option><option value="hard">HARD</option></select><button id="pause">PAUSE</button><button id="reset">NEW GAME</button></div>
+<section class="deck">
+<div class="keys">
+<div class="kg"><span class="kc">W</span><span class="kc">A</span><span class="kc">S</span><span class="kc">D</span><em>MOVE</em></div>
+<div class="kg"><span class="kc wide">SPACE</span><em>ROTATE / RELEASE</em></div>
+<div class="kg"><span class="kc">ESC</span><em>PAUSE</em></div>
+<div class="kg"><span class="kc">H</span><em>HITBOXES</em></div>
+</div>
+<div class="ctl">
+<label class="pick"><span>TWIST</span><select id="mode"></select></label>
+<button id="pause" class="abtn"><i class="ico"></i><span id="pt">PAUSE</span></button>
+</div>
 </section>
 <section class="tweaks" id="tw">
 <label data-m="bumpers">BUMPERS <input id="bn" type="range" min="1" max="8" value="4"><output id="bnv">4</output></label>
@@ -181,8 +215,9 @@ const INFO = {
   curve: "THE BALL CURVES THROUGH THE AIR.", dark: "LIGHTS OUT. FOLLOW THE GLOW."
 };
 const ORDER = Object.keys(MODES);
-const modeSel = $("mode"), diff = $("difficulty"), pauseBtn = $("pause"), ui = $("ui");
-modeSel.innerHTML = '<option value="cycle">MODES: CYCLE</option>' +
+const modeSel = $("mode"), pauseBtn = $("pause"), ui = $("ui");
+const diff = { value: "normal" };            // current difficulty (set from the menus)
+modeSel.innerHTML = '<option value="cycle">CYCLE ALL</option>' +
   ORDER.map(k => `<option value="${k}">${MODES[k]}</option>`).join("");
 
 /* ---------- settings ---------- */
@@ -355,6 +390,7 @@ function endMatch() {
 }
 
 /* ---------- screens ---------- */
+const retroOn = () => screen === "title" || screen === "howto" || screen === "over" || (screen === "settings" && settingsFrom !== "pause");
 const items = () => [...ui.querySelectorAll(".row,.mi")];
 function sel(i, quiet) {
   const it = items(); if (!it.length) return;
@@ -366,10 +402,12 @@ function sel(i, quiet) {
 
 function showScreen(name, opt) {
   screen = name; keys = {}; selI = 0;
-  pauseBtn.textContent = name === "pause" ? "RESUME" : "PAUSE";
+  pauseBtn.classList.toggle("paused", name === "pause");
+  $("pt").textContent = name === "pause" ? "RESUME" : "PAUSE";
   if (name !== "over") { conf = []; confT = 0; fx.clearRect(0, 0, W, H); }
   if (name === "playing") { ui.classList.remove("on"); ui.innerHTML = ""; return; }
   ui.classList.add("on");
+  ui.classList.toggle("retro", retroOn());
   ({ title: renderTitle, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver })[name](opt);
   sel(0, true);
 }
@@ -377,14 +415,14 @@ function showScreen(name, opt) {
 function renderTitle() {
   const line = rec.games ? `RECORD ${rec.w}W - ${rec.l}L  &middot;  BEST STREAK ${rec.best}` : "NEW CHALLENGER";
   ui.innerHTML = `<div class="sc"><div class="shade"></div>
-    <div class="kicker">&#9670; ARCADE EDITION &#9670;</div>
-    <div class="title-card"><h2 class="logo">PONG</h2></div>
-    <div class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</div>
+    <div class="bx kick"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
+    <div class="bx logobox"><h2 class="logo">PONG</h2></div>
+    <div class="bx tagbox"><span class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</span></div>
     <div class="menu"><div class="mi" data-act="play">PLAY</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="howto">HOW TO PLAY</div></div>
-    <div class="rec">${line}</div><div class="hint">ARROWS / WASD SELECT &middot; ENTER CONFIRM</div><div class="ver">V2.0</div></div>`;
+    <div class="bx rec">${line}</div><div class="bx hint">ARROWS / WASD SELECT &middot; ENTER CONFIRM</div><div class="bx ver">V2.1</div></div>`;
 }
 
-const rowHtml = s => `<div class="row" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
+const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
 function optIndex(s) {
   const v = S[s.id]; let i = s.opts.findIndex(o => o[1] === v);
   if (i < 0 && typeof v === "number") {
@@ -394,7 +432,7 @@ function optIndex(s) {
   return Math.max(i, 0);
 }
 function renderSettings() {
-  const grp = g => `<div class="gh">${g}</div>` + SETTINGS.filter(s => s.grp === g).map(rowHtml).join("");
+  const grp = g => `<div class="gh">${g}</div>` + SETTINGS.filter(s => s.grp === g).map(s => rowHtml(s)).join("");
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel"><h3 class="ph">SETTINGS</h3>
     <div class="cols"><div>${grp("GAMEPLAY")}</div><div>${grp("TWIST TUNING")}${grp("AUDIO & VIDEO")}</div></div>
     <div class="sdesc" id="sd"></div>
@@ -415,7 +453,7 @@ function renderHowto() {
 function renderPause() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow"><h3 class="ph">PAUSED</h3>
     <div class="psub">ROUND ${round} &middot; ${MODES[twist]}<br>${scoreP} - ${scoreC}</div>
-    <div class="menu" style="animation:none"><div class="mi" data-act="resume">RESUME</div><div class="mi" data-act="restart">RESTART MATCH</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
+    <div class="menu" style="animation:none"><div class="mi" data-act="resume">RESUME</div>${rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
 }
 
 const fmtTime = t => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
@@ -424,13 +462,14 @@ function renderOver(opt) {
   const st = (label, val, to) => `<div class="stat"><small>${label}</small><b${to != null ? ` data-to="${to}"` : ""}>${to != null ? (fresh ? 0 : to) : val}</b></div>`;
   const chips = M.hist.map((h, i) => `<div class="chip ${h.w}" title="ROUND ${i + 1}: ${MODES[h.m]}">${i + 1}</div>`).join("");
   ui.innerHTML = `<div class="sc over ${w ? "win" : "lose"}"><div class="shade"></div>
-    <div class="ov-title-card"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div><div class="ov-sub">${res.sub}</div>
-    <div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div>
+    <div class="bx ovt"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div>
+    <div class="bx ovs"><div class="ov-sub">${res.sub}</div></div>
+    <div class="bx ovsc"><div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div></div>
     <div class="ov-mid"><div class="rank rk-${res.rank}"><small>RANK</small><b>${res.rank}</b></div>
       <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st("YOUR HITS", 0, M.hits)}${st("TOP SPEED PX/S", 0, Math.round(M.top))}
       ${st("MATCH TIME", fmtTime(M.time))}${st("DIFFICULTY", S.diff.toUpperCase())}${st("ROUNDS", 0, M.hist.length)}</div></div>
-    <div class="chips">${chips}</div>
-    <div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div>
+    <div class="bx chipsbox"><div class="chips">${chips}</div></div>
+    <div class="bx recbox"><div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
     <div class="menu h"><div class="mi" data-act="rematch">REMATCH</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="menu">MAIN MENU</div></div></div>`;
   if (fresh) {
     ui.querySelectorAll("[data-to]").forEach(el => {
@@ -501,11 +540,9 @@ function menuKey(e, k) {
 
 /* ---------- input ---------- */
 pauseBtn.onclick = () => { if (screen === "playing") showScreen("pause"); else if (screen === "pause") showScreen("playing"); };
-$("reset").onclick = startMatch;
-diff.onchange = () => { S.diff = diff.value; save(); };
-modeSel.onchange = () => { S.mode = modeSel.value; save(); if (screen === "playing") startMatch(); };
-document.querySelectorAll("button").forEach(e => e.addEventListener("click", () => e.blur()));
-document.querySelectorAll("select").forEach(e => e.addEventListener("change", () => e.blur()));
+modeSel.onchange = () => { setS("mode", modeSel.value); save(); if (screen === "playing") startMatch(); };
+pauseBtn.addEventListener("click", () => pauseBtn.blur());
+modeSel.addEventListener("change", () => modeSel.blur());
 window.addEventListener("blur", () => { if (screen === "playing") showScreen("pause"); });
 
 window.onkeydown = e => {
@@ -767,34 +804,6 @@ function update(dt) {
   balls.forEach(b => { b.trail.push([b.x, b.y]); if (b.trail.length > 20) b.trail.shift(); });
 }
 
-/* ---------- title-screen demo (CPU vs CPU) ---------- */
-const demo = { x: W / 2, y: H / 2, vx: 360, vy: 140, trail: [], hit: 0, seen: [false, false], err: [0, 0] };
-const dpl = { x: 62.5, y: H / 2, w: 15, h: 105, angle: 0 }, dpr = { x: W - 62.5, y: H / 2, w: 15, h: 105, angle: 0 };
-const demoOn = () => screen === "title" || screen === "howto" || (screen === "settings" && settingsFrom === "title");
-
-function demoStep(dt) {
-  const d = demo; d.x += d.vx * dt; d.y += d.vy * dt;
-  if (d.y < WALL + 10) { d.y = WALL + 10; d.vy = Math.abs(d.vy); }
-  if (d.y > H - WALL - 10) { d.y = H - WALL - 10; d.vy = -Math.abs(d.vy); }
-  [[dpl, -1], [dpr, 1]].forEach(([p, s], i) => {
-    const coming = d.vx * s > 0;
-    if (coming && !d.seen[i]) {
-      d.seen[i] = true;
-      d.err[i] = Math.random() < .22 ? (Math.random() < .5 ? -1 : 1) * (90 + Math.random() * 60) : (Math.random() - .5) * 40;
-    }
-    if (!coming) d.seen[i] = false;
-    p.y += clamp((coming ? d.y + d.err[i] : H / 2) - p.y, -380 * dt, 380 * dt);
-    if (coming && Math.abs(d.x - p.x) < 27 && Math.abs(d.y - p.y) < 62) {
-      d.vx = clamp(-d.vx * 1.03, -620, 620); d.vy = clamp(d.vy + (d.y - p.y) * 3, -420, 420); d.hit = .25;
-    }
-  });
-  if (d.x < -30 || d.x > W + 30) {
-    d.x = W / 2; d.y = H / 2; d.vx = (Math.random() < .5 ? -1 : 1) * 360; d.vy = (Math.random() - .5) * 260; d.trail = [];
-  }
-  d.trail.push([d.x, d.y]); if (d.trail.length > 26) d.trail.shift();
-  d.hit = Math.max(0, d.hit - dt);
-}
-
 /* ---------- confetti ---------- */
 let conf = [], confT = 0;
 const CC = ["#d94a3a", "#d5ad54", "#f2e8c9", "#8be0a0", "#6fb7ff"];
@@ -814,6 +823,39 @@ function fxStep(dt) {
 }
 
 /* ---------- drawing ---------- */
+function drawRetro(t) {          // dark green retro background for the menus
+  const s = t / 1000, hz = H * .46;
+  ctx.fillStyle = "#04100a"; ctx.fillRect(0, 0, W, H);
+  let g = ctx.createLinearGradient(0, 0, 0, hz);
+  g.addColorStop(0, "#020a06"); g.addColorStop(1, "#0f3d25");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, hz);
+  for (let i = 0; i < 46; i++) {                       // twinkling pixel stars
+    ctx.fillStyle = "rgba(150,255,190," + (.2 + .4 * Math.sin(s * 2 + i * 1.7)) + ")";
+    ctx.fillRect((i * 173) % W, (i * 97) % (hz - 40), 2, 2);
+  }
+  ctx.save(); ctx.beginPath(); ctx.arc(W / 2, hz, 170, Math.PI, 0); ctx.clip();   // striped sun
+  g = ctx.createLinearGradient(0, hz - 170, 0, hz);
+  g.addColorStop(0, "#2f9a5c"); g.addColorStop(1, "#14602f");
+  ctx.fillStyle = g; ctx.fillRect(W / 2 - 170, hz - 170, 340, 170);
+  ctx.fillStyle = "#0b2f1b";
+  for (let k = 0; k < 7; k++) ctx.fillRect(W / 2 - 170, hz - 8 - k * 22, 340, 3 + (6 - k) * 1.6);
+  ctx.restore();
+  g = ctx.createLinearGradient(0, hz, 0, H);           // floor with a moving grid
+  g.addColorStop(0, "#0d3a22"); g.addColorStop(1, "#030c07");
+  ctx.fillStyle = g; ctx.fillRect(0, hz, W, H - hz);
+  ctx.strokeStyle = "rgba(70,220,120,.35)"; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = -16; i <= 16; i++) { ctx.moveTo(W / 2 + i * 22, hz); ctx.lineTo(W / 2 + i * 120, H); }
+  for (let j = 0; j < 12; j++) {
+    const p = (j + (s * .6) % 1) / 12, y = hz + (H - hz) * p * p;
+    ctx.moveTo(0, y); ctx.lineTo(W, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = "rgba(90,255,150,.5)"; ctx.fillRect(0, hz - 1, W, 2);
+  const v = ctx.createRadialGradient(W / 2, H / 2, 150, W / 2, H / 2, 640);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.65)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+}
+
 function drawPaddle(p) {
   ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
   ctx.fillStyle = "#e8dfbd"; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
@@ -838,23 +880,6 @@ function drawCourt() {
   ctx.setLineDash([]);
   ctx.beginPath(); ctx.arc(W / 2, H / 2, 65, 0, Math.PI * 2);
   ctx.strokeStyle = "rgba(218,224,188,.15)"; ctx.stroke();
-}
-
-function drawDemo() {
-  drawCourt();
-  drawPaddle(dpl); drawPaddle(dpr);
-  demo.trail.forEach((p, i) => {
-    const t = i / demo.trail.length;
-    ctx.globalAlpha = t * .25; ctx.fillStyle = "#e9dfbd";
-    ctx.beginPath(); ctx.arc(p[0], p[1], 10 * t * .8, 0, Math.PI * 2); ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-  if (demo.hit > 0) {
-    ctx.save(); ctx.strokeStyle = "#fff0bd"; ctx.lineWidth = 3; ctx.globalAlpha = demo.hit * 3;
-    ctx.beginPath(); ctx.arc(demo.x, demo.y, 20 + (1 - demo.hit * 4) * 14, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-  }
-  ctx.fillStyle = "#f3e9c6"; ctx.shadowColor = "#dbe7c0"; ctx.shadowBlur = 10;
-  ctx.beginPath(); ctx.arc(demo.x, demo.y, 10, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
 }
 
 function drawGame() {
@@ -968,10 +993,10 @@ function drawGame() {
 function loop(t) {
   const dt = Math.min((t - last) / 1000, .03);
   last = t;
-  if (screen === "playing") update(dt); else if (demoOn()) demoStep(dt);
+  if (screen === "playing") update(dt);
   shakeT = Math.max(0, shakeT - dt);
   fxStep(dt);
-  demoOn() ? drawDemo() : drawGame();
+  retroOn() ? drawRetro(t) : drawGame();
   requestAnimationFrame(loop);
 }
 
