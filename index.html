@@ -25,6 +25,10 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .controls{display:flex;gap:8px;flex-wrap:wrap}
 button,select{font:20px VT323,monospace;color:var(--cream);background:#333229;border:2px solid #5a574a;padding:7px 13px;cursor:pointer}
 button:hover,select:hover{background:#403f35}
+.tweaks{max-width:1000px;margin:12px auto 0;display:none;gap:22px;flex-wrap:wrap;font-size:20px;color:#bdb59e;letter-spacing:1px}
+.tweaks label{display:flex;align-items:center;gap:8px}
+.tweaks input{accent-color:#d94a3a;width:150px}
+.tweaks output{min-width:2.2em;color:var(--cream)}
 .footer{margin-top:16px;text-align:center;color:#777365;font-size:17px;letter-spacing:2px}
 @media(max-width:700px){.machine{padding:15px 13px}.screen-frame{padding:8px}.controls{width:100%}.controls>*{flex:1}.instructions{font-size:18px}}
 </style>
@@ -36,8 +40,13 @@ button:hover,select:hover{background:#403f35}
 <canvas id="game" width="960" height="540"></canvas><div class="scan"></div><div class="glass"></div>
 </div></section>
 <section class="below">
-<div class="instructions"><b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE · <b>H</b> HITBOXES</div>
+<div class="instructions"><b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/RELEASE · <b>H</b> HITBOXES</div>
 <div class="controls"><select id="mode"></select><select id="difficulty"><option value=".58">EASY</option><option value=".76" selected>NORMAL</option><option value=".92">HARD</option></select><button id="pause">PAUSE</button><button id="reset">NEW GAME</button></div>
+</section>
+<section class="tweaks" id="tw">
+<label data-m="bumpers">BUMPERS <input id="bn" type="range" min="1" max="8" value="4"><output id="bnv">4</output></label>
+<label data-m="gravity">RADIUS <input id="gr" type="range" min="80" max="400" step="10" value="260"><output id="grv">260</output></label>
+<label data-m="gravity">STRENGTH <input id="gs" type="range" min="1" max="12" value="5"><output id="gsv">5</output></label>
 </section>
 <div class="footer">FIRST TO 7 &bull; EVERY ROUND HAS A NEW TWIST</div>
 </main>
@@ -45,55 +54,70 @@ button:hover,select:hover{background:#403f35}
 (() => {
 "use strict";
 const cv = document.getElementById("game"), ctx = cv.getContext("2d");
-const W = 960, H = 540, WALL = 18;
+const W = 960, H = 540, WALL = 18, SLOWW = 200;
 const $ = id => document.getElementById(id);
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
 const MODES = {
-  normal: "CLASSIC PONG", gravity: "GRAVITY WELL", bumpers: "BUMPER MAYHEM",
-  speed: "TURBO COURT", wind: "CROSSWIND", barrier: "MOVING WALL",
-  multi: "TRIPLE BALL", ghost: "GHOST BALL", heavy: "HEAVY BALL", tiny: "TINY PADDLES",
-  repel: "REPEL FIELD", curve: "CURVEBALL", slow: "SLOW ZONE", portal: "PORTALS", dark: "LIGHTS OUT"
+  normal: "CLASSIC PONG", gravity: "GRAVITY WELL", fast: "SUPER SPEED PADDLES",
+  bumpers: "BUMPER MAYHEM", sticky: "STICKY PADDLES", slow: "SLOW ZONE",
+  spinner: "SPINNING PADDLES", bricks: "BRICK WALLS", speed: "TURBO COURT",
+  mirror: "MIRROR CONTROLS", closing: "CLOSING WALLS", portal: "PORTALS",
+  ice: "ICE PADDLES", barrier: "MOVING WALL", giant: "GIANT PADDLES",
+  ghost: "GHOST BALL", heavy: "HEAVY BALL", tiny: "TINY PADDLES",
+  curve: "CURVEBALL", dark: "LIGHTS OUT"
 };
 const ORDER = Object.keys(MODES);
 const modeSel = $("mode"), diff = $("difficulty"), pauseBtn = $("pause");
 modeSel.innerHTML = '<option value="cycle">MODES: CYCLE</option>' +
   ORDER.map(k => `<option value="${k}">${MODES[k]}</option>`).join("");
 
-const BUMPERS = [[.35,.28],[.65,.72],[.35,.72],[.65,.28]].map(([x, y]) => ({ x: W * x, y: H * y, r: 17 }));
+// Adjustable settings (the sliders change these)
+let bumperN = 4, gravR = 260, gravS = 5;
+[["bn", "bnv", v => bumperN = v], ["gr", "grv", v => gravR = v], ["gs", "gsv", v => gravS = v]].forEach(([i, o, f]) => {
+  const el = $(i);
+  el.oninput = () => { f(+el.value); $(o).textContent = el.value; };
+  el.onchange = () => el.blur();
+});
+
+const BPOS = [[.35,.28],[.65,.72],[.35,.72],[.65,.28],[.5,.15],[.5,.85],[.43,.5],[.57,.5]];
+const bumpers = () => BPOS.slice(0, bumperN).map(([x, y]) => ({ x: W * x, y: H * y, r: 17 }));
 const PORTALS = [{ x: W * .4, y: H * .27, r: 24 }, { x: W * .6, y: H * .73, r: 24 }];
 
 const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
-  rot: false, power: 0, cool: 0, rotCool: 0, vx: 0, vy: 0, omega: 0 });
+  rot: false, power: 0, cool: 0, rotCool: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0 });
 const player = mk(62.5), cpu = mk(W - 62.5);
 const barrier = { x: W / 2, y: H / 2, w: 14, h: 110, angle: 0, vx: 0, vy: 0, omega: 0 };
 
-let balls = [], scoreP = 0, scoreC = 0, round = 1, paused = false, over = false;
-let ready = .8, clock = 0, bt = 0, windPos = 0, twist = "normal", cpuY = H / 2;
+let balls = [], bricks = [], scoreP = 0, scoreC = 0, round = 1, paused = false, over = false;
+let ready = .8, clock = 0, bt = 0, wy = WALL, twist = "normal", cpuY = H / 2;
 let debug = false, keys = {}, last = performance.now();
+
+const spdMul = () => twist === "fast" ? 2.1 : twist === "speed" ? 1.3 : 1;
 
 function chooseTwist() {
   twist = modeSel.value === "cycle" ? ORDER[(round - 1) % ORDER.length] : modeSel.value;
-  player.h = cpu.h = twist === "tiny" ? 62 : 105;
+  const h = { tiny: 62, giant: 180 }[twist] || 105;
+  [player, cpu].forEach(p => { p.h = h; p.rot = false; p.angle = 0; p.mvx = p.mvy = 0; });
+  document.querySelectorAll("#tw label").forEach(l => l.style.display = l.dataset.m === twist ? "" : "none");
+  $("tw").style.display = twist === "bumpers" || twist === "gravity" ? "flex" : "none";
 }
 
 function serve(dir) {
-  const n = twist === "multi" ? 3 : 1;
-  const r = twist === "heavy" ? 17 : twist === "multi" ? 8 : 10;
-  const sp = twist === "heavy" ? 320 : twist === "speed" ? 480 : 390;
-  balls = [];
-  for (let i = 0; i < n; i++) {
-    const a = (Math.random() - .5) * .5 + (n > 1 ? (i - 1) * .35 : 0);
-    balls.push({ x: W / 2, y: H / 2 + (n > 1 ? (i - 1) * 45 : 0), r,
-      vx: dir * sp * Math.cos(a), vy: sp * Math.sin(a), glow: 0, trail: [],
-      spin: Math.random() < .5 ? -1 : 1, pc: 0 });
-  }
-  ready = .8; bt = 0;
+  const r = twist === "heavy" ? 17 : 10;
+  const sp = twist === "heavy" ? 320 : twist === "speed" ? 520 : 390;
+  const a = (Math.random() - .5) * .5;
+  balls = [{ x: W / 2, y: H / 2, r, vx: dir * sp * Math.cos(a), vy: sp * Math.sin(a), glow: 0, trail: [],
+    spin: Math.random() < .5 ? -1 : 1, pc: 0, stuck: null, stT: 0 }];
+  bricks = [];
+  if (twist === "bricks") for (const x of [W * .36, W * .64]) for (let i = 0; i < 8; i++)
+    bricks.push({ x, y: WALL + 32 + i * 63, w: 20, h: 52, angle: 0, vx: 0, vy: 0, omega: 0, alive: true });
+  ready = .8; bt = 0; wy = WALL;
 }
 
 function reset() {
   scoreP = scoreC = 0; round = 1; paused = over = false;
-  [player, cpu].forEach(p => { p.y = H / 2; p.angle = 0; p.rot = false; p.cool = 0; p.power = 0; p.rotCool = 0; });
+  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; });
   player.x = 62.5; cpu.x = W - 62.5;
   chooseTwist(); serve(Math.random() < .5 ? -1 : 1);
   pauseBtn.textContent = "PAUSE";
@@ -113,25 +137,36 @@ function togglePause() {
 pauseBtn.onclick = togglePause;
 $("reset").onclick = reset;
 modeSel.onchange = reset;
-// Buttons lose focus after a click (so SPACE doesn't re-press them).
-// Selects only lose focus AFTER a choice, so their list can open normally.
 document.querySelectorAll("button").forEach(e => e.addEventListener("click", () => e.blur()));
 document.querySelectorAll("select").forEach(e => e.addEventListener("change", () => e.blur()));
 
 window.onkeydown = e => {
-  if (e.target.tagName === "SELECT") return;   // let dropdowns use the keyboard
+  if (e.target.tagName === "SELECT") return;
+  if (e.target.tagName === "INPUT") e.target.blur();
   const k = e.key.toLowerCase();
   keys[k] = true;
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
-  if (k === " " && !e.repeat) rotate(player);
+  if (k === " " && !e.repeat) {
+    if (twist === "sticky") balls.forEach(b => { if (b.stuck === player) release(b); });
+    else rotate(player);
+  }
   if (k === "r") reset();
   if (k === "h") debug = !debug;
 };
 window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
+// Sticky mode: let go of a held ball. Moving the paddle as you release aims it.
+function release(b) {
+  const p = b.stuck; if (!p) return;
+  const dir = p === player ? 1 : -1, sp = 520;
+  const vy = p === cpu ? (Math.random() - .5) * 400 : clamp(p.vy * .7, -380, 380);
+  b.vx = dir * Math.sqrt(sp * sp - vy * vy); b.vy = vy;
+  b.stuck = null; b.glow = .3; p.cool = .2;
+}
+
 /* ---------- paddles ---------- */
 function rotate(p) {
-  if (p.rot) return;
+  if (p.rot || twist === "spinner") return;
   p.from = p.angle; p.to = p.angle + Math.PI / 2; p.t = 0; p.rot = true;
 }
 
@@ -140,7 +175,8 @@ function spin(p, dt) {
   p.cool = Math.max(0, p.cool - dt);
   p.rotCool = Math.max(0, p.rotCool - dt);
   const old = p.angle;
-  if (p.rot) {
+  if (twist === "spinner") p.angle += (p === player ? 1 : -1) * 2.4 * dt;   // constant spin
+  else if (p.rot) {
     p.t += dt;
     const t = clamp(p.t / p.dur, 0, 1), e = 1 - Math.pow(1 - t, 3);
     p.angle = p.from + (p.to - p.from) * e;
@@ -153,25 +189,39 @@ function clampPaddle(p, side) {
   const c = Math.cos(p.angle), s = Math.sin(p.angle);
   const ex = (p.w / 2) * Math.abs(c) + (p.h / 2) * Math.abs(s);
   const ey = (p.w / 2) * Math.abs(s) + (p.h / 2) * Math.abs(c);
-  p.x = side === 0 ? clamp(p.x, WALL + ex, W / 2 - WALL - ex)
-                   : clamp(p.x, W / 2 + WALL + ex, W - WALL - ex);
-  p.y = clamp(p.y, WALL + ey, H - WALL - ey);
+  const br = twist === "bricks";   // brick mode keeps each paddle behind its brick wall
+  p.x = side === 0 ? clamp(p.x, WALL + ex, (br ? W * .36 - 16 : W / 2 - WALL) - ex)
+                   : clamp(p.x, (br ? W * .64 + 16 : W / 2 + WALL) + ex, W - WALL - ex);
+  p.y = clamp(p.y, wy + ey, H - wy - ey);
 }
 
 function movePlayer(dt) {
-  const dx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
-  const dy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
-  const l = Math.hypot(dx, dy) || 1, ox = player.x, oy = player.y;
-  player.x += dx / l * 480 * dt; player.y += dy / l * 480 * dt;
+  let dx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+  let dy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+  if (twist === "mirror") { dx = -dx; dy = -dy; }
+  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul(), ox = player.x, oy = player.y;
+  let tx = dx / l * sp, ty = dy / l * sp;
+  if (twist === "ice") {                      // slide: speed changes gradually
+    const k = Math.min(1, dt * 2.2);
+    player.mvx += (tx - player.mvx) * k; player.mvy += (ty - player.mvy) * k;
+    tx = player.mvx; ty = player.mvy;
+  }
+  player.x += tx * dt; player.y += ty * dt;
   clampPaddle(player, 0);
   player.vx = (player.x - ox) / dt; player.vy = (player.y - oy) / dt;
+  if (twist === "ice") { player.mvx = player.vx; player.mvy = player.vy; }
 }
 
 function moveCpu(dt) {
-  const sp = 360 + Number(diff.value) * 120, oy = cpu.y;
-  cpu.y += clamp(cpuY - cpu.y, -sp * dt, sp * dt);
+  const sp = (360 + Number(diff.value) * 120) * spdMul(), oy = cpu.y;
+  if (twist === "ice") {
+    const want = clamp((cpuY - cpu.y) * 5, -sp, sp);
+    cpu.mvy += (want - cpu.mvy) * Math.min(1, dt * 2.5);
+    cpu.y += cpu.mvy * dt;
+  } else cpu.y += clamp(cpuY - cpu.y, -sp * dt, sp * dt);
   clampPaddle(cpu, 1);
   cpu.vx = 0; cpu.vy = (cpu.y - oy) / dt;
+  if (twist === "ice") cpu.mvy = cpu.vy;
 }
 
 function think() {
@@ -179,6 +229,7 @@ function think() {
   let b = balls[0];
   balls.forEach(o => { if (o.vx > 0 && (b.vx <= 0 || o.x > b.x)) b = o; });
   cpuY = b.vx > 0 ? b.y : H / 2;
+  if (twist === "spinner" || twist === "sticky") return;
   if (cpu.rot || cpu.rotCool > 0) return;
   const sideways = Math.round(cpu.angle / (Math.PI / 2)) % 2 !== 0;
   if (b.vx > 0 && !sideways && b.x > W * .62 && Math.abs(b.y - cpu.y) > cpu.h * .3 && Math.random() < d * .05) {
@@ -205,25 +256,29 @@ function hitRect(b, p) {
   return { nx: nx * c - ny * s, ny: nx * s + ny * c, pen, ly };
 }
 
+// Returns true if the ball touched the object.
 function bounce(b, p, isPaddle) {
   const h = hitRect(b, p);
-  if (!h) return;
+  if (!h) return false;
   b.x += h.nx * (h.pen + .5); b.y += h.ny * (h.pen + .5);
   const rx = b.x - p.x, ry = b.y - p.y;
   const sx = p.vx - p.omega * ry, sy = p.vy + p.omega * rx;
   const vn = (b.vx - sx) * h.nx + (b.vy - sy) * h.ny;
-  if (vn >= 0) return;
+  if (vn >= 0) return true;
   b.vx -= 2 * vn * h.nx; b.vy -= 2 * vn * h.ny;
-  if (!isPaddle) return;
+  if (!isPaddle) return true;
   const k = clamp(h.ly / (p.h / 2), -1, 1) * 100;
   b.vx += -h.ny * k; b.vy += h.nx * k;
   if (p.cool <= 0) {
-    let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * 1.02, 740);
-    if (p.rot || p.power > 0) { s = Math.min(s * 1.16, 860); b.glow = .5; }
+    const turbo = twist === "speed";
+    let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * 1.02, turbo ? 1000 : 740);
+    if (p.rot || p.power > 0) { s = Math.min(s * 1.16, turbo ? 1150 : 860); b.glow = .5; }
     const c = Math.hypot(b.vx, b.vy) || 1;
     b.vx *= s / c; b.vy *= s / c; p.cool = .08;
   }
   if (Math.abs(b.vx) < 150) b.vx = (b.vx < 0 ? -1 : 1) * 150;
+  if (twist === "sticky") { b.stuck = p; b.stT = 0; }
+  return true;
 }
 
 function bump(b, o) {
@@ -239,41 +294,42 @@ function bump(b, o) {
 }
 
 function walls(b) {
-  if (b.y - b.r < WALL) { b.y = WALL + b.r; b.vy = Math.abs(b.vy); }
-  else if (b.y + b.r > H - WALL) { b.y = H - WALL - b.r; b.vy = -Math.abs(b.vy); }
+  if (b.y - b.r < wy) { b.y = wy + b.r; b.vy = Math.abs(b.vy); }
+  else if (b.y + b.r > H - wy) { b.y = H - wy - b.r; b.vy = -Math.abs(b.vy); }
 }
 
 function stepBall(b, dt) {
-      if (twist === "gravity") {
-    const dx = W / 2 - b.x, dy = H / 2 - b.y, d = Math.hypot(dx, dy), R = 260;
-    if (d > .001 && d < R) {
-      const f = Math.sqrt(1 - d / R);                        
-      // angle between where the ball is heading and the direction of the center
+  if (b.stuck) {                                   // sticky: ride on the paddle
+    const p = b.stuck, side = p === player ? 1 : -1;
+    const ex = (p.w / 2) * Math.abs(Math.cos(p.angle)) + (p.h / 2) * Math.abs(Math.sin(p.angle));
+    b.x = p.x + side * (ex + b.r + 1); b.y = p.y; b.vx = b.vy = 0; b.stT += dt;
+    if ((p === cpu && b.stT > .55) || b.stT > 2.5) release(b);
+    return;
+  }
+  if (twist === "slow" && Math.abs(b.x - W / 2) < SLOWW) dt *= .2;   // ball crawls in the zone
+  if (twist === "gravity") {
+    const dx = W / 2 - b.x, dy = H / 2 - b.y, d = Math.hypot(dx, dy);
+    if (d > .001 && d < gravR) {
+      const f = Math.sqrt(1 - d / gravR);
       const ang = Math.atan2(b.vx * dy - b.vy * dx, b.vx * dx + b.vy * dy);
-      const turn = clamp(ang, -5 * f * dt, 7 * f * dt); // 5 = how hard it turns (radians/sec)
+      const turn = clamp(ang, -gravS * f * dt, gravS * f * dt);
       const c = Math.cos(turn), s = Math.sin(turn), x = b.vx;
-      b.vx = x * c - b.vy * s;
-      b.vy = x * s + b.vy * c;
+      b.vx = x * c - b.vy * s; b.vy = x * s + b.vy * c;
     }
   }
-  if (twist === "repel") {
-    const dx = b.x - W / 2, dy = b.y - H / 2, d = Math.hypot(dx, dy), R = 120;
-    if (d > .001 && d < R) {
-      const f = 1 - d / R;
-      b.vx += dx / d * 600 * f * dt; b.vy += dy / d * 600 * f * dt;
-    }
-  }
-  if (twist === "wind") b.vy += Math.sin(clock * .9) * 320 * dt;
-  if (twist === "curve") {                       // turn the velocity a little each step
+  if (twist === "speed") { const f = 1 + .3 * dt; b.vx *= f; b.vy *= f; }   // keeps getting faster
+  if (twist === "curve") {
     const a = b.spin * 1.3 * dt, c = Math.cos(a), s = Math.sin(a), x = b.vx;
     b.vx = x * c - b.vy * s; b.vy = x * s + b.vy * c;
   }
-  const s = Math.hypot(b.vx, b.vy);
-  if (s > 860) { b.vx *= 860 / s; b.vy *= 860 / s; }
+  const cap = twist === "speed" ? 1100 : 860, s = Math.hypot(b.vx, b.vy);
+  if (s > cap) { b.vx *= cap / s; b.vy *= cap / s; }
   b.x += b.vx * dt; b.y += b.vy * dt;
   walls(b);
-  if (twist === "bumpers") BUMPERS.forEach(o => bump(b, o));
+  if (twist === "bumpers") bumpers().forEach(o => bump(b, o));
   if (twist === "barrier") bounce(b, barrier, false);
+  if (twist === "bricks") for (const k of bricks)
+    if (k.alive && bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; break; }
   if (twist === "portal") {
     b.pc = Math.max(0, b.pc - dt);
     for (let i = 0; i < 2; i++) {
@@ -292,7 +348,7 @@ function stepBall(b, dt) {
 function update(dt) {
   if (paused || over) return;
   clock += dt;
-  windPos += Math.sin(clock * .9) * 200 * dt;
+  wy = twist === "closing" ? WALL + clamp(bt * 12, 0, 160) : WALL;
   think();
   const n = Math.min(30, Math.max(1, Math.ceil(dt / .0015))), sd = dt / n;
   for (let i = 0; i < n; i++) {
@@ -343,22 +399,17 @@ function draw() {
   ctx.strokeStyle = "rgba(218,224,188,.15)"; ctx.stroke();
 
   if (twist === "gravity") {
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, 235, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, gravR, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(76,125,104,.10)"; ctx.fill();
     ctx.strokeStyle = "rgba(198,218,177,.48)"; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(W / 2, H / 2, 13 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(218,224,188,.55)"; ctx.fill();
   }
-  if (twist === "repel") {
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, 120, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(217,74,58,.08)"; ctx.fill();
-    ctx.strokeStyle = "rgba(217,120,100,.45)"; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([]);
-  }
   if (twist === "slow") {
-    ctx.fillStyle = "rgba(120,160,220,.09)"; ctx.fillRect(W / 2 - 130, WALL, 260, H - WALL * 2);
+    ctx.fillStyle = "rgba(120,160,220,.09)"; ctx.fillRect(W / 2 - SLOWW, WALL, SLOWW * 2, H - WALL * 2);
     ctx.strokeStyle = "rgba(150,190,240,.3)"; ctx.lineWidth = 2; ctx.setLineDash([6, 10]);
-    ctx.beginPath(); ctx.moveTo(W / 2 - 130, WALL); ctx.lineTo(W / 2 - 130, H - WALL);
-    ctx.moveTo(W / 2 + 130, WALL); ctx.lineTo(W / 2 + 130, H - WALL); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(W / 2 - SLOWW, WALL); ctx.lineTo(W / 2 - SLOWW, H - WALL);
+    ctx.moveTo(W / 2 + SLOWW, WALL); ctx.lineTo(W / 2 + SLOWW, H - WALL); ctx.stroke(); ctx.setLineDash([]);
   }
   if (twist === "portal") PORTALS.forEach((o, i) => {
     const col = i ? "#ffa24a" : "#6fb7ff";
@@ -369,23 +420,25 @@ function draw() {
     ctx.fillStyle = col; ctx.globalAlpha = .45; ctx.fill(); ctx.globalAlpha = 1;
     if (debug) ring(o.x, o.y, o.r, "#ff5a4a");
   });
-  if (twist === "bumpers") BUMPERS.forEach(b => {
+  if (twist === "bumpers") bumpers().forEach(b => {
     [[b.r, "#d5ad54"], [b.r - 6, "#514b35"], [b.r - 11, "#e5d59b"]].forEach(([r, c]) => {
       ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
     });
     if (debug) ring(b.x, b.y, b.r, "#ff5a4a");
   });
-  if (twist === "wind") {
-    const w = Math.sin(clock * .9), L = H - 60;
-    ctx.strokeStyle = "rgba(230,221,184," + (.06 + Math.abs(w) * .16) + ")"; ctx.lineWidth = 2;
-    for (let i = 0; i < 9; i++) {
-      const x = W * (i + .5) / 9, y = (((windPos + i * 97) % L) + L) % L + 30;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 18 * (w < 0 ? -1 : 1)); ctx.stroke();
-    }
-  }
   if (twist === "barrier") {
     ctx.fillStyle = "#d5ad54"; ctx.fillRect(barrier.x - barrier.w / 2, barrier.y - barrier.h / 2, barrier.w, barrier.h);
     if (debug) { ctx.strokeStyle = "#ff5a4a"; ctx.strokeRect(barrier.x - barrier.w / 2, barrier.y - barrier.h / 2, barrier.w, barrier.h); }
+  }
+  if (twist === "bricks") bricks.forEach((k, i) => {
+    if (!k.alive) return;
+    ctx.fillStyle = i % 2 ? "#d5ad54" : "#c9923f";
+    ctx.fillRect(k.x - k.w / 2, k.y - k.h / 2, k.w, k.h);
+    if (debug) { ctx.strokeStyle = "#ff5a4a"; ctx.strokeRect(k.x - k.w / 2, k.y - k.h / 2, k.w, k.h); }
+  });
+  if (twist === "closing" && wy > WALL) {
+    ctx.fillStyle = "#0c140f"; ctx.fillRect(0, 0, W, wy); ctx.fillRect(0, H - wy, W, wy);
+    ctx.fillStyle = "#d94a3a"; ctx.fillRect(0, wy - 4, W, 4); ctx.fillRect(0, H - wy, W, 4);
   }
 
   drawPaddle(player); drawPaddle(cpu);
@@ -404,6 +457,15 @@ function draw() {
       ctx.beginPath(); ctx.arc(p[0], p[1], b.r * t * .8, 0, Math.PI * 2); ctx.fill();
     });
     ctx.globalAlpha = 1;
+    if (twist === "speed") {
+      ctx.strokeStyle = "rgba(230,221,184,.2)"; ctx.lineWidth = 1;
+      for (let i = 1; i < 7; i++) {
+        ctx.beginPath();
+        ctx.moveTo(b.x - b.vx * .004 * i, b.y - b.vy * .004 * i);
+        ctx.lineTo(b.x - b.vx * .007 * i, b.y - b.vy * .007 * i);
+        ctx.stroke();
+      }
+    }
     if (b.glow > 0) {
       ctx.save(); ctx.strokeStyle = "#fff0bd"; ctx.lineWidth = 4; ctx.globalAlpha = .65 * a;
       ctx.shadowColor = "#e4bd5e"; ctx.shadowBlur = 18;
@@ -416,7 +478,7 @@ function draw() {
     if (debug) ring(b.x, b.y, b.r, "#5affb0");
   }
 
-  if (twist === "dark" && balls[0]) {          // darkness with a lit circle around the ball
+  if (twist === "dark" && balls[0]) {
     const b = balls[0], g = ctx.createRadialGradient(b.x, b.y, 40, b.x, b.y, 190);
     g.addColorStop(0, "rgba(3,8,6,0)"); g.addColorStop(1, "rgba(3,8,6,.88)");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -428,6 +490,9 @@ function draw() {
   if (ready > 0 && !paused && !over) {
     ctx.fillStyle = "#d9d0b1"; ctx.font = '23px "Press Start 2P"';
     ctx.fillText("READY", W / 2, H / 2 + 120);
+  } else if (balls.some(b => b.stuck === player) && !paused && !over) {
+    ctx.fillStyle = "#d9d0b1"; ctx.font = '16px "Press Start 2P"';
+    ctx.fillText("MOVE TO AIM - SPACE TO RELEASE", W / 2, H / 2 + 120);
   }
   if (paused || over) {
     ctx.fillStyle = "rgba(9,17,13,.74)"; ctx.fillRect(0, 0, W, H);
