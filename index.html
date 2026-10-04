@@ -245,9 +245,9 @@ function walls(b) {
 
 function stepBall(b, dt) {
       if (twist === "gravity") {
-    const dx = W / 2 - b.x, dy = H / 2 - b.y, d = Math.hypot(dx, dy), R = 140;
+    const dx = W / 2 - b.x, dy = H / 2 - b.y, d = Math.hypot(dx, dy), R = 260;
     if (d > .001 && d < R) {
-      const f = 1 - d / R;                              // 1 at the center, 0 at the edge
+      const f = Math.sqrt(1 - d / R);                        
       // angle between where the ball is heading and the direction of the center
       const ang = Math.atan2(b.vx * dy - b.vy * dx, b.vx * dx + b.vy * dy);
       const turn = clamp(ang, -5 * f * dt, 10 * f * dt); // 5 = how hard it turns (radians/sec)
@@ -343,7 +343,7 @@ function draw() {
   ctx.strokeStyle = "rgba(218,224,188,.15)"; ctx.stroke();
 
   if (twist === "gravity") {
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, 140, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, 260, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(76,125,104,.10)"; ctx.fill();
     ctx.strokeStyle = "rgba(198,218,177,.48)"; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(W / 2, H / 2, 13 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
