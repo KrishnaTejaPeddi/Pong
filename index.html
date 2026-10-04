@@ -27,25 +27,33 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .deck{max-width:1000px;margin:18px auto 0;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 24px;border:3px solid #0b0b09;border-radius:8px;
   background:radial-gradient(circle at 11px 11px,#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at calc(100% - 11px) 11px,#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at 11px calc(100% - 11px),#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at calc(100% - 11px) calc(100% - 11px),#7c7867 0 3px,#2a2923 4px,transparent 5px),linear-gradient(#1c1b15,#12110d);
   box-shadow:inset 0 0 0 2px #3b392f,inset 0 10px 20px rgba(0,0,0,.45),0 4px 0 #0a0a08}
-.keys{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
-.kg{display:flex;align-items:center;gap:4px}
-.kc{display:inline-block;min-width:30px;height:30px;line-height:27px;padding:0 7px;text-align:center;font:10px "Press Start 2P",monospace;color:var(--cream);background:linear-gradient(#4d4b3f,#2f2e25);border:1px solid #0b0b09;border-radius:5px;box-shadow:0 3px 0 #0b0b09,inset 0 1px 0 rgba(255,255,255,.16)}
-.kc.wide{min-width:82px}
-.kg em{font-style:normal;font-size:19px;letter-spacing:1px;color:#9d957d;margin-left:8px}
+.instructions{font-size:20px;letter-spacing:1px;color:#bdb59e}
+.instructions b{color:var(--cream);font-weight:normal}
 .ctl{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.pick{display:flex;align-items:center;gap:10px;padding:5px 6px 5px 14px;background:#0b0b09;border:2px solid #4b493d;border-radius:7px;box-shadow:inset 0 2px 6px #000}
-.pick span{font:9px "Press Start 2P",monospace;letter-spacing:1px;color:var(--gold)}
-.pick select{appearance:none;-webkit-appearance:none;font:20px VT323,monospace;color:var(--cream);cursor:pointer;padding:8px 36px 8px 12px;border:1px solid #5a574a;border-radius:4px;
-  background:#201f19 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0h12L6 8z' fill='%23d5ad54'/%3E%3C/svg%3E") no-repeat right 12px center}
-.pick select:hover{background-color:#2a2922}
-.pick option{background:#201f19;color:var(--cream)}
-.abtn{display:flex;align-items:center;gap:11px;font:12px "Press Start 2P",monospace;letter-spacing:1px;color:#1a1208;cursor:pointer;border:0;border-radius:7px;padding:14px 24px;
-  background:linear-gradient(#f4dc95,#d5ad54 55%,#b88a34);text-shadow:0 1px 0 rgba(255,255,255,.35);
-  box-shadow:0 5px 0 #7a5a1c,0 9px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .08s,box-shadow .08s,filter .12s}
-.abtn:hover{filter:brightness(1.08)}
-.abtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7a5a1c,0 3px 6px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.55)}
-.abtn .ico{width:12px;height:14px;background:linear-gradient(90deg,#1a1208 0 35%,transparent 35% 65%,#1a1208 65%)}
-.abtn.paused .ico{background:#1a1208;clip-path:polygon(0 0,100% 50%,0 100%)}
+.abtn{font:20px VT323,monospace;letter-spacing:3px;color:var(--cream);background:#333229;border:2px solid #5a574a;padding:7px 22px;cursor:pointer;box-shadow:3px 3px 0 #0b0b09;transition:all .1s}
+.abtn:hover{background:#403f35;border-color:var(--gold);color:var(--gold)}
+.abtn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #0b0b09}
+.abtn.paused{color:var(--gold);border-color:var(--gold)}
+
+/* twist picker (custom dropdown) */
+.pick{position:relative;display:flex;align-items:center;gap:10px;padding:5px 6px 5px 14px;background:#0b0b09;border:2px solid #4b493d;border-radius:7px;box-shadow:inset 0 2px 6px #000}
+.pick>span{font:9px "Press Start 2P",monospace;letter-spacing:1px;color:var(--gold)}
+.dd{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:210px;font:20px VT323,monospace;letter-spacing:1px;color:var(--cream);background:#201f19;border:1px solid #5a574a;border-radius:4px;padding:8px 14px;cursor:pointer;transition:all .1s}
+.dd:hover,.pick.open .dd{background:#2a2922;border-color:var(--gold);color:var(--gold)}
+.dd b{font-weight:normal}
+.car{border:5px solid transparent;border-top:7px solid var(--gold);border-bottom:0;transition:transform .15s}
+.pick.open .car{transform:rotate(180deg)}
+.mpop{position:absolute;right:0;bottom:calc(100% + 12px);width:min(620px,86vw);max-height:340px;overflow-y:auto;display:none;grid-template-columns:1fr 1fr;gap:6px;padding:10px;background:#000;border:3px solid var(--phos);
+  box-shadow:inset 0 0 0 2px #000,inset 0 0 0 4px #1f4d33,0 14px 44px rgba(0,0,0,.85);z-index:50;scrollbar-width:thin;scrollbar-color:#3f8a5c #000}
+.mpop.open{display:grid}
+.opt{padding:8px 10px;border:1px solid #1f4d33;background:#07130d;cursor:pointer;transition:all .08s;text-align:left}
+.opt b{display:block;font:9px "Press Start 2P",monospace;letter-spacing:.5px;color:#bfe8cc;margin-bottom:6px;line-height:1.3}
+.opt span{font-size:17px;color:#7fa890;line-height:1}
+.opt:hover,.opt.hov{background:#143824;border-color:var(--gold)}
+.opt:hover b,.opt.hov b{color:var(--gold)}
+.opt.cur{border-color:var(--cream);background:#0f2a1c}
+.opt.cur b:before{content:"";display:inline-block;margin-right:7px;border:4px solid transparent;border-left:6px solid var(--red);border-right:0}
+
 .tweaks{max-width:1000px;margin:14px auto 0;display:none;gap:26px;flex-wrap:wrap;align-items:center;padding:12px 20px;background:#0b0b09;border:2px solid #4b493d;border-radius:7px;box-shadow:inset 0 2px 8px #000}
 .tweaks label{display:flex;align-items:center;gap:12px;font:9px "Press Start 2P",monospace;letter-spacing:1px;color:var(--gold)}
 .tweaks output{min-width:2.4em;font:20px VT323,monospace;color:var(--cream)}
@@ -68,7 +76,6 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 @keyframes blink{50%{opacity:.3}}
 @keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 
-/* retro black box with a phosphor-green double border */
 .bx{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 2.4cqw rgba(60,200,110,.18)}
 
 .kick{padding:.7cqw 2cqw;animation:fade .8s both}
@@ -150,7 +157,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .recl{font-size:1.9cqw;color:#9bd8b0}
 .badge{font-family:"Press Start 2P",monospace;font-size:.9cqw;letter-spacing:.2cqw;color:#10150f;background:var(--gold);padding:.35cqw .8cqw;margin-left:1cqw;animation:blink 1s infinite}
 
-@media(max-width:700px){.machine{padding:15px 13px}.screen-frame{padding:8px}.deck{padding:14px}.keys{gap:12px}.kg em{display:none}}
+@media(max-width:700px){.machine{padding:15px 13px}.screen-frame{padding:8px}.deck{padding:14px}.mpop{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -163,15 +170,10 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 <div class="scan"></div><div class="glass"></div>
 </div></section>
 <section class="deck">
-<div class="keys">
-<div class="kg"><span class="kc">W</span><span class="kc">A</span><span class="kc">S</span><span class="kc">D</span><em>MOVE</em></div>
-<div class="kg"><span class="kc wide">SPACE</span><em>ROTATE / RELEASE</em></div>
-<div class="kg"><span class="kc">ESC</span><em>PAUSE</em></div>
-<div class="kg"><span class="kc">H</span><em>HITBOXES</em></div>
-</div>
+<div class="instructions"><b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES</div>
 <div class="ctl">
-<label class="pick"><span>TWIST</span><select id="mode"></select></label>
-<button id="pause" class="abtn"><i class="ico"></i><span id="pt">PAUSE</span></button>
+<div class="pick" id="pick"><span>TWIST</span><button id="mbtn" class="dd" type="button"><b id="mtxt">CYCLE ALL</b><i class="car"></i></button><div class="mpop" id="mpop"></div></div>
+<button id="pause" class="abtn"><span id="pt">PAUSE</span></button>
 </div>
 </section>
 <section class="tweaks" id="tw">
@@ -186,7 +188,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 "use strict";
 const $ = id => document.getElementById(id);
 const cv = $("game"), ctx = cv.getContext("2d"), fx = $("fx").getContext("2d");
-const W = 960, H = 540, WALL = 18, SLOWW = 200;
+const W = 960, H = 540, WALL = 18, SLOWW = 200, SLOWD = .55;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
@@ -215,14 +217,59 @@ const INFO = {
   curve: "THE BALL CURVES THROUGH THE AIR.", dark: "LIGHTS OUT. FOLLOW THE GLOW."
 };
 const ORDER = Object.keys(MODES);
-const modeSel = $("mode"), pauseBtn = $("pause"), ui = $("ui");
+const pauseBtn = $("pause"), ui = $("ui");
 const diff = { value: "normal" };            // current difficulty (set from the menus)
-modeSel.innerHTML = '<option value="cycle">CYCLE ALL</option>' +
-  ORDER.map(k => `<option value="${k}">${MODES[k]}</option>`).join("");
+const modeSel = { value: "cycle" };          // current twist mode (set from the menus)
+
+/* ---------- twist picker (custom dropdown) ---------- */
+const pick = $("pick"), mbtn = $("mbtn"), mtxt = $("mtxt"), mpop = $("mpop");
+mpop.innerHTML = [["cycle", "CYCLE ALL", "A DIFFERENT TWIST EVERY ROUND."], ...ORDER.map(k => [k, MODES[k], INFO[k]])]
+  .map(([k, n, d]) => `<div class="opt" data-v="${k}" role="option"><b>${n}</b><span>${d}</span></div>`).join("");
+const popOpts = () => [...mpop.querySelectorAll(".opt")];
+function markPop() {
+  popOpts().forEach(o => o.classList.toggle("cur", o.dataset.v === modeSel.value));
+  mtxt.textContent = modeSel.value === "cycle" ? "CYCLE ALL" : MODES[modeSel.value];
+}
+function openPop() {
+  if (screen === "playing") showScreen("pause");
+  pick.classList.add("open"); mpop.classList.add("open");
+  popOpts().forEach(o => o.classList.remove("hov"));
+  const c = mpop.querySelector(".cur");
+  if (c) mpop.scrollTop = c.offsetTop - mpop.clientHeight / 2 + c.offsetHeight / 2;
+}
+function closePop() { pick.classList.remove("open"); mpop.classList.remove("open"); }
+function pickMode(v) {
+  setS("mode", v); save(); closePop(); sfx("select");
+  if (screen === "playing" || screen === "pause") startMatch();
+}
+mbtn.addEventListener("click", e => {
+  e.stopPropagation(); mbtn.blur();
+  mpop.classList.contains("open") ? closePop() : openPop();
+});
+mpop.addEventListener("click", e => { const o = e.target.closest(".opt"); if (o) pickMode(o.dataset.v); });
+document.addEventListener("click", e => { if (!e.target.closest("#pick")) closePop(); });
+function popKey(e, k) {
+  if (["arrowup", "arrowdown", "arrowleft", "arrowright", "enter", " ", "escape"].includes(k)) e.preventDefault();
+  const o = popOpts();
+  let i = o.findIndex(x => x.classList.contains("hov"));
+  if (i < 0) i = o.findIndex(x => x.classList.contains("cur"));
+  if (k === "escape") { closePop(); return; }
+  if (k === "enter" || k === " ") { pickMode(o[i].dataset.v); return; }
+  const cols = getComputedStyle(mpop).gridTemplateColumns.split(" ").length;
+  if (k === "arrowright" || k === "d") i = (i + 1) % o.length;
+  else if (k === "arrowleft" || k === "a") i = (i - 1 + o.length) % o.length;
+  else if (k === "arrowdown" || k === "s") i = Math.min(i + cols, o.length - 1);
+  else if (k === "arrowup" || k === "w") i = Math.max(i - cols, 0);
+  o.forEach((x, j) => x.classList.toggle("hov", j === i));
+  const t = o[i];
+  if (t.offsetTop < mpop.scrollTop) mpop.scrollTop = t.offsetTop - 8;
+  else if (t.offsetTop + t.offsetHeight > mpop.scrollTop + mpop.clientHeight) mpop.scrollTop = t.offsetTop + t.offsetHeight - mpop.clientHeight + 8;
+  sfx("move");
+}
 
 /* ---------- settings ---------- */
 const DEFV = { diff: "normal", win: 7, mode: "cycle", ball: 1, psize: 1, pspeed: 1, rotate: true,
-  bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true };
+  bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true, slowmo: true };
 const S = { ...DEFV };
 const nums = a => a.map(n => ["" + n, n]);
 const ONOFF = [["ON", true], ["OFF", false]];
@@ -233,18 +280,19 @@ const SETTINGS = [
   ["ball", "GAMEPLAY", "BALL SPEED", "HOW FAST THE BALL TRAVELS.", [["SLOW", .75], ["NORMAL", 1], ["FAST", 1.3], ["INSANE", 1.7]]],
   ["psize", "GAMEPLAY", "PADDLE SIZE", "LENGTH OF BOTH PADDLES (APPLIES NEXT ROUND).", [["SMALL", .7], ["NORMAL", 1], ["LARGE", 1.4]]],
   ["pspeed", "GAMEPLAY", "YOUR SPEED", "HOW FAST YOUR PADDLE MOVES.", [["SLOW", .75], ["NORMAL", 1], ["FAST", 1.3]]],
-  ["rotate", "GAMEPLAY", "ROTATION", "ALLOW PADDLE ROTATION FOR YOU AND THE CPU.", ONOFF],
+  ["rotate", "GAMEPLAY", "ROTATION", "ALLOW PADDLE ROTATION (AND SMASHES) FOR YOU AND THE CPU.", ONOFF],
   ["bumpers", "TWIST TUNING", "BUMPER COUNT", "BUMPER MAYHEM: HOW MANY BUMPERS ARE ON THE COURT.", nums([1, 2, 3, 4, 5, 6, 7, 8])],
   ["gravR", "TWIST TUNING", "GRAVITY RADIUS", "GRAVITY WELL: HOW FAR THE PULL REACHES.", nums([100, 140, 180, 220, 260, 300, 340, 380])],
   ["gravS", "TWIST TUNING", "GRAVITY POWER", "GRAVITY WELL: HOW HARD THE BALL IS BENT.", nums([1, 2, 3, 4, 5, 6, 8, 10, 12])],
   ["vol", "AUDIO & VIDEO", "SOUND", "SOUND EFFECTS VOLUME.", [["OFF", 0], ["LOW", .35], ["MEDIUM", .7], ["HIGH", 1]]],
   ["crt", "AUDIO & VIDEO", "CRT EFFECT", "SCANLINES AND SCREEN GLASS.", ONOFF],
-  ["shake", "AUDIO & VIDEO", "SCREEN SHAKE", "THE SCREEN SHAKES WHEN SOMEONE SCORES.", ONOFF]
+  ["shake", "AUDIO & VIDEO", "SCREEN SHAKE", "THE SCREEN SHAKES WHEN SOMEONE SCORES OR SMASHES.", ONOFF],
+  ["slowmo", "AUDIO & VIDEO", "SMASH SLOW-MO", "A BRIEF SLOW MOTION MOMENT WHEN A SMASH LANDS.", ONOFF]
 ].map(([id, grp, label, tip, opts]) => ({ id, grp, label, tip, opts }));
 
 const HOOK = {   // extra work to do when a setting changes
   diff: v => diff.value = v,
-  mode: v => modeSel.value = v,
+  mode: v => { modeSel.value = v; markPop(); },
   win: v => $("foot").innerHTML = "FIRST TO " + v + " &bull; EVERY ROUND HAS A NEW TWIST",
   crt: v => $("scr").classList.toggle("nocrt", !v),
   bumpers: v => { $("bn").value = v; $("bnv").textContent = v; },
@@ -295,7 +343,8 @@ const SFX = {
   release: () => beep(600, .08, "square", .8, 200), move: () => beep(520, .03, "square", .5),
   tick: () => beep(700, .04, "square", .6), select: () => seq([660, 880], 60, "square", .08),
   score: () => seq([520, 780], 100, "square", .12), lose: () => seq([300, 200], 120, "sawtooth", .16),
-  win: () => seq([523, 659, 784, 1047], 130, "square", .2), defeat: () => seq([392, 330, 262, 196], 170, "sawtooth", .24)
+  win: () => seq([523, 659, 784, 1047], 130, "square", .2), defeat: () => seq([392, 330, 262, 196], 170, "sawtooth", .24),
+  smash: () => { beep(110, .3, "sawtooth", 1.6, -60); setTimeout(() => beep(1100, .18, "square", 1, -900), 25); setTimeout(() => beep(300, .22, "triangle", 1, -200), 80); }
 };
 const sfx = n => SFX[n] && SFX[n]();
 
@@ -305,14 +354,15 @@ const bumpers = () => BPOS.slice(0, S.bumpers).map(([x, y]) => ({ x: W * x, y: H
 const PORTALS = [{ x: W * .4, y: H * .27, r: 24 }, { x: W * .6, y: H * .73, r: 24 }];
 
 const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
-  rot: false, power: 0, cool: 0, rotCool: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0 });
+  rot: false, power: 0, cool: 0, rotCool: 0, smashCool: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0 });
 const player = mk(62.5), cpu = mk(W - 62.5);
 const barrier = { x: W / 2, y: H / 2, w: 14, h: 110, angle: 0, vx: 0, vy: 0, omega: 0 };
-const newStats = () => ({ hits: 0, rally: 0, longest: 0, top: 0, time: 0, hist: [] });
+const newStats = () => ({ hits: 0, rally: 0, longest: 0, top: 0, time: 0, smashes: 0, hist: [] });
 
 let balls = [], bricks = [], scoreP = 0, scoreC = 0, round = 1, M = newStats(), res = null;
 let ready = .8, countdown = false, clock = 0, bt = 0, wy = WALL, twist = "normal", cpuY = H / 2;
 let debug = false, keys = {}, last = performance.now(), shakeT = 0;
+let slowT = 0, flashT = 0, sparks = [], rings = [], pops = [];
 let screen = "title", settingsFrom = "title", selI = 0;
 
 const spdMul = () => twist === "fast" ? 2.1 : twist === "speed" ? 1.3 : 1;
@@ -350,7 +400,7 @@ function serve(dir, first) {
   const sp = (twist === "heavy" ? 320 : twist === "speed" ? 520 : 390) * S.ball;
   const a = (Math.random() - .5) * .5;
   balls = [{ x: W / 2, y: H / 2, r, vx: dir * sp * Math.cos(a), vy: sp * Math.sin(a), glow: 0, trail: [],
-    spin: Math.random() < .5 ? -1 : 1, pc: 0, stuck: null, stT: 0 }];
+    spin: Math.random() < .5 ? -1 : 1, pc: 0, stuck: null, stT: 0, smash: false }];
   bricks = [];
   if (twist === "bricks") for (const x of [W * .36, W * .64]) for (let i = 0; i < 8; i++)
     bricks.push({ x, y: WALL + 32 + i * 63, w: 20, h: 52, angle: 0, vx: 0, vy: 0, omega: 0, alive: true });
@@ -359,7 +409,8 @@ function serve(dir, first) {
 
 function startMatch() {
   scoreP = scoreC = 0; round = 1; M = newStats();
-  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; });
+  sparks = []; rings = []; pops = []; slowT = 0; flashT = 0;
+  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.smashCool = 0; });
   player.x = 62.5; cpu.x = HOME; cpuX = HOME; cpuY = H / 2; sawIncoming = false;
   chooseTwist(); serve(Math.random() < .5 ? -1 : 1, true);
   showScreen("playing");
@@ -419,7 +470,7 @@ function renderTitle() {
     <div class="bx logobox"><h2 class="logo">PONG</h2></div>
     <div class="bx tagbox"><span class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</span></div>
     <div class="menu"><div class="mi" data-act="play">PLAY</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="howto">HOW TO PLAY</div></div>
-    <div class="bx rec">${line}</div><div class="bx hint">ARROWS / WASD SELECT &middot; ENTER CONFIRM</div><div class="bx ver">V2.1</div></div>`;
+    <div class="bx rec">${line}</div><div class="bx hint">ARROWS / WASD SELECT &middot; ENTER CONFIRM</div><div class="bx ver">V2.2</div></div>`;
 }
 
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
@@ -440,11 +491,11 @@ function renderSettings() {
 }
 
 function renderHowto() {
-  const kv = [["MOVE", "WASD / ARROWS"], ["ROTATE", "SPACE (SPAM IT!)"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]];
+  const kv = [["MOVE", "WASD / ARROWS"], ["ROTATE / SMASH", "SPACE (SPAM IT!)"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]];
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel"><h3 class="ph">HOW TO PLAY</h3>
     <div class="cols how"><div><div class="gh">CONTROLS</div>${kv.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join("")}
     <div class="gh">TIPS</div><div class="tip">HIT WITH THE EDGE OF YOUR PADDLE TO ANGLE THE BALL.</div>
-    <div class="tip">ROTATING PADDLES HIT HARDER. EACH TAP IS A QUARTER TURN.</div>
+    <div class="tip">TAP SPACE JUST BEFORE THE BALL ARRIVES. HIT IT MID-SPIN FOR A SLOW-MO SMASH!</div>
     <div class="tip">EVERY ROUND ADDS A NEW TWIST. FIRST TO ${S.win} WINS.</div></div>
     <div><div class="gh">THE TWISTS</div><div class="tw">${ORDER.map(k => `<div><b>${MODES[k]}</b><span>${INFO[k]}</span></div>`).join("")}</div></div></div>
     <div class="menu h" style="margin-top:1.2cqw"><div class="mi" data-act="howback">BACK</div></div></div></div>`;
@@ -467,7 +518,7 @@ function renderOver(opt) {
     <div class="bx ovsc"><div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div></div>
     <div class="ov-mid"><div class="rank rk-${res.rank}"><small>RANK</small><b>${res.rank}</b></div>
       <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st("YOUR HITS", 0, M.hits)}${st("TOP SPEED PX/S", 0, Math.round(M.top))}
-      ${st("MATCH TIME", fmtTime(M.time))}${st("DIFFICULTY", S.diff.toUpperCase())}${st("ROUNDS", 0, M.hist.length)}</div></div>
+      ${st("MATCH TIME", fmtTime(M.time))}${st("DIFFICULTY", S.diff.toUpperCase())}${st("SMASHES", 0, M.smashes)}</div></div>
     <div class="bx chipsbox"><div class="chips">${chips}</div></div>
     <div class="bx recbox"><div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
     <div class="menu h"><div class="mi" data-act="rematch">REMATCH</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="menu">MAIN MENU</div></div></div>`;
@@ -540,15 +591,13 @@ function menuKey(e, k) {
 
 /* ---------- input ---------- */
 pauseBtn.onclick = () => { if (screen === "playing") showScreen("pause"); else if (screen === "pause") showScreen("playing"); };
-modeSel.onchange = () => { setS("mode", modeSel.value); save(); if (screen === "playing") startMatch(); };
 pauseBtn.addEventListener("click", () => pauseBtn.blur());
-modeSel.addEventListener("change", () => modeSel.blur());
 window.addEventListener("blur", () => { if (screen === "playing") showScreen("pause"); });
 
 window.onkeydown = e => {
-  if (e.target.tagName === "SELECT") return;
   if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") e.target.blur();
   const k = e.key.toLowerCase();
+  if (mpop.classList.contains("open")) { popKey(e, k); return; }
   if (screen !== "playing") { menuKey(e, k); return; }
   if (k === "escape" || k === "p") { e.preventDefault(); showScreen("pause"); return; }
   keys[k] = true;
@@ -568,7 +617,7 @@ function release(b) {
   const dir = p === player ? 1 : -1, sp = 520 * S.ball;
   const vy = p === cpu ? (Math.random() - .5) * 400 : clamp(p.vy * .7, -380, 380);
   b.vx = dir * Math.sqrt(sp * sp - vy * vy); b.vy = vy;
-  b.stuck = null; b.glow = .3; p.cool = .2; sfx("release");
+  b.stuck = null; b.smash = false; b.glow = .3; p.cool = .2; sfx("release");
 }
 
 /* ---------- paddles ---------- */
@@ -583,6 +632,7 @@ function spin(p, dt) {
   p.power = Math.max(0, p.power - dt);
   p.cool = Math.max(0, p.cool - dt);
   p.rotCool = Math.max(0, p.rotCool - dt);
+  p.smashCool = Math.max(0, p.smashCool - dt);
   const old = p.angle;
   if (twist === "spinner") p.angle += (p === player ? 1 : -1) * 2.4 * dt;
   else if (p.rot) {
@@ -667,6 +717,25 @@ function think() {
   } else if (!incoming && sideways) { rotate(cpu); cpu.rotCool = .9; }
 }
 
+/* ---------- smash effects ---------- */
+function smashFx(b) {
+  sfx("smash");
+  if (S.slowmo) slowT = SLOWD;
+  flashT = .16; shakeT = .45;
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * 6.283, s = 120 + Math.random() * 420, l = .5 + Math.random() * .4;
+    sparks.push({ x: b.x, y: b.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l, m: l });
+  }
+  rings.push({ x: b.x, y: b.y, t: 0 });
+  pops.push({ x: clamp(b.x, 90, W - 90), y: b.y - 28, t: 0 });
+}
+function fxUpdate(dt) {
+  sparks = sparks.filter(s => (s.l -= dt) > 0);
+  sparks.forEach(s => { s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= 1 - 3 * dt; s.vy *= 1 - 3 * dt; });
+  rings = rings.filter(r => (r.t += dt * 2) < 1);
+  pops = pops.filter(p => (p.t += dt * 1.1) < 1);
+}
+
 /* ---------- collisions ---------- */
 function hitRect(b, p) {
   const c = Math.cos(p.angle), s = Math.sin(p.angle);
@@ -701,12 +770,22 @@ function bounce(b, p, isPaddle) {
   if (p === player) M.hits++;
   const k = clamp(h.ly / (p.h / 2), -1, 1) * 100;
   b.vx += -h.ny * k; b.vy += h.nx * k;
-  if (p.cool <= 0) {
-    const turbo = twist === "speed";
-    let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * 1.02, (turbo ? 1000 : 740) * S.ball);
-    if (p.rot || p.power > 0) { s = Math.min(s * 1.16, (turbo ? 1150 : 860) * S.ball); b.glow = .5; }
-    const c = Math.hypot(b.vx, b.vy) || 1;
-    b.vx *= s / c; b.vy *= s / c; p.cool = .08;
+  if (twist !== "sticky" && p.smashCool <= 0 && Math.abs(p.omega) > 6) {
+    // SMASH: the paddle was swinging fast when it met the ball
+    const c = Math.hypot(b.vx, b.vy) || 1, sp = 1250 * S.ball;
+    b.vx *= sp / c; b.vy *= sp / c; b.smash = true;
+    p.smashCool = p === player ? 1 : 2.5; p.cool = .08;
+    if (p === player) M.smashes++;
+    smashFx(b);
+  } else {
+    b.smash = false;
+    if (p.cool <= 0) {
+      const turbo = twist === "speed";
+      let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * 1.02, (turbo ? 1000 : 740) * S.ball);
+      if (p.rot || p.power > 0) { s = Math.min(s * 1.16, (turbo ? 1150 : 860) * S.ball); b.glow = .5; }
+      const c = Math.hypot(b.vx, b.vy) || 1;
+      b.vx *= s / c; b.vy *= s / c; p.cool = .08;
+    }
   }
   if (Math.abs(b.vx) < 150) b.vx = (b.vx < 0 ? -1 : 1) * 150;
   if (twist === "sticky") { b.stuck = p; b.stT = 0; sfx("stick"); }
@@ -722,7 +801,7 @@ function bump(b, o) {
   if (vn >= 0) return;
   b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny;
   const s = Math.hypot(b.vx, b.vy) || 1, t = clamp(s * 1.12, 620 * S.ball, 820 * S.ball);
-  b.vx *= t / s; b.vy *= t / s; b.glow = .4; sfx("bump");
+  b.vx *= t / s; b.vy *= t / s; b.glow = .4; b.smash = false; sfx("bump");
 }
 
 function walls(b) {
@@ -754,15 +833,18 @@ function stepBall(b, dt) {
     const a = b.spin * 1.3 * dt, c = Math.cos(a), s = Math.sin(a), x = b.vx;
     b.vx = x * c - b.vy * s; b.vy = x * s + b.vy * c;
   }
-  const cap = (twist === "speed" ? 1100 : 860) * S.ball, s = Math.hypot(b.vx, b.vy);
+  const cap = (b.smash ? 1500 : twist === "speed" ? 1100 : 860) * S.ball, s = Math.hypot(b.vx, b.vy);
   if (s > M.top) M.top = s;
   if (s > cap) { b.vx *= cap / s; b.vy *= cap / s; }
   b.x += b.vx * dt; b.y += b.vy * dt;
   walls(b);
   if (twist === "bumpers") bumpers().forEach(o => bump(b, o));
   if (twist === "barrier") bounce(b, barrier, false);
-  if (twist === "bricks") for (const k of bricks)
-    if (k.alive && bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; sfx("brick"); break; }
+  if (twist === "bricks") for (const k of bricks) {
+    if (!k.alive) continue;
+    if (b.smash) { if (hitRect(b, k)) { k.alive = false; b.glow = .3; sfx("brick"); } }   // smashes punch through
+    else if (bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; sfx("brick"); break; }
+  }
   if (twist === "portal") {
     b.pc = Math.max(0, b.pc - dt);
     for (let i = 0; i < 2; i++) {
@@ -801,7 +883,7 @@ function update(dt) {
     if (scored) { point(scored); break; }
   }
   if (ready > 0) ready -= dt;
-  balls.forEach(b => { b.trail.push([b.x, b.y]); if (b.trail.length > 20) b.trail.shift(); });
+  balls.forEach(b => { b.trail.push([b.x, b.y]); if (b.trail.length > (b.smash ? 30 : 20)) b.trail.shift(); });
 }
 
 /* ---------- confetti ---------- */
@@ -938,16 +1020,23 @@ function drawGame() {
   ctx.font = "17px VT323"; ctx.fillStyle = "#cfc6a7";
   ctx.fillText("PLAYER", W * .25, 35); ctx.fillText("CPU", W * .75, 35);
 
+  if (S.rotate) {                                  // smash meter under your name
+    const f = 1 - clamp(player.smashCool / 1, 0, 1), c = f >= 1 ? "#ffb36b" : "#6d6853";
+    ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(W * .25 - 46, 42, 92, 8);
+    ctx.fillStyle = c; ctx.fillRect(W * .25 - 45, 43, 90 * f, 6);
+    ctx.font = "15px VT323"; ctx.fillText(f >= 1 ? "SMASH READY" : "SMASH", W * .25, 64);
+  }
+
   for (const b of balls) {
     const a = twist === "ghost" ? clamp((Math.abs(b.x - W / 2) - 40) / 150, 0, 1) : 1;
     b.trail.forEach((p, i) => {
       const t = i / b.trail.length;
-      ctx.globalAlpha = t * .18 * a; ctx.fillStyle = "#e9dfbd";
-      ctx.beginPath(); ctx.arc(p[0], p[1], b.r * t * .8, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = t * (b.smash ? .4 : .18) * a; ctx.fillStyle = b.smash ? "#ffb36b" : "#e9dfbd";
+      ctx.beginPath(); ctx.arc(p[0], p[1], b.r * t * (b.smash ? 1 : .8), 0, Math.PI * 2); ctx.fill();
     });
     ctx.globalAlpha = 1;
-    if (twist === "speed") {
-      ctx.strokeStyle = "rgba(230,221,184,.2)"; ctx.lineWidth = 1;
+    if (twist === "speed" || b.smash) {
+      ctx.strokeStyle = b.smash ? "rgba(255,190,120,.55)" : "rgba(230,221,184,.2)"; ctx.lineWidth = b.smash ? 2 : 1;
       for (let i = 1; i < 7; i++) {
         ctx.beginPath();
         ctx.moveTo(b.x - b.vx * .004 * i, b.y - b.vy * .004 * i);
@@ -955,13 +1044,13 @@ function drawGame() {
         ctx.stroke();
       }
     }
-    if (b.glow > 0) {
-      ctx.save(); ctx.strokeStyle = "#fff0bd"; ctx.lineWidth = 4; ctx.globalAlpha = .65 * a;
-      ctx.shadowColor = "#e4bd5e"; ctx.shadowBlur = 18;
+    if (b.glow > 0 || b.smash) {
+      ctx.save(); ctx.strokeStyle = b.smash ? "#ffb36b" : "#fff0bd"; ctx.lineWidth = 4; ctx.globalAlpha = .65 * a;
+      ctx.shadowColor = b.smash ? "#ff7a2a" : "#e4bd5e"; ctx.shadowBlur = b.smash ? 26 : 18;
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 10 + Math.sin(performance.now() / 40) * 3, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
     }
-    ctx.globalAlpha = a; ctx.fillStyle = "#f3e9c6"; ctx.shadowColor = "#dbe7c0"; ctx.shadowBlur = 8;
+    ctx.globalAlpha = a; ctx.fillStyle = b.smash ? "#fff2dc" : "#f3e9c6"; ctx.shadowColor = b.smash ? "#ff9a4a" : "#dbe7c0"; ctx.shadowBlur = b.smash ? 16 : 8;
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     if (debug) ring(b.x, b.y, b.r, "#5affb0");
@@ -972,6 +1061,20 @@ function drawGame() {
     g.addColorStop(0, "rgba(3,8,6,0)"); g.addColorStop(1, "rgba(3,8,6,.88)");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
+
+  rings.forEach(r => {                              // smash shockwaves, sparks and callouts
+    ctx.strokeStyle = "rgba(255,190,110," + (1 - r.t) + ")"; ctx.lineWidth = 6 * (1 - r.t) + 1;
+    ctx.beginPath(); ctx.arc(r.x, r.y, 10 + r.t * 130, 0, Math.PI * 2); ctx.stroke();
+  });
+  sparks.forEach(s => {
+    const k = s.l / s.m;
+    ctx.fillStyle = "rgba(255," + (150 + k * 100 | 0) + ",90," + k + ")"; ctx.fillRect(s.x - 2, s.y - 2, 4, 4);
+  });
+  pops.forEach(p => {
+    ctx.save(); ctx.globalAlpha = 1 - p.t; ctx.font = '22px "Press Start 2P"';
+    ctx.fillStyle = "#000"; ctx.fillText("SMASH!", p.x + 3, p.y - p.t * 34 + 3);
+    ctx.fillStyle = "#ffb36b"; ctx.fillText("SMASH!", p.x, p.y - p.t * 34); ctx.restore();
+  });
 
   ctx.font = '17px "Press Start 2P"'; ctx.fillStyle = "rgba(232,223,189,.72)";
   ctx.fillText("ROUND " + round + "  —  " + MODES[twist], W / 2, H - 25);
@@ -987,15 +1090,24 @@ function drawGame() {
     ctx.fillStyle = "#d9d0b1"; ctx.font = '16px "Press Start 2P"';
     ctx.fillText("MOVE TO AIM - SPACE TO RELEASE", W / 2, H / 2 + 120);
   }
+
+  if (slowT > 0) {                                 // warm vignette while time is slowed
+    const k = slowT / SLOWD, g = ctx.createRadialGradient(W / 2, H / 2, 160, W / 2, H / 2, 620);
+    g.addColorStop(0, "rgba(40,15,0,0)"); g.addColorStop(1, "rgba(40,15,0," + (.55 * k) + ")");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  if (flashT > 0) { ctx.fillStyle = "rgba(255,240,210," + Math.min(.55, flashT * 3.5) + ")"; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }
 
 function loop(t) {
-  const dt = Math.min((t - last) / 1000, .03);
+  const real = Math.min((t - last) / 1000, .03);
   last = t;
-  if (screen === "playing") update(dt);
-  shakeT = Math.max(0, shakeT - dt);
-  fxStep(dt);
+  const k = slowT / SLOWD, dt = real * (slowT > 0 ? .1 + .9 * (1 - k) * (1 - k) : 1);   // slow-mo scales game time only
+  slowT = Math.max(0, slowT - real); flashT = Math.max(0, flashT - real);
+  if (screen === "playing") { update(dt); fxUpdate(dt); }
+  shakeT = Math.max(0, shakeT - real);
+  fxStep(real);
   retroOn() ? drawRetro(t) : drawGame();
   requestAnimationFrame(loop);
 }
