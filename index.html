@@ -343,7 +343,7 @@ function draw() {
   ctx.strokeStyle = "rgba(218,224,188,.15)"; ctx.stroke();
 
   if (twist === "gravity") {
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, 200, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, 235, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(76,125,104,.10)"; ctx.fill();
     ctx.strokeStyle = "rgba(198,218,177,.48)"; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(W / 2, H / 2, 13 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
