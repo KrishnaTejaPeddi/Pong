@@ -244,12 +244,16 @@ function walls(b) {
 }
 
 function stepBall(b, dt) {
-    if (twist === "gravity") {
+      if (twist === "gravity") {
     const dx = W / 2 - b.x, dy = H / 2 - b.y, d = Math.hypot(dx, dy), R = 140;
     if (d > .001 && d < R) {
-      const f = 1 - d / R;                       // 1 at the center, 0 at the edge
-      b.vx += (dx / d * 750 - dy / d * 0) * f * dt;   // 750 = pull, 300 = swirl
-      b.vy += (dy / d * 750 + dx / d * 0) * f * dt;
+      const f = 1 - d / R;                              // 1 at the center, 0 at the edge
+      // angle between where the ball is heading and the direction of the center
+      const ang = Math.atan2(b.vx * dy - b.vy * dx, b.vx * dx + b.vy * dy);
+      const turn = clamp(ang, -5 * f * dt, 5 * f * dt); // 5 = how hard it turns (radians/sec)
+      const c = Math.cos(turn), s = Math.sin(turn), x = b.vx;
+      b.vx = x * c - b.vy * s;
+      b.vy = x * s + b.vy * c;
     }
   }
   if (twist === "repel") {
