@@ -250,7 +250,7 @@ function stepBall(b, dt) {
       const f = 1 - d / R;                              // 1 at the center, 0 at the edge
       // angle between where the ball is heading and the direction of the center
       const ang = Math.atan2(b.vx * dy - b.vy * dx, b.vx * dx + b.vy * dy);
-      const turn = clamp(ang, -5 * f * dt, 5 * f * dt); // 5 = how hard it turns (radians/sec)
+      const turn = clamp(ang, -5 * f * dt, 10 * f * dt); // 5 = how hard it turns (radians/sec)
       const c = Math.cos(turn), s = Math.sin(turn), x = b.vx;
       b.vx = x * c - b.vy * s;
       b.vy = x * s + b.vy * c;
