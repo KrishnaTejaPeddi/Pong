@@ -48,6 +48,19 @@ button:hover,select:hover{background:#403f35}
 
 .kicker{font-family:"Press Start 2P",monospace;font-size:1.15cqw;letter-spacing:.7cqw;color:var(--gold);animation:fade .8s both}
 .logo{font-family:"Press Start 2P",monospace;font-size:15cqw;line-height:1;font-weight:normal;margin:1.2cqw 0 .8cqw;letter-spacing:1cqw;color:var(--red);text-shadow:.7cqw .7cqw 0 #501e19,0 0 3.5cqw rgba(217,74,58,.55);animation:drop .9s cubic-bezier(.2,1.2,.3,1) both,glow 3.2s ease-in-out .9s infinite}
+/* Lightweight CRT title card: a solid black retro plaque keeps the logo readable without adding another canvas layer. */
+.title-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:.3cqw 0 1.2cqw;padding:1.2cqw 4.2cqw 1.5cqw;background:#050505;border:.35cqw solid #2e2d27;box-shadow:.55cqw .55cqw 0 #000,0 0 0 .25cqw rgba(255,255,255,.035),inset 0 0 0 .22cqw #171713;animation:cardIn .55s cubic-bezier(.2,.9,.2,1) both;overflow:hidden}
+.title-card:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent .55cqw,rgba(255,255,255,.035) .7cqw);opacity:.45;pointer-events:none}
+.title-card:after{content:"";position:absolute;left:-25%;right:-25%;top:-30%;height:18%;background:rgba(255,255,255,.045);transform:rotate(-3deg);animation:cardSweep 5s linear 1s infinite;pointer-events:none}
+@keyframes cardIn{from{opacity:0;transform:translateY(-.8cqw) scale(.96)}to{opacity:1;transform:none}}
+@keyframes cardSweep{from{top:-30%}to{top:125%}}
+.title-card .logo{margin:0}
+.ov-title-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.15cqw 3.8cqw 1.35cqw;margin-bottom:.6cqw;background:#050505;border:.35cqw solid #2e2d27;box-shadow:.5cqw .5cqw 0 #000,0 0 0 .25cqw rgba(255,255,255,.035),inset 0 0 0 .22cqw #171713;overflow:hidden;animation:resultCardIn .6s cubic-bezier(.2,.9,.2,1) both}
+.ov-title-card:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent .55cqw,rgba(255,255,255,.035) .7cqw);opacity:.4;pointer-events:none}
+.ov-title-card:after{content:"";position:absolute;left:-30%;width:160%;height:14%;top:-25%;background:rgba(255,255,255,.045);transform:rotate(-3deg);animation:cardSweep 4.5s linear .4s infinite;pointer-events:none}
+@keyframes resultCardIn{from{opacity:0;transform:translateY(-.7cqw) scale(.97)}to{opacity:1;transform:none}}
+.ov-title-card .ov-title{position:relative;z-index:1}
+
 .tag{font-size:2.3cqw;letter-spacing:.4cqw;color:#c8bfa5;margin-bottom:2.2cqw;animation:fade 1s .5s both}
 .menu{display:flex;flex-direction:column;align-items:center;animation:fade .8s .7s both}
 .menu.h{flex-direction:row;gap:1.2cqw}
@@ -365,7 +378,7 @@ function renderTitle() {
   const line = rec.games ? `RECORD ${rec.w}W - ${rec.l}L  &middot;  BEST STREAK ${rec.best}` : "NEW CHALLENGER";
   ui.innerHTML = `<div class="sc"><div class="shade"></div>
     <div class="kicker">&#9670; ARCADE EDITION &#9670;</div>
-    <h2 class="logo">PONG</h2>
+    <div class="title-card"><h2 class="logo">PONG</h2></div>
     <div class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</div>
     <div class="menu"><div class="mi" data-act="play">PLAY</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="howto">HOW TO PLAY</div></div>
     <div class="rec">${line}</div><div class="hint">ARROWS / WASD SELECT &middot; ENTER CONFIRM</div><div class="ver">V2.0</div></div>`;
@@ -411,7 +424,7 @@ function renderOver(opt) {
   const st = (label, val, to) => `<div class="stat"><small>${label}</small><b${to != null ? ` data-to="${to}"` : ""}>${to != null ? (fresh ? 0 : to) : val}</b></div>`;
   const chips = M.hist.map((h, i) => `<div class="chip ${h.w}" title="ROUND ${i + 1}: ${MODES[h.m]}">${i + 1}</div>`).join("");
   ui.innerHTML = `<div class="sc over ${w ? "win" : "lose"}"><div class="shade"></div>
-    <div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div><div class="ov-sub">${res.sub}</div>
+    <div class="ov-title-card"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div><div class="ov-sub">${res.sub}</div>
     <div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div>
     <div class="ov-mid"><div class="rank rk-${res.rank}"><small>RANK</small><b>${res.rank}</b></div>
       <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st("YOUR HITS", 0, M.hits)}${st("TOP SPEED PX/S", 0, Math.round(M.top))}
