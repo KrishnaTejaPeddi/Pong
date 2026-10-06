@@ -9,7 +9,21 @@
 :root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54;--phos:#3f8a5c}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#11110f;color:var(--cream)}
-body{display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%)}
+body{position:relative;display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%);overflow-x:hidden}
+/* ---------- outer arcade surround: dense, dark moving CRT lines ---------- */
+body{background:#020202;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:repeating-linear-gradient(180deg,
+    #020202 0px,
+    #020202 7px,
+    #555755 8px,
+    #555755 10px);
+  background-size:100% 10px;
+  animation:outerLines 2.2s linear infinite;
+}
+@keyframes outerLines{from{background-position:0 0}to{background-position:0 10px}}
+.outer-art{display:none}
+.machine{position:relative;z-index:1;width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
 .machine{width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
 .marquee{text-align:center;padding:5px 0 15px;border-bottom:4px solid #0c0c0b}
 .marquee h1{margin:0;font-family:"Press Start 2P",monospace;font-size:clamp(20px,3.3vw,38px);color:var(--red);text-shadow:3px 3px 0 #501e19}
@@ -110,16 +124,18 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .tag{font-size:2.2cqw;letter-spacing:.4cqw;color:#c8bfa5}
 .menu{display:flex;flex-direction:column;align-items:center}
 .menu.h{flex-direction:row;gap:1.2cqw}
-.mi{position:relative;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;min-width:26cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;user-select:none;
+.mi{position:relative;box-sizing:border-box;width:26cqw;min-width:26cqw;white-space:nowrap;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;user-select:none;
   transition:transform .3s cubic-bezier(.34,1.7,.5,1),background .12s,color .12s,border-color .12s,box-shadow .12s}
 .mi.sel{color:#000;background:var(--cream);border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
 .mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0}
+.menu .mi[data-act="local"]{text-indent:-.8cqw}
 .menu.h .mi{min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
 .menu.h .mi.sel{transform:scale(1.06)}
 .menu.h .mi.sel:before{display:none}
 .rec,.hint,.ver{padding:.5cqw 1.1cqw;font-size:1.8cqw;color:#9bd8b0}
 .rec{left:2.5cqw;bottom:2cqw}
 .sc>.hint{left:0;right:0;margin:0 auto;width:max-content;bottom:2cqw}
+.title-hint{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;margin-top:1.1cqw!important}
 .hint .blk{display:inline-block;animation:blink 2.2s infinite}
 .ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
 
@@ -189,8 +205,10 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 </style>
 </head>
 <body>
+<div class="outer-art left" aria-hidden="true"></div>
+<div class="outer-art right" aria-hidden="true"></div>
 <main class="machine">
-<header class="marquee"><h1>PONG</h1><p>PLAYER VS COMPUTER</p></header>
+<header class="marquee"><h1>PONG</h1><p id="marqueeSub">PLAYER VS COMPUTER</p></header>
 <section class="screen-frame"><div class="screen" id="scr">
 <canvas id="game" width="960" height="540"></canvas>
 <div class="ui" id="ui"></div>
@@ -199,7 +217,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 <div class="scan"></div><div class="glass"></div>
 </div></section>
 <section class="deck">
-<div class="instructions"><b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES</div>
+<div class="instructions" id="instructions">P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES</div>
 <div class="ctl">
 <div class="pick" id="pick"><span>TWIST</span><button id="mbtn" class="dd" type="button"><b id="mtxt">CYCLE ALL</b><i class="car"></i></button><div class="mpop" id="mpop"></div></div>
 <button id="pause" class="abtn"><span id="pt">PAUSE</span></button>
@@ -249,6 +267,7 @@ const ORDER = Object.keys(MODES);
 const pauseBtn = $("pause"), ui = $("ui"), uo = $("uo");
 const diff = { value: "normal" };            // current difficulty (set from the menus)
 const modeSel = { value: "cycle" };          // current twist mode (set from the menus)
+let cycleIndex = -1;                             // next concrete twist used by the cycle button
 
 /* ---------- twist picker (custom dropdown) ---------- */
 const pick = $("pick"), mbtn = $("mbtn"), mtxt = $("mtxt"), mpop = $("mpop");
@@ -283,11 +302,22 @@ function openPop() {
 function closePop() { pick.classList.remove("open"); mpop.classList.remove("open"); }
 function pickMode(v) {
   setS("mode", v); save(); closePop(); sfx("select");
+  if (v === "cycle") cycleIndex = -1;
+  else cycleIndex = ORDER.indexOf(v);
   if (screen === "playing" || screen === "pause") startMatch();
+}
+function cycleMode() {
+  // The main TWIST button always advances one concrete twist at a time.
+  // It never gets stuck on the special CYCLE ALL setting.
+  cycleIndex = (cycleIndex + 1) % ORDER.length;
+  pickMode(ORDER[cycleIndex]);
 }
 mbtn.addEventListener("click", e => {
   e.stopPropagation(); mbtn.blur();
-  mpop.classList.contains("open") ? closePop() : openPop();
+  // Main button advances twists; click the arrow area to open the full picker.
+  if (e.offsetX >= mbtn.clientWidth - 44) {
+    mpop.classList.contains("open") ? closePop() : openPop();
+  } else cycleMode();
 });
 mpop.addEventListener("click", e => { const o = e.target.closest(".opt"); if (o) pickMode(o.dataset.v); });
 document.addEventListener("click", e => { if (!e.target.closest("#pick")) closePop(); });
@@ -313,13 +343,14 @@ function popKey(e, k) {
 }
 
 /* ---------- settings ---------- */
-const DEFV = { diff: "normal", win: 7, mode: "cycle", ball: 1, psize: 1, pspeed: 1, rotate: true,
+const DEFV = { players: "cpu", diff: "normal", win: 7, mode: "cycle", ball: 1, psize: 1, pspeed: 1, rotate: true,
   bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true, slowmo: true, anim: true };
 const S = { ...DEFV };
 const nums = a => a.map(n => ["" + n, n]);
 const ONOFF = [["ON", true], ["OFF", false]];
 const SETTINGS = [
-  ["diff", "GAMEPLAY", "DIFFICULTY", "HOW SKILLED THE CPU OPPONENT IS.", [["EASY", "easy"], ["NORMAL", "normal"], ["HARD", "hard"]]],
+  ["players", "GAMEPLAY", "MATCH TYPE", "PLAY AGAINST THE CPU OR CHALLENGE A SECOND PLAYER ON THE SAME KEYBOARD.", [["VS COMPUTER", "cpu"], ["LOCAL 2 PLAYER", "local"]]],
+  ["diff", "GAMEPLAY", "DIFFICULTY", "HOW SKILLED THE CPU OPPONENT IS. HIDDEN IN LOCAL 2 PLAYER.", [["EASY", "easy"], ["NORMAL", "normal"], ["HARD", "hard"]]],
   ["win", "GAMEPLAY", "POINTS TO WIN", "POINTS NEEDED TO WIN A MATCH.", nums([3, 5, 7, 10, 15, 21])],
   ["mode", "GAMEPLAY", "TWIST MODE", "LOCK ONE TWIST FOR EVERY ROUND, OR CYCLE THROUGH ALL OF THEM.", [["CYCLE ALL", "cycle"], ...ORDER.map(k => [MODES[k], k])]],
   ["ball", "GAMEPLAY", "BALL SPEED", "HOW FAST THE BALL TRAVELS.", [["SLOW", .75], ["NORMAL", 1], ["FAST", 1.3], ["INSANE", 1.7]]],
@@ -337,9 +368,10 @@ const SETTINGS = [
 ].map(([id, grp, label, tip, opts]) => ({ id, grp, label, tip, opts }));
 
 const HOOK = {   // extra work to do when a setting changes
+  players: v => { updatePlayerModeUI(); updateSettingsVisibility(); },
   diff: v => diff.value = v,
-  mode: v => { modeSel.value = v; markPop(); },
-  win: v => $("foot").innerHTML = "FIRST TO " + v + " &bull; EVERY ROUND HAS A NEW TWIST",
+  mode: v => { modeSel.value = v; cycleIndex = v === "cycle" ? -1 : ORDER.indexOf(v); markPop(); },
+  win: v => updatePlayerModeUI(),
   crt: v => $("scr").classList.toggle("nocrt", !v),
   bumpers: v => { $("bn").value = v; $("bnv").textContent = v; },
   gravR: v => { $("gr").value = v; $("grv").textContent = v; },
@@ -360,6 +392,7 @@ SETTINGS.forEach(s => {
   if (v !== undefined && typeof v === typeof DEFV[s.id] && (typeof v !== "string" || s.opts.some(o => o[1] === v))) S[s.id] = v;
 });
 SETTINGS.forEach(s => setS(s.id, S[s.id]));
+updatePlayerModeUI();
 
 const rec = Object.assign({ w: 0, l: 0, streak: 0, best: 0, rally: 0, games: 0 }, store.get("pong_rec") || {});
 
@@ -404,16 +437,17 @@ const PORTALS = [{ x: W * .4, y: H * .27, r: 24 }, { x: W * .6, y: H * .73, r: 2
 // ik = how hard the paddle was just hit (a quick thinning flex); gh = motion-smear afterimages while it spins
 const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
   rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0,
-  s: 0, sv: 0, dx: 1, dy: 1, ik: 0, gh: [] });
+  s: 0, sv: 0, dx: 1, dy: 1, ik: 0, gh: [], smearT: 0 });
 const player = mk(62.5), cpu = mk(W - 62.5);
 const barrier = { x: W / 2, y: H / 2, w: 14, h: 110, angle: 0, vx: 0, vy: 0, omega: 0 };
-const newStats = () => ({ hits: 0, rally: 0, longest: 0, top: 0, time: 0, smashes: 0, hist: [] });
+const newStats = () => ({ hits: 0, hits2: 0, rally: 0, longest: 0, top: 0, time: 0, smashes: 0, hist: [] });
 const PW = p => p.w * (p.dx || 1), PH = p => p.h * (p.dy || 1);   // real (stretched) paddle size
 
-let balls = [], bricks = [], scoreP = 0, scoreC = 0, round = 1, M = newStats(), res = null;
+let balls = [], bricks = [], brickBarrierActive = false, scoreP = 0, scoreC = 0, round = 1, M = newStats(), res = null;
 let ready = .8, countdown = false, cdN = 0, clock = 0, bt = 0, wy = WALL, twist = "normal", cpuY = H / 2;
 let debug = false, keys = {}, last = performance.now(), shakeT = 0, popP = 0, popC = 0;
 let slowT = 0, flashT = 0, sparks = [], rings = [], pops = [];
+let comboT = 0, comboPop = 0;
 let screen = "title", settingsFrom = "title", selI = 0, slideDir = 1;
 
 const spdMul = () => twist === "fast" ? 2.1 : twist === "speed" ? 1.3 : 1;
@@ -439,6 +473,22 @@ function predictY(b, x) {
   return y + top;
 }
 
+function localMode() { return S.players === "local"; }
+function updateSettingsVisibility() {
+  const row = ui.querySelector('.row[data-id="diff"]');
+  if (row) row.style.display = localMode() ? "none" : "";
+}
+
+function updatePlayerModeUI() {
+  const local = localMode();
+  const sub = $("marqueeSub"), ins = $("instructions"), foot = $("foot");
+  if (sub) sub.textContent = local ? "LOCAL 2 PLAYER" : "PLAYER VS COMPUTER";
+  if (ins) ins.innerHTML = local
+    ? 'P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH &nbsp;|&nbsp; P2 <b>ARROWS</b> MOVE · <b>ENTER</b> ROTATE/SMASH · <b>ESC</b> PAUSE'
+    : 'P1 <b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES';
+  if (foot) foot.innerHTML = local ? "FIRST TO " + S.win + " &bull; LOCAL 2 PLAYER" : "FIRST TO " + S.win + " &bull; EVERY ROUND HAS A NEW TWIST";
+}
+
 function chooseTwist() {
   twist = modeSel.value === "cycle" ? ORDER[(round - 1) % ORDER.length] : modeSel.value;
   const h = clamp(Math.round(({ tiny: 62, giant: 180 }[twist] || 105) * S.psize), 40, 240);
@@ -454,15 +504,16 @@ function serve(dir, first) {
   balls = [{ x: W / 2, y: H / 2, r, vx: dir * sp * Math.cos(a), vy: sp * Math.sin(a), glow: 0, trail: [],
     spin: Math.random() < .5 ? -1 : 1, pc: 0, stuck: null, stT: 0, smash: false, sm: 0, sa: 0, ht: 0 }];
   bricks = [];
+  brickBarrierActive = twist === "bricks";
   if (twist === "bricks") for (const x of [W * .36, W * .64]) for (let i = 0; i < 8; i++)
     bricks.push({ x, y: WALL + 32 + i * 63, w: 20, h: 52, angle: 0, vx: 0, vy: 0, omega: 0, alive: true });
   countdown = !!first; cdN = 0; ready = first ? 2.4 : .8; bt = 0; wy = WALL;
 }
 
 function startMatch() {
-  scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0;
+  scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0; comboT = 0; comboPop = 0;
   sparks = []; rings = []; pops = []; slowT = 0; flashT = 0;
-  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh = []; });
+  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh = []; p.smearT = 0; });
   player.x = 62.5; cpu.x = HOME; cpuX = HOME; cpuY = H / 2; sawIncoming = false;
   chooseTwist(); serve(Math.random() < .5 ? -1 : 1, true);
   showScreen("playing");
@@ -471,7 +522,7 @@ function startMatch() {
 function point(side) {
   side === "p" ? (scoreP++, popP = .45) : (scoreC++, popC = .45);
   M.hist.push({ m: twist, w: side });
-  M.longest = Math.max(M.longest, M.rally); M.rally = 0;
+  M.longest = Math.max(M.longest, M.rally); M.rally = 0; comboT = 0; comboPop = 0;
   shakeT = .3; sfx(side === "p" ? "score" : "lose");
   if (scoreP >= S.win || scoreC >= S.win) { endMatch(); return; }
   round++; chooseTwist(); serve(side === "p" ? 1 : -1, false);
@@ -480,7 +531,7 @@ function point(side) {
 function endMatch() {
   const win = scoreP > scoreC, t = S.win, L = ["D", "C", "B", "A", "S"];
   let r = win ? (scoreC === 0 ? 4 : scoreC <= t * .4 ? 3 : 2) : (scoreP >= t * .6 ? 1 : 0);
-  if (win) r = clamp(r + (S.diff === "hard" ? 1 : S.diff === "easy" ? -1 : 0), 2, 4);
+  if (win && !localMode()) r = clamp(r + (S.diff === "hard" ? 1 : S.diff === "easy" ? -1 : 0), 2, 4);
   const newRally = M.longest > rec.rally;
   rec.games++; rec.rally = Math.max(rec.rally, M.longest);
   if (win) { rec.w++; rec.streak++; rec.best = Math.max(rec.best, rec.streak); } else { rec.l++; rec.streak = 0; }
@@ -494,7 +545,7 @@ function endMatch() {
 
 /* ---------- screens ---------- */
 const retroOn = () => screen === "title" || screen === "howto" || screen === "over" || (screen === "settings" && settingsFrom !== "pause");
-const items = () => [...ui.querySelectorAll(".row,.mi")];
+const items = () => [...ui.querySelectorAll(".row,.mi")].filter(e => getComputedStyle(e).display !== "none");
 function sel(i, quiet) {
   const it = items(); if (!it.length) return;
   selI = (i + it.length) % it.length;
@@ -534,8 +585,8 @@ function renderTitle() {
     <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
     <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
     <div class="bx tagbox sec"><span class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</span></div>
-    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
-    <div class="bx rec sec">${line}</div><div class="bx hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V2.6</div></div>`;
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V2.6</div></div>`;
 }
 
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
@@ -553,14 +604,17 @@ function renderSettings() {
     <div class="cols"><div>${grp("GAMEPLAY")}</div><div>${grp("TWIST TUNING")}${grp("AUDIO & VIDEO")}</div></div>
     <div class="sdesc" id="sd"></div>
     <div class="menu h"><div class="mi" data-act="back">BACK</div><div class="mi" data-act="defaults">RESET DEFAULTS</div></div></div></div>`;
+  updateSettingsVisibility();
 }
 
 function renderHowto() {
-  const kv = [["ROTATE / SMASH", "SPACE (SPAM IT!)"], ["MOVE", "WASD / ARROWS"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]];
+  const kv = localMode()
+    ? [["P1 MOVE", "W A S D"], ["P1 ROTATE / SMASH", "SPACE"], ["P2 MOVE", "ARROW KEYS"], ["P2 ROTATE / SMASH", "ENTER"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]]
+    : [["MOVE", "WASD / ARROWS"], ["ROTATE / SMASH", "SPACE (SPAM IT!)"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]];
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec"><h3 class="ph">HOW TO PLAY</h3>
     <div class="cols how"><div><div class="gh">CONTROLS</div>${kv.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join("")}
     <div class="gh">TIPS</div><div class="tip">HIT WITH THE EDGE OF YOUR PADDLE TO ANGLE THE BALL.</div>
-    <div class="tip">EVERY HIT CHARGES YOUR SMASH METER. AT 4 HITS, TAP SPACE JUST BEFORE THE BALL ARRIVES AND SMASH IT MID-SPIN!</div>
+    <div class="tip">EVERY HIT CHARGES YOUR SMASH METER. AT 4 HITS, use your rotate key just before the ball arrives and smash it mid-spin!</div>
     <div class="tip">EVERY ROUND ADDS A NEW TWIST. FIRST TO ${S.win} WINS.</div></div>
     <div><div class="gh">THE TWISTS</div><div class="tw">${ORDER.map(k => `<div><b>${MODES[k]}</b><span>${INFO[k]}</span></div>`).join("")}</div></div></div>
     <div class="menu h" style="margin-top:1.2cqw"><div class="mi" data-act="howback">BACK</div></div></div></div>`;
@@ -568,7 +622,7 @@ function renderHowto() {
 
 function renderPause() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow pz"><h3 class="ph">PAUSED</h3>
-    <div class="psub">ROUND ${round} &middot; ${MODES[twist]}<br>${scoreP} - ${scoreC}</div>
+    <div class="psub">ROUND ${round} &middot; ${MODES[twist]}<br>${scoreP} - ${scoreC}<br><span class="lo">${localMode() ? "LOCAL 2 PLAYER" : "VS COMPUTER"}</span></div>
     <div class="menu"><div class="mi" data-act="resume">RESUME</div>${rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
 }
 
@@ -580,10 +634,10 @@ function renderOver(opt) {
   ui.innerHTML = `<div class="sc over ${w ? "win" : "lose"}"><div class="shade"></div>
     <div class="bx ovt sec"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div>
     <div class="bx ovs sec"><div class="ov-sub">${res.sub}</div></div>
-    <div class="bx ovsc sec"><div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div></div>
+    <div class="bx ovsc sec"><div class="ov-score"><span class="nm">P1</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">${localMode() ? "P2" : "CPU"}</span></div></div>
     <div class="ov-mid"><div class="rank rk-${res.rank} sec"><small>RANK</small><b>${res.rank}</b></div>
-      <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st("YOUR HITS", 0, M.hits)}${st("TOP SPEED PX/S", 0, Math.round(M.top))}
-      ${st("MATCH TIME", fmtTime(M.time))}${st("DIFFICULTY", S.diff.toUpperCase())}${st("SMASHES", 0, M.smashes)}</div></div>
+      <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st(localMode() ? "P1 HITS" : "YOUR HITS", 0, M.hits)}${st(localMode() ? "P2 HITS" : "TOP SPEED PX/S", 0, localMode() ? M.hits2 : Math.round(M.top))}
+      ${st("MATCH TIME", fmtTime(M.time))}${st(localMode() ? "MATCH TYPE" : "DIFFICULTY", localMode() ? "LOCAL 2P" : S.diff.toUpperCase())}${st("SMASHES", 0, M.smashes)}</div></div>
     <div class="bx chipsbox sec"><div class="chips">${chips}</div></div>
     <div class="bx recbox sec"><div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
     <div class="menu h"><div class="mi sec" data-act="rematch">REMATCH</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="menu">MAIN MENU</div></div></div>`;
@@ -611,7 +665,8 @@ function change(row, d) {
 function act(a) {
   sfx("select");
   slideDir = ["back", "howback", "menu", "quit"].includes(a) ? -1 : 1;   // going back flies the other way
-  if (a === "play" || a === "rematch" || a === "restart") startMatch();
+  if (a === "local") { setS("players", "local"); save(); startMatch(); }
+  else if (a === "play" || a === "rematch" || a === "restart") startMatch();
   else if (a === "settings") { settingsFrom = screen; showScreen("settings"); }
   else if (a === "howto") showScreen("howto");
   else if (a === "howback" || a === "menu" || a === "quit") showScreen("title");
@@ -672,6 +727,14 @@ window.onkeydown = e => {
     if (twist === "sticky") balls.forEach(b => { if (b.stuck === player) release(b); });
     else rotate(player);
   }
+  // Local P2 gets a dedicated rotate/smash control. Use both Enter variants so
+  // the control works reliably on full-size and numpad keyboards.
+  const p2RotateKey = e.code === "Enter" || e.code === "NumpadEnter";
+  if (p2RotateKey && !e.repeat && localMode()) {
+    e.preventDefault();
+    if (twist === "sticky") balls.forEach(b => { if (b.stuck === cpu) release(b); });
+    else rotate(cpu);
+  }
   if (k === "r") startMatch();
   if (k === "h") debug = !debug;
 };
@@ -714,7 +777,7 @@ function spin(p, dt) {
    when the spin slows down it snaps back with a small overshoot (a little squash) and settles.
    The hitbox uses the same stretched size, so what you see is what the ball hits. */
 function flex(p, dt) {
-  if (!S.anim) { p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh.length = 0; return; }
+  if (!S.anim) { p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh.length = 0; p.smearT = 0; return; }
   const target = clamp(Math.abs(p.omega) * .012, 0, .26);
   const n = 3, h = dt / n;
   for (let i = 0; i < n; i++) {
@@ -725,7 +788,8 @@ function flex(p, dt) {
   const sy = Math.min(1.2, 1 + p.s * .9);
   p.dy = sy; p.dx = 1 / Math.pow(sy, 1.4);               // longer = thinner, shorter = thicker
   p.ik = Math.max(0, p.ik - dt * 5.5);                    // impact flex fades quickly
-  if (Math.abs(p.omega) > 9) p.gh.push({ x: p.x, y: p.y, a: p.angle, dx: p.dx, dy: p.dy, l: 1 });   // motion smear
+  p.smearT = Math.max(0, p.smearT - dt);
+  if (p.smearT > 0 && Math.abs(p.omega) > 5) p.gh.push({ x: p.x, y: p.y, a: p.angle, dx: p.dx, dy: p.dy, l: 1 });   // smear is reserved for smash attacks
   p.gh.forEach(g => g.l -= dt * 7);
   p.gh = p.gh.filter(g => g.l > 0).slice(-6);
 }
@@ -734,15 +798,22 @@ function clampPaddle(p, side) {
   const w = PW(p), h = PH(p), c = Math.cos(p.angle), s = Math.sin(p.angle);
   const ex = (w / 2) * Math.abs(c) + (h / 2) * Math.abs(s);
   const ey = (w / 2) * Math.abs(s) + (h / 2) * Math.abs(c);
-  const br = twist === "bricks";
+  const br = brickBarrierActive;
   p.x = side === 0 ? clamp(p.x, WALL + ex, (br ? W * .36 - 16 : W / 2 - WALL) - ex)
                    : clamp(p.x, (br ? W * .64 + 16 : W / 2 + WALL) + ex, W - WALL - ex);
   p.y = clamp(p.y, wy + ey, H - wy - ey);
 }
 
 function movePlayer(dt) {
-  let dx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
-  let dy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+  // In local 2 player, P1 is WASD-only so the arrow keys belong exclusively to P2.
+  // In solo mode, the player keeps the original WASD / ARROWS controls.
+  const local = localMode();
+  let dx = local
+    ? ((keys.d ? 1 : 0) - (keys.a ? 1 : 0))
+    : ((keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0));
+  let dy = local
+    ? ((keys.s ? 1 : 0) - (keys.w ? 1 : 0))
+    : ((keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0));
   if (twist === "mirror") { dx = -dx; dy = -dy; }
   const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = player.x, oy = player.y;
   let tx = dx / l * sp, ty = dy / l * sp;
@@ -755,6 +826,23 @@ function movePlayer(dt) {
   clampPaddle(player, 0);
   player.vx = (player.x - ox) / dt; player.vy = (player.y - oy) / dt;
   if (twist === "ice") { player.mvx = player.vx; player.mvy = player.vy; }
+}
+
+function moveLocalP2(dt) {
+  let dx = (keys.arrowright ? 1 : 0) - (keys.arrowleft ? 1 : 0);
+  let dy = (keys.arrowdown ? 1 : 0) - (keys.arrowup ? 1 : 0);
+  if (twist === "mirror") { dx = -dx; dy = -dy; }
+  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = cpu.x, oy = cpu.y;
+  let tx = dx / l * sp, ty = dy / l * sp;
+  if (twist === "ice") {
+    const k = Math.min(1, dt * 2.2);
+    cpu.mvx += (tx - cpu.mvx) * k; cpu.mvy += (ty - cpu.mvy) * k;
+    tx = cpu.mvx; ty = cpu.mvy;
+  }
+  cpu.x += tx * dt; cpu.y += ty * dt;
+  clampPaddle(cpu, 1);
+  cpu.vx = (cpu.x - ox) / dt; cpu.vy = (cpu.y - oy) / dt;
+  if (twist === "ice") { cpu.mvx = cpu.vx; cpu.mvy = cpu.vy; }
 }
 
 function moveCpu(dt) {
@@ -773,6 +861,7 @@ function moveCpu(dt) {
 }
 
 function think() {
+  if (localMode()) return;
   const L = LV();
   let b = balls[0];
   balls.forEach(o => { if (o.vx > 0 && (b.vx <= 0 || o.x > b.x)) b = o; });
@@ -860,14 +949,15 @@ function bounce(b, p, isPaddle) {
   if (!isPaddle) { squashBall(b, h.nx, h.ny, .8); return true; }
   sfx("hit");
   M.rally++; M.longest = Math.max(M.longest, M.rally);
-  if (p === player) M.hits++;
+  comboT = 1.05; comboPop = .28;
+  if (p === player) M.hits++; else M.hits2++;
   const k = clamp(h.ly / (p.h / 2), -1, 1) * 100;
   b.vx += -h.ny * k; b.vy += h.nx * k;
   if (smashOn() && p.charge >= 4 && Math.abs(p.omega) > 6) {
     // SMASH: fully charged, and the paddle was swinging fast when it met the ball
     const c = Math.hypot(b.vx, b.vy) || 1, sp = 1250 * S.ball;
     b.vx *= sp / c; b.vy *= sp / c; b.smash = true;
-    p.charge = 0; p.cool = .08; p.sv += 7;               // the paddle stretches extra hard on a smash
+    p.charge = 0; p.cool = .08; p.sv += 7; p.smearT = .22;       // motion smear is only enabled for the smash itself
     if (p === player) M.smashes++;
     smashFx(b);
   } else {
@@ -938,10 +1028,13 @@ function stepBall(b, dt) {
   walls(b);
   if (twist === "bumpers") bumpers().forEach(o => bump(b, o));
   if (twist === "barrier") bounce(b, barrier, false);
-  if (twist === "bricks") for (const k of bricks) {
-    if (!k.alive) continue;
-    if (b.smash) { if (hitRect(b, k)) { k.alive = false; b.glow = .3; sfx("brick"); } }   // smashes punch through
-    else if (bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; sfx("brick"); break; }
+  if (twist === "bricks") {
+    for (const k of bricks) {
+      if (!k.alive) continue;
+      if (b.smash) { if (hitRect(b, k)) { k.alive = false; b.glow = .3; sfx("brick"); } }
+      else if (bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; sfx("brick"); break; }
+    }
+    if (!bricks.some(k => k.alive)) brickBarrierActive = false;
   }
   if (twist === "portal") {
     b.pc = Math.max(0, b.pc - dt);
@@ -962,11 +1055,11 @@ function update(dt) {
   if (screen !== "playing") return;
   clock += dt; M.time += dt;
   wy = twist === "closing" ? WALL + clamp(bt * 12, 0, 160) : WALL;
-  think();
+  if (!localMode()) think();
   const n = Math.min(30, Math.max(1, Math.ceil(dt / .0015))), sd = dt / n;
   for (let i = 0; i < n; i++) {
     spin(player, sd); spin(cpu, sd);
-    movePlayer(sd); moveCpu(sd);
+    movePlayer(sd); if (localMode()) moveLocalP2(sd); else moveCpu(sd);
     if (ready > 0) continue;
     bt += sd;
     const A = H / 2 - WALL - 60, py = barrier.y;
@@ -1084,6 +1177,22 @@ function drawMeter(p, x, right) {
   ctx.restore();
 }
 
+// Live rally / combo counter. It counts every paddle-to-ball hit in the current rally
+// and resets the instant a point is scored. The punchy pop mirrors the score and smash UI.
+function drawCombo() {
+  if (M.rally <= 0 || comboT <= 0) return;
+  const pulse = comboPop > 0 && S.anim ? 1 + .28 * Math.sin((1 - comboPop / .28) * Math.PI) : 1;
+  const fade = clamp(comboT / .3, 0, 1);
+  ctx.save();
+  ctx.translate(W / 2, 88); ctx.scale(pulse, pulse);
+  ctx.textAlign = "center"; ctx.globalAlpha = fade;
+  ctx.font = '10px "Press Start 2P"'; ctx.fillStyle = "#d5ad54";
+  ctx.fillText("RALLY", 0, 0);
+  ctx.font = '18px "Press Start 2P"'; ctx.fillStyle = M.rally >= 4 ? "#ffb36b" : "#f2e8c9";
+  ctx.fillText("x" + M.rally, 0, 20);
+  ctx.restore();
+}
+
 // Score numbers pop bigger for a moment when they change
 function drawScore(n, x, t) {
   const s = t > 0 && S.anim ? 1 + .55 * Math.sin((1 - t / .45) * Math.PI) : 1;
@@ -1117,6 +1226,7 @@ function drawCourt() {
   ctx.setLineDash([]);
   ctx.beginPath(); ctx.arc(W / 2, H / 2, 65, 0, Math.PI * 2);
   ctx.strokeStyle = "rgba(218,224,188,.15)"; ctx.stroke();
+
 }
 
 function drawGame() {
@@ -1173,10 +1283,11 @@ function drawGame() {
   ctx.fillStyle = "#e9dfbd"; ctx.font = '42px "Press Start 2P"';
   drawScore(scoreP, W * .43, popP); drawScore(scoreC, W * .57, popC);
   ctx.font = "17px VT323"; ctx.fillStyle = "#cfc6a7";
-  ctx.fillText("PLAYER", W * .25, 35); ctx.fillText("CPU", W * .75, 35);
+  ctx.fillText("P1", W * .25, 35); ctx.fillText(localMode() ? "P2" : "CPU", W * .75, 35);
+  drawCombo();
 
   if (smashOn()) {                  // smash meters: yours left-aligned, the CPU's right-aligned
-    const pw = ctx.measureText("PLAYER").width / 2, cw = ctx.measureText("CPU").width / 2;
+    const pw = ctx.measureText("P1").width / 2, cw = ctx.measureText(localMode() ? "P2" : "CPU").width / 2;
     drawMeter(player, W * .25 - pw, false);
     drawMeter(cpu, W * .75 + cw, true);
     ctx.textAlign = "center";
@@ -1184,14 +1295,15 @@ function drawGame() {
 
   for (const b of balls) {
     const a = twist === "ghost" ? clamp((Math.abs(b.x - W / 2) - 40) / 150, 0, 1) : 1;
-    b.trail.forEach((p, i) => {
-      const t = i / b.trail.length;
-      ctx.globalAlpha = t * (b.smash ? .4 : .18) * a; ctx.fillStyle = b.smash ? "#ffb36b" : "#e9dfbd";
-      ctx.beginPath(); ctx.arc(p[0], p[1], b.r * t * (b.smash ? 1 : .8), 0, Math.PI * 2); ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-    if (twist === "speed" || b.smash) {
-      ctx.strokeStyle = b.smash ? "rgba(255,190,120,.55)" : "rgba(230,221,184,.2)"; ctx.lineWidth = b.smash ? 2 : 1;
+    // No ordinary motion smear. The trail/speed streaks only appear during a smash.
+    if (b.smash) {
+      b.trail.forEach((p, i) => {
+        const t = i / b.trail.length;
+        ctx.globalAlpha = t * .42 * a; ctx.fillStyle = "#ffb36b";
+        ctx.beginPath(); ctx.arc(p[0], p[1], b.r * t, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "rgba(255,190,120,.55)"; ctx.lineWidth = 2;
       for (let i = 1; i < 7; i++) {
         ctx.beginPath();
         ctx.moveTo(b.x - b.vx * .004 * i, b.y - b.vy * .004 * i);
@@ -1265,6 +1377,7 @@ function loop(t) {
   const k = slowT / SLOWD, dt = real * (slowT > 0 ? .1 + .9 * (1 - k) * (1 - k) : 1);   // slow-mo scales game time only
   slowT = Math.max(0, slowT - real); flashT = Math.max(0, flashT - real);
   popP = Math.max(0, popP - real); popC = Math.max(0, popC - real);
+  comboT = Math.max(0, comboT - real); comboPop = Math.max(0, comboPop - real);
   if (screen === "playing") { update(dt); fxUpdate(dt); }
   shakeT = Math.max(0, shakeT - real);
   fxStep(real);
