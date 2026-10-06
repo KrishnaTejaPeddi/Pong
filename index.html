@@ -65,64 +65,65 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 /* ---------- menus & screens (sizes use cqw so everything scales with the screen) ---------- */
 .ui{position:absolute;inset:0;z-index:4;display:none;font-family:VT323,monospace}
 .ui.on{display:block}
-.ui2{position:absolute;inset:0;z-index:5;pointer-events:none;font-family:VT323,monospace}   /* holds the screen that is sliding away */
-.sc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ui2{position:absolute;inset:0;z-index:5;pointer-events:none;font-family:VT323,monospace}   /* holds the screen that is flying away */
+.sc{--d:1;--st:70ms;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .sc>*{position:relative;z-index:1}
-.sc>.shade{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(8,14,11,.45) 0,rgba(5,9,7,.9) 100%)}
+.sc>.shade{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(8,14,11,.45) 0,rgba(5,9,7,.9) 100%);animation:shIn .6s both}
 .retro .shade{background:rgba(0,0,0,.1)}
 .sc>.rec,.sc>.hint,.sc>.ver{position:absolute}
 @keyframes fade{from{opacity:0;transform:translateY(1cqw)}to{opacity:1;transform:none}}
-@keyframes drop{from{opacity:0;transform:translateY(-4cqw) scale(1.15)}to{opacity:1;transform:none}}
 @keyframes glow{50%{text-shadow:.7cqw .7cqw 0 #501e19,0 0 6cqw rgba(217,74,58,.9)}}
 @keyframes blink{50%{opacity:.3}}
-@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes shIn{from{opacity:0}to{opacity:1}}
+@keyframes shOut{to{opacity:0}}
 
-/* screen slides: wind up, then fly away with a bounce; the next screen bounces in from the other side */
-@keyframes outS{
+/* Every section flies in on its own: squashed and fast, overshoots, wobbles, settles.
+   --d is the direction (1 = enters from the left, leaves to the right), --i is its place in the order */
+@keyframes secIn{
+  0%{opacity:0;transform:translateX(calc(var(--d)*-75cqw)) rotate(calc(var(--d)*-5deg)) scale(1.35,.72);animation-timing-function:cubic-bezier(.15,.75,.25,1)}
+  50%{opacity:1;transform:translateX(calc(var(--d)*4cqw)) rotate(calc(var(--d)*1.5deg)) scale(.9,1.1);animation-timing-function:ease-in-out}
+  72%{transform:translateX(calc(var(--d)*-1.6cqw)) scale(1.04,.97);animation-timing-function:ease-in-out}
+  88%{transform:translateX(calc(var(--d)*.5cqw)) scale(.99,1.01);animation-timing-function:ease-in-out}
+  100%{opacity:1;transform:none}
+}
+/* ...and leaves the same way: winds up backwards first, then shoots off stretched */
+@keyframes secOut{
   0%{transform:none;animation-timing-function:ease-out}
-  22%{transform:translateX(calc(var(--d)*-3cqw)) scale(1.02,.98);animation-timing-function:cubic-bezier(.55,0,.9,.45)}
-  100%{transform:translateX(calc(var(--d)*118cqw)) scale(1.05,.95)}
+  26%{transform:translateX(calc(var(--d)*-4.5cqw)) rotate(calc(var(--d)*-2deg)) scale(.92,1.08);animation-timing-function:cubic-bezier(.6,0,.9,.4)}
+  100%{transform:translateX(calc(var(--d)*85cqw)) rotate(calc(var(--d)*5deg)) scale(1.4,.7);opacity:0}
 }
-@keyframes inS{
-  0%{transform:translateX(calc(var(--d)*-118cqw));animation-timing-function:cubic-bezier(.2,.7,.3,1)}
-  58%{transform:translateX(calc(var(--d)*3.4cqw)) scale(1.012,.988);animation-timing-function:ease-in-out}
-  80%{transform:translateX(calc(var(--d)*-1.2cqw));animation-timing-function:ease-in-out}
-  100%{transform:none}
-}
-.leaving{animation:outS .9s both;pointer-events:none}
-.leaving *{animation:none!important}
-.enter{animation:inS .9s both}
-.enter .kick,.enter .logobox,.enter .tagbox,.enter .menu,.enter .ovt,.enter .ovs,.enter .ovsc,.enter .ov-mid,.enter .rank,.enter .chipsbox,.enter .recbox,.enter .panel{animation:none}
-@keyframes nudge{
-  0%{transform:translateX(0) scale(1)}
-  45%{transform:translateX(2cqw) scale(1.09,.96)}
-  70%{transform:translateX(.2cqw) scale(1.03)}
-  100%{transform:translateX(.8cqw) scale(1.05)}
-}
+.sec{animation-name:secIn;animation-duration:.85s;animation-fill-mode:backwards;animation-delay:calc(var(--i,0)*var(--st))}
+.leaving{pointer-events:none}
+.leaving .sec{animation-name:secOut;animation-duration:.7s;animation-fill-mode:both;animation-delay:calc(var(--i,0)*var(--st)*.55)}
+.leaving *:not(.sec):not(.shade){animation:none!important}
+.leaving>.shade{animation:shOut .6s both}                 /* the dark backdrop fades away on its own; it never moves */
+.noanim .sec,.noanim .pz,.noanim .shade{animation:none!important}
+.pz{animation:fade .3s both}
 
 .bx{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 2.4cqw rgba(60,200,110,.18)}
 
-.kick{padding:.7cqw 2cqw;animation:fade .8s both}
+.kick{padding:.7cqw 2cqw}
 .kicker{font-family:"Press Start 2P",monospace;font-size:1.1cqw;letter-spacing:.7cqw;color:var(--gold)}
-.logobox{padding:1.2cqw 3cqw 1.8cqw;margin:1.1cqw 0;animation:drop .9s cubic-bezier(.2,1.2,.3,1) both}
+.logobox{padding:1.2cqw 3cqw 1.8cqw;margin:1.1cqw 0}
 .logo{font-family:"Press Start 2P",monospace;font-size:14cqw;line-height:1;font-weight:normal;margin:0;letter-spacing:1cqw;color:var(--red);text-shadow:.7cqw .7cqw 0 #501e19,0 0 3.5cqw rgba(217,74,58,.55);animation:glow 3.2s ease-in-out .9s infinite}
-.tagbox{padding:.6cqw 2cqw;margin-bottom:1.8cqw;animation:fade 1s .5s both}
+.tagbox{padding:.6cqw 2cqw;margin-bottom:1.8cqw}
 .tag{font-size:2.2cqw;letter-spacing:.4cqw;color:#c8bfa5}
-.menu{display:flex;flex-direction:column;align-items:center;animation:fade .8s .7s both}
+.menu{display:flex;flex-direction:column;align-items:center}
 .menu.h{flex-direction:row;gap:1.2cqw}
-.mi{position:relative;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;min-width:26cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;transition:all .12s;user-select:none}
+.mi{position:relative;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;min-width:26cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;user-select:none;
+  transition:transform .3s cubic-bezier(.34,1.7,.5,1),background .12s,color .12s,border-color .12s,box-shadow .12s}
 .mi.sel{color:#000;background:var(--cream);border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
-.menu:not(.h) .mi.sel,.row.big.sel{animation:nudge .5s ease-out both}
 .mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0}
 .menu.h .mi{min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
-.menu.h .mi.sel{transform:scale(1.05)}
+.menu.h .mi.sel{transform:scale(1.06)}
 .menu.h .mi.sel:before{display:none}
 .rec,.hint,.ver{padding:.5cqw 1.1cqw;font-size:1.8cqw;color:#9bd8b0}
 .rec{left:2.5cqw;bottom:2cqw}
-.sc>.hint{left:50%;transform:translateX(-50%);bottom:2cqw;animation:blink 2.2s infinite}
+.sc>.hint{left:0;right:0;margin:0 auto;width:max-content;bottom:2cqw}
+.hint .blk{display:inline-block;animation:blink 2.2s infinite}
 .ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
 
-.panel{width:88cqw;background:rgba(0,0,0,.96);border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 3cqw rgba(0,0,0,.8);padding:1.8cqw 2.4cqw;animation:fade .35s both}
+.panel{width:88cqw;background:rgba(0,0,0,.96);border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 3cqw rgba(0,0,0,.8);padding:1.8cqw 2.4cqw}
 .panel.narrow{width:44cqw}
 .ph{font-family:"Press Start 2P",monospace;font-size:2.3cqw;font-weight:normal;color:var(--red);text-shadow:.3cqw .3cqw 0 #501e19;margin:0 0 1.2cqw;letter-spacing:.3cqw}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:2.6cqw;text-align:left}
@@ -133,7 +134,8 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .val b{font-weight:normal;text-align:center;flex:1}
 .ar{font-style:normal;color:var(--gold);padding:0 .8cqw;cursor:pointer;user-select:none;opacity:.35}
 .row.sel .ar{opacity:1}
-.row.big{width:32cqw;margin:.45cqw;padding:.8cqw 1.2cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;font-size:2.2cqw;transition:all .12s}
+.row.big{width:32cqw;margin:.45cqw;padding:.8cqw 1.2cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;font-size:2.2cqw;
+  transition:transform .3s cubic-bezier(.34,1.7,.5,1),background .12s,color .12s,border-color .12s,box-shadow .12s}
 .row.big .val{min-width:13cqw}
 .row.big.sel{background:var(--cream);color:#000;border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
 .row.big.sel .ar{color:#000}
@@ -150,20 +152,20 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .tw span{font-size:1.9cqw;color:#bdb59e;line-height:1}
 
 .sc.over .bx{margin-bottom:.7cqw}
-.ovt{padding:.8cqw 2.6cqw;animation:pop .7s both}
+.ovt{padding:.8cqw 2.6cqw}
 .ov-title{font-family:"Press Start 2P",monospace;font-size:5.8cqw;letter-spacing:.8cqw}
 .win .ov-title{color:#ffd877;text-shadow:.5cqw .5cqw 0 #5a4313,0 0 4cqw rgba(255,216,119,.6)}
 .lose .ov-title{color:var(--red);text-shadow:.5cqw .5cqw 0 #501e19,0 0 4cqw rgba(217,74,58,.5)}
-.ovs{padding:.35cqw 1.6cqw;animation:fade .6s .3s both}
+.ovs{padding:.35cqw 1.6cqw}
 .ov-sub{font-size:2.2cqw;letter-spacing:.5cqw;color:#c8bfa5}
-.ovsc{padding:.7cqw 3cqw;animation:fade .6s .45s both}
+.ovsc{padding:.7cqw 3cqw}
 .ov-score{display:flex;align-items:center;gap:2.5cqw}
 .nm{font-family:"Press Start 2P",monospace;font-size:1.1cqw;color:#9d957d;letter-spacing:.2cqw}
 .ov-score b{font-family:"Press Start 2P",monospace;font-size:5cqw;font-weight:normal}
 .dash{font-size:4cqw;color:#5a574a}
 .hi{color:var(--cream)}.lo{color:#6d6853}
-.ov-mid{display:flex;align-items:center;gap:2.4cqw;margin:.2cqw 0 .7cqw;animation:fade .6s .6s both}
-.rank{width:10.5cqw;height:10.5cqw;border-width:.5cqw;border-style:solid;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;animation:pop .6s .9s both}
+.ov-mid{display:flex;align-items:center;gap:2.4cqw;margin:.2cqw 0 .7cqw}
+.rank{width:10.5cqw;height:10.5cqw;border-width:.5cqw;border-style:solid;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
 .rank small{font-family:"Press Start 2P",monospace;font-size:.85cqw;letter-spacing:.2cqw;color:#9d957d}
 .rank b{font-family:"Press Start 2P",monospace;font-size:5.4cqw;font-weight:normal;line-height:1.1}
 .rk-S{color:#ffd877;border-color:#ffd877;box-shadow:0 0 3cqw rgba(255,216,119,.5)}
@@ -175,11 +177,11 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .stat{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .2cqw #000,inset 0 0 0 .32cqw #1f4d33;padding:.9cqw 1.5cqw;min-width:15cqw;text-align:left}
 .stat small{display:block;font-family:"Press Start 2P",monospace;font-size:.8cqw;letter-spacing:.12cqw;color:#9d957d;margin-bottom:.55cqw}
 .stat b{font-family:"Press Start 2P",monospace;font-size:1.8cqw;font-weight:normal;color:var(--cream)}
-.chipsbox{padding:.6cqw 1.2cqw;max-width:80cqw;animation:fade .6s .8s both}
+.chipsbox{padding:.6cqw 1.2cqw;max-width:80cqw}
 .chips{display:flex;gap:.45cqw;justify-content:center;flex-wrap:wrap}
 .chip{width:2cqw;height:2cqw;font-family:"Press Start 2P",monospace;font-size:.8cqw;display:flex;align-items:center;justify-content:center;color:#10150f}
 .chip.p{background:#8be0a0}.chip.c{background:#e0675a}
-.recbox{padding:.4cqw 1.4cqw;animation:fade .6s .9s both}
+.recbox{padding:.4cqw 1.4cqw}
 .recl{font-size:1.9cqw;color:#9bd8b0}
 .badge{font-family:"Press Start 2P",monospace;font-size:.9cqw;letter-spacing:.2cqw;color:#10150f;background:var(--gold);padding:.35cqw .8cqw;margin-left:1cqw;animation:blink 1s infinite}
 
@@ -331,7 +333,7 @@ const SETTINGS = [
   ["crt", "AUDIO & VIDEO", "CRT EFFECT", "SCANLINES AND SCREEN GLASS.", ONOFF],
   ["shake", "AUDIO & VIDEO", "SCREEN SHAKE", "THE SCREEN SHAKES WHEN SOMEONE SCORES OR SMASHES.", ONOFF],
   ["slowmo", "AUDIO & VIDEO", "SMASH SLOW-MO", "A BRIEF SLOW MOTION MOMENT WHEN A SMASH LANDS.", ONOFF],
-  ["anim", "AUDIO & VIDEO", "ANIMATIONS", "BOUNCY MENU SLIDES, BALL SQUASH & STRETCH, AND SCORE POPS.", ONOFF]
+  ["anim", "AUDIO & VIDEO", "ANIMATIONS", "BOUNCY MENUS, SQUASH & STRETCH ON THE BALL AND PADDLES, AND SCORE POPS.", ONOFF]
 ].map(([id, grp, label, tip, opts]) => ({ id, grp, label, tip, opts }));
 
 const HOOK = {   // extra work to do when a setting changes
@@ -398,11 +400,15 @@ const BPOS = [[.35,.28],[.65,.72],[.35,.72],[.65,.28],[.5,.15],[.5,.85],[.43,.5]
 const bumpers = () => BPOS.slice(0, S.bumpers).map(([x, y]) => ({ x: W * x, y: H * y, r: 17 }));
 const PORTALS = [{ x: W * .4, y: H * .27, r: 24 }, { x: W * .6, y: H * .73, r: 24 }];
 
+// s / sv = the paddle's stretch spring; dx / dy = its current thickness and length scale (the hitbox uses them too);
+// ik = how hard the paddle was just hit (a quick thinning flex); gh = motion-smear afterimages while it spins
 const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
-  rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0 });
+  rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0,
+  s: 0, sv: 0, dx: 1, dy: 1, ik: 0, gh: [] });
 const player = mk(62.5), cpu = mk(W - 62.5);
 const barrier = { x: W / 2, y: H / 2, w: 14, h: 110, angle: 0, vx: 0, vy: 0, omega: 0 };
 const newStats = () => ({ hits: 0, rally: 0, longest: 0, top: 0, time: 0, smashes: 0, hist: [] });
+const PW = p => p.w * (p.dx || 1), PH = p => p.h * (p.dy || 1);   // real (stretched) paddle size
 
 let balls = [], bricks = [], scoreP = 0, scoreC = 0, round = 1, M = newStats(), res = null;
 let ready = .8, countdown = false, cdN = 0, clock = 0, bt = 0, wy = WALL, twist = "normal", cpuY = H / 2;
@@ -436,7 +442,7 @@ function predictY(b, x) {
 function chooseTwist() {
   twist = modeSel.value === "cycle" ? ORDER[(round - 1) % ORDER.length] : modeSel.value;
   const h = clamp(Math.round(({ tiny: 62, giant: 180 }[twist] || 105) * S.psize), 40, 240);
-  [player, cpu].forEach(p => { p.h = h; p.rot = false; p.angle = 0; p.mvx = p.mvy = 0; });
+  [player, cpu].forEach(p => { p.h = h; p.rot = false; p.angle = 0; p.omega = 0; p.mvx = p.mvy = 0; });
   document.querySelectorAll("#tw label").forEach(l => l.style.display = l.dataset.m === twist ? "" : "none");
   $("tw").style.display = twist === "bumpers" || twist === "gravity" ? "flex" : "none";
 }
@@ -456,7 +462,7 @@ function serve(dir, first) {
 function startMatch() {
   scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0;
   sparks = []; rings = []; pops = []; slowT = 0; flashT = 0;
-  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; });
+  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh = []; });
   player.x = 62.5; cpu.x = HOME; cpuX = HOME; cpuY = H / 2; sawIncoming = false;
   chooseTwist(); serve(Math.random() < .5 ? -1 : 1, true);
   showScreen("playing");
@@ -499,12 +505,12 @@ function sel(i, quiet) {
 
 function showScreen(name, opt) {
   const from = screen, old = ui.firstElementChild;
-  // Bouncy slide between screens (not for the pause menu, which just pops up)
+  // The screen we're leaving hands over to the "leaving" layer, where each of its sections bounces out
   const go = S.anim && from !== name && from !== "pause" && name !== "pause";
   if (go && old) {
     uo.classList.toggle("retro", ui.classList.contains("retro"));
-    old.classList.add("leaving"); old.style.setProperty("--d", slideDir);
-    uo.appendChild(old); setTimeout(() => old.remove(), 1100);
+    old.style.setProperty("--d", slideDir); old.classList.add("leaving");
+    uo.appendChild(old); setTimeout(() => old.remove(), 1600);
   }
   screen = name; keys = {}; selI = 0;
   pauseBtn.classList.toggle("paused", name === "pause");
@@ -513,8 +519,11 @@ function showScreen(name, opt) {
   if (name === "playing") { ui.classList.remove("on"); ui.innerHTML = ""; slideDir = 1; return; }
   ui.classList.add("on");
   ui.classList.toggle("retro", retroOn());
+  ui.classList.toggle("noanim", !S.anim);
   ({ title: renderTitle, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver })[name](opt);
-  if (go) { const sc = ui.firstElementChild; sc.classList.add("enter"); sc.style.setProperty("--d", slideDir); }
+  const sc = ui.firstElementChild;                  // number the sections so they bounce in one after another
+  sc.style.setProperty("--d", slideDir); sc.style.setProperty("--st", name === "over" ? "36ms" : "70ms");
+  sc.querySelectorAll(".sec").forEach((e, i) => e.style.setProperty("--i", i));
   slideDir = 1;
   sel(0, true);
 }
@@ -522,11 +531,11 @@ function showScreen(name, opt) {
 function renderTitle() {
   const line = rec.games ? `RECORD ${rec.w}W - ${rec.l}L  &middot;  BEST STREAK ${rec.best}` : "NEW CHALLENGER";
   ui.innerHTML = `<div class="sc"><div class="shade"></div>
-    <div class="bx kick"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
-    <div class="bx logobox"><h2 class="logo">PONG</h2></div>
-    <div class="bx tagbox"><span class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</span></div>
-    <div class="menu"><div class="mi" data-act="play">PLAY</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="howto">HOW TO PLAY</div></div>
-    <div class="bx rec">${line}</div><div class="bx hint">ARROWS / WASD SELECT &middot; ENTER CONFIRM</div><div class="bx ver">V2.4</div></div>`;
+    <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
+    <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
+    <div class="bx tagbox sec"><span class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</span></div>
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="bx rec sec">${line}</div><div class="bx hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V2.6</div></div>`;
 }
 
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
@@ -540,7 +549,7 @@ function optIndex(s) {
 }
 function renderSettings() {
   const grp = g => `<div class="gh">${g}</div>` + SETTINGS.filter(s => s.grp === g).map(s => rowHtml(s)).join("");
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel"><h3 class="ph">SETTINGS</h3>
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec"><h3 class="ph">SETTINGS</h3>
     <div class="cols"><div>${grp("GAMEPLAY")}</div><div>${grp("TWIST TUNING")}${grp("AUDIO & VIDEO")}</div></div>
     <div class="sdesc" id="sd"></div>
     <div class="menu h"><div class="mi" data-act="back">BACK</div><div class="mi" data-act="defaults">RESET DEFAULTS</div></div></div></div>`;
@@ -548,7 +557,7 @@ function renderSettings() {
 
 function renderHowto() {
   const kv = [["ROTATE / SMASH", "SPACE (SPAM IT!)"], ["MOVE", "WASD / ARROWS"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]];
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel"><h3 class="ph">HOW TO PLAY</h3>
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec"><h3 class="ph">HOW TO PLAY</h3>
     <div class="cols how"><div><div class="gh">CONTROLS</div>${kv.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join("")}
     <div class="gh">TIPS</div><div class="tip">HIT WITH THE EDGE OF YOUR PADDLE TO ANGLE THE BALL.</div>
     <div class="tip">EVERY HIT CHARGES YOUR SMASH METER. AT 4 HITS, TAP SPACE JUST BEFORE THE BALL ARRIVES AND SMASH IT MID-SPIN!</div>
@@ -558,29 +567,29 @@ function renderHowto() {
 }
 
 function renderPause() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow"><h3 class="ph">PAUSED</h3>
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow pz"><h3 class="ph">PAUSED</h3>
     <div class="psub">ROUND ${round} &middot; ${MODES[twist]}<br>${scoreP} - ${scoreC}</div>
-    <div class="menu" style="animation:none"><div class="mi" data-act="resume">RESUME</div>${rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
+    <div class="menu"><div class="mi" data-act="resume">RESUME</div>${rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
 }
 
 const fmtTime = t => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
 function renderOver(opt) {
   const fresh = opt && opt.fresh, w = res.win;
-  const st = (label, val, to) => `<div class="stat"><small>${label}</small><b${to != null ? ` data-to="${to}"` : ""}>${to != null ? (fresh ? 0 : to) : val}</b></div>`;
+  const st = (label, val, to) => `<div class="stat sec"><small>${label}</small><b${to != null ? ` data-to="${to}"` : ""}>${to != null ? (fresh ? 0 : to) : val}</b></div>`;
   const chips = M.hist.map((h, i) => `<div class="chip ${h.w}" title="ROUND ${i + 1}: ${MODES[h.m]}">${i + 1}</div>`).join("");
   ui.innerHTML = `<div class="sc over ${w ? "win" : "lose"}"><div class="shade"></div>
-    <div class="bx ovt"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div>
-    <div class="bx ovs"><div class="ov-sub">${res.sub}</div></div>
-    <div class="bx ovsc"><div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div></div>
-    <div class="ov-mid"><div class="rank rk-${res.rank}"><small>RANK</small><b>${res.rank}</b></div>
+    <div class="bx ovt sec"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div>
+    <div class="bx ovs sec"><div class="ov-sub">${res.sub}</div></div>
+    <div class="bx ovsc sec"><div class="ov-score"><span class="nm">PLAYER</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">CPU</span></div></div>
+    <div class="ov-mid"><div class="rank rk-${res.rank} sec"><small>RANK</small><b>${res.rank}</b></div>
       <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st("YOUR HITS", 0, M.hits)}${st("TOP SPEED PX/S", 0, Math.round(M.top))}
       ${st("MATCH TIME", fmtTime(M.time))}${st("DIFFICULTY", S.diff.toUpperCase())}${st("SMASHES", 0, M.smashes)}</div></div>
-    <div class="bx chipsbox"><div class="chips">${chips}</div></div>
-    <div class="bx recbox"><div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
-    <div class="menu h"><div class="mi" data-act="rematch">REMATCH</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="menu">MAIN MENU</div></div></div>`;
+    <div class="bx chipsbox sec"><div class="chips">${chips}</div></div>
+    <div class="bx recbox sec"><div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
+    <div class="menu h"><div class="mi sec" data-act="rematch">REMATCH</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="menu">MAIN MENU</div></div></div>`;
   if (fresh) {
     ui.querySelectorAll("[data-to]").forEach(el => {
-      const to = +el.dataset.to, t0 = performance.now() + 800;
+      const to = +el.dataset.to, t0 = performance.now() + 1000;
       (function f(t) {
         const k = clamp((t - t0) / 900, 0, 1);
         el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3)));
@@ -601,7 +610,7 @@ function change(row, d) {
 
 function act(a) {
   sfx("select");
-  slideDir = ["back", "howback", "menu", "quit"].includes(a) ? -1 : 1;   // going back slides the other way
+  slideDir = ["back", "howback", "menu", "quit"].includes(a) ? -1 : 1;   // going back flies the other way
   if (a === "play" || a === "rematch" || a === "restart") startMatch();
   else if (a === "settings") { settingsFrom = screen; showScreen("settings"); }
   else if (a === "howto") showScreen("howto");
@@ -700,10 +709,31 @@ function spin(p, dt) {
   p.omega = (p.angle - old) / dt;
 }
 
+/* Paddle squash & stretch.
+   The paddle is a spring. The faster it spins, the more it is pulled longer (and thinner);
+   when the spin slows down it snaps back with a small overshoot (a little squash) and settles.
+   The hitbox uses the same stretched size, so what you see is what the ball hits. */
+function flex(p, dt) {
+  if (!S.anim) { p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh.length = 0; return; }
+  const target = clamp(Math.abs(p.omega) * .012, 0, .26);
+  const n = 3, h = dt / n;
+  for (let i = 0; i < n; i++) {
+    p.sv += (420 * (target - p.s) - 15 * p.sv) * h;
+    p.s += p.sv * h;
+  }
+  p.s = clamp(p.s, -.2, .34);
+  const sy = Math.min(1.2, 1 + p.s * .9);
+  p.dy = sy; p.dx = 1 / Math.pow(sy, 1.4);               // longer = thinner, shorter = thicker
+  p.ik = Math.max(0, p.ik - dt * 5.5);                    // impact flex fades quickly
+  if (Math.abs(p.omega) > 9) p.gh.push({ x: p.x, y: p.y, a: p.angle, dx: p.dx, dy: p.dy, l: 1 });   // motion smear
+  p.gh.forEach(g => g.l -= dt * 7);
+  p.gh = p.gh.filter(g => g.l > 0).slice(-6);
+}
+
 function clampPaddle(p, side) {
-  const c = Math.cos(p.angle), s = Math.sin(p.angle);
-  const ex = (p.w / 2) * Math.abs(c) + (p.h / 2) * Math.abs(s);
-  const ey = (p.w / 2) * Math.abs(s) + (p.h / 2) * Math.abs(c);
+  const w = PW(p), h = PH(p), c = Math.cos(p.angle), s = Math.sin(p.angle);
+  const ex = (w / 2) * Math.abs(c) + (h / 2) * Math.abs(s);
+  const ey = (w / 2) * Math.abs(s) + (h / 2) * Math.abs(c);
   const br = twist === "bricks";
   p.x = side === 0 ? clamp(p.x, WALL + ex, (br ? W * .36 - 16 : W / 2 - WALL) - ex)
                    : clamp(p.x, (br ? W * .64 + 16 : W / 2 + WALL) + ex, W - WALL - ex);
@@ -796,7 +826,7 @@ function fxUpdate(dt) {
   pops = pops.filter(p => (p.t += dt * 1.1) < 1);
 }
 
-// Squash & stretch: remember where and how hard the ball was hit; drawBall() turns that into a wobble.
+// Ball squash & stretch: remember where and how hard the ball was hit; drawBall() turns that into a quick wobble.
 function squashBall(b, nx, ny, amt) { b.sa = Math.atan2(ny, nx); b.sm = amt; b.ht = 0; }
 
 /* ---------- collisions ---------- */
@@ -804,7 +834,7 @@ function hitRect(b, p) {
   const c = Math.cos(p.angle), s = Math.sin(p.angle);
   const rx = b.x - p.x, ry = b.y - p.y;
   const lx = rx * c + ry * s, ly = -rx * s + ry * c;
-  const hw = p.w / 2, hh = p.h / 2;
+  const hw = p.w * (p.dx || 1) / 2, hh = p.h * (p.dy || 1) / 2;
   const dx = lx - clamp(lx, -hw, hw), dy = ly - clamp(ly, -hh, hh);
   const d = Math.hypot(dx, dy);
   if (d >= b.r) return null;
@@ -827,7 +857,7 @@ function bounce(b, p, isPaddle) {
   const vn = (b.vx - sx) * h.nx + (b.vy - sy) * h.ny;
   if (vn >= 0) return true;
   b.vx -= 2 * vn * h.nx; b.vy -= 2 * vn * h.ny;
-  if (!isPaddle) { squashBall(b, h.nx, h.ny, .55); return true; }
+  if (!isPaddle) { squashBall(b, h.nx, h.ny, .8); return true; }
   sfx("hit");
   M.rally++; M.longest = Math.max(M.longest, M.rally);
   if (p === player) M.hits++;
@@ -837,7 +867,7 @@ function bounce(b, p, isPaddle) {
     // SMASH: fully charged, and the paddle was swinging fast when it met the ball
     const c = Math.hypot(b.vx, b.vy) || 1, sp = 1250 * S.ball;
     b.vx *= sp / c; b.vy *= sp / c; b.smash = true;
-    p.charge = 0; p.cool = .08;
+    p.charge = 0; p.cool = .08; p.sv += 7;               // the paddle stretches extra hard on a smash
     if (p === player) M.smashes++;
     smashFx(b);
   } else {
@@ -851,7 +881,9 @@ function bounce(b, p, isPaddle) {
       b.vx *= s / c; b.vy *= s / c; p.cool = .08;
     }
   }
-  squashBall(b, h.nx, h.ny, b.smash ? 1.3 : .55 + Math.min(.5, Math.hypot(b.vx, b.vy) / 1600));
+  const spd = Math.hypot(b.vx, b.vy);
+  squashBall(b, h.nx, h.ny, b.smash ? 1.5 : .65 + Math.min(.5, spd / 1400));
+  p.ik = b.smash ? 1 : Math.min(1, .5 + spd / 1700);        // the paddle flexes (gets thinner) for a moment
   if (Math.abs(b.vx) < 150) b.vx = (b.vx < 0 ? -1 : 1) * 150;
   if (twist === "sticky") { b.stuck = p; b.stT = 0; sfx("stick"); }
   return true;
@@ -867,18 +899,18 @@ function bump(b, o) {
   b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny;
   const s = Math.hypot(b.vx, b.vy) || 1, t = clamp(s * 1.12, 620 * S.ball, 820 * S.ball);
   b.vx *= t / s; b.vy *= t / s; b.glow = .4; b.smash = false; sfx("bump");
-  squashBall(b, nx, ny, .9);
+  squashBall(b, nx, ny, 1.1);
 }
 
 function walls(b) {
-  if (b.y - b.r < wy) { b.y = wy + b.r; if (b.vy < 0) { b.vy = -b.vy; sfx("wall"); squashBall(b, 0, 1, .5); } }
-  else if (b.y + b.r > H - wy) { b.y = H - wy - b.r; if (b.vy > 0) { b.vy = -b.vy; sfx("wall"); squashBall(b, 0, -1, .5); } }
+  if (b.y - b.r < wy) { b.y = wy + b.r; if (b.vy < 0) { b.vy = -b.vy; sfx("wall"); squashBall(b, 0, 1, .75); } }
+  else if (b.y + b.r > H - wy) { b.y = H - wy - b.r; if (b.vy > 0) { b.vy = -b.vy; sfx("wall"); squashBall(b, 0, -1, .75); } }
 }
 
 function stepBall(b, dt) {
   if (b.stuck) {
     const p = b.stuck, side = p === player ? 1 : -1;
-    const ex = (p.w / 2) * Math.abs(Math.cos(p.angle)) + (p.h / 2) * Math.abs(Math.sin(p.angle));
+    const ex = (PW(p) / 2) * Math.abs(Math.cos(p.angle)) + (PH(p) / 2) * Math.abs(Math.sin(p.angle));
     b.x = p.x + side * (ex + b.r + 1); b.y = p.y; b.vx = b.vy = 0; b.stT += dt;
     if ((p === cpu && b.stT > .55) || b.stT > 2.5) release(b);
     return;
@@ -948,6 +980,7 @@ function update(dt) {
     }
     if (scored) { point(scored); break; }
   }
+  flex(player, dt); flex(cpu, dt);                    // paddle squash & stretch
   if (ready > 0) {
     ready -= dt;
     if (countdown) { const n = Math.ceil(Math.max(ready, 0) / .8); if (n > 0 && n !== cdN) { cdN = n; sfx("tick"); } }
@@ -1007,12 +1040,27 @@ function drawRetro(t) {          // dark green retro background for the menus
   ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
 }
 
-function drawPaddle(p) {
-  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-  ctx.fillStyle = "#e8dfbd"; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-  ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(-p.w / 2 + 2, -p.h / 2 + 3, 3, p.h - 6);
-  if (debug) { ctx.strokeStyle = "#ff5a4a"; ctx.lineWidth = 1; ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h); }
+// One paddle body. dx / dy are the stretch, thin is the quick impact flex (visual only, always inside the hitbox).
+function paddleBody(x, y, a, w, h, dx, dy, thin, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(a); ctx.scale(dx * (1 - .3 * thin), dy);
+  ctx.fillStyle = "#e8dfbd"; ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(-w / 2 + 2, -h / 2 + 3, 3, h - 6);
   ctx.restore();
+}
+
+function drawPaddle(p) {
+  p.gh.forEach(g => {                                   // motion smear while spinning
+    ctx.save(); ctx.fillStyle = "#e8dfbd";
+    paddleBody(g.x, g.y, g.a, p.w, p.h, g.dx, g.dy, 0, g.l * .28);
+    ctx.restore();
+  });
+  const f = p.ik * p.ik * (3 - 2 * p.ik);               // smoothstep for the impact flex
+  paddleBody(p.x, p.y, p.angle, p.w, p.h, p.dx, p.dy, f, 1);
+  if (debug) {                                          // the real hitbox
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+    ctx.strokeStyle = "#ff5a4a"; ctx.lineWidth = 1; ctx.strokeRect(-PW(p) / 2, -PH(p) / 2, PW(p), PH(p));
+    ctx.restore();
+  }
 }
 
 function ring(x, y, r, col) {
@@ -1042,15 +1090,16 @@ function drawScore(n, x, t) {
   ctx.save(); ctx.translate(x, 52); ctx.scale(s, s); ctx.fillText(n, 0, 15); ctx.restore();
 }
 
-// The ball: stretches along its direction of travel, and wobbles (squash, then stretch) after every hit
+// The ball: slightly stretched along its path, and a quick, deep squash against whatever it hits that springs back fast
 function drawBall(b) {
   ctx.save(); ctx.translate(b.x, b.y);
   if (S.anim) {
-    const sp = Math.hypot(b.vx, b.vy), st = 1 + clamp(sp / 3200, 0, .3), va = Math.atan2(b.vy, b.vx);
+    const sp = Math.hypot(b.vx, b.vy), st = 1 + clamp(sp / 3600, 0, .25), va = Math.atan2(b.vy, b.vx);
     ctx.rotate(va); ctx.scale(st, 1 / Math.sqrt(st));
     if (b.sm) {
-      const s = b.sm * Math.exp(-b.ht * 14) * Math.cos(b.ht * 38);   // +1 = squashed flat, -1 = stretched long
-      ctx.rotate(b.sa - va); ctx.scale(1 - .5 * s, 1 + .35 * s);
+      const s = b.sm * Math.exp(-b.ht * 20) * Math.cos(b.ht * 26);   // +1 = squashed flat; the stretch phase is tiny and gone in ~0.15s
+      ctx.rotate(b.sa - va);
+      ctx.scale(Math.max(.32, 1 - .65 * s), Math.min(1.7, 1 + .42 * s));
     }
   }
   ctx.beginPath(); ctx.arc(0, 0, b.r, 0, Math.PI * 2); ctx.fill();
