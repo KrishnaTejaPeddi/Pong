@@ -8,33 +8,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 :root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54;--phos:#3f8a5c}
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:#020202;color:var(--cream)}
-body{position:relative;display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;overflow-x:hidden}
+html,body{margin:0;min-height:100%;background:#11110f;color:var(--cream)}
+body{position:relative;display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%);overflow-x:hidden}
 /* ---------- outer arcade surround: dense, dark moving CRT lines ---------- */
-body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:repeating-linear-gradient(180deg,#020202 0,#020202 7px,#252525 8px,#252525 10px);
-  background-size:100% 10px;animation:outerLines 2.2s linear infinite}
+body{background:#020202;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:repeating-linear-gradient(180deg,
+    #020202 0px,
+    #020202 7px,
+    #252525 8px,
+    #252525 10px);
+  background-size:100% 10px;
+  animation:outerLines 2.2s linear infinite;
+}
 @keyframes outerLines{from{background-position:0 0}to{background-position:0 10px}}
+.outer-art{display:none}
 .machine{position:relative;z-index:1;width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
-/* chasing marquee bulbs */
-.marquee{position:relative;text-align:center;padding:20px 0 15px;border-bottom:4px solid #0c0c0b}
-.marquee:before,.marquee:after{content:"";position:absolute;left:6px;right:6px;top:4px;height:9px;background:radial-gradient(circle,#ffd877 0 2.6px,transparent 3.6px) 0 0/22px 9px repeat-x;filter:drop-shadow(0 0 3px #ffb347)}
-.marquee:after{background-position:11px 0;animation:bulbs 1s steps(1) infinite}
-.marquee:before{animation:bulbs 1s steps(1) infinite reverse}
-@keyframes bulbs{0%{opacity:1}50%{opacity:.2}}
-.marquee h1{margin:0;font-family:"Press Start 2P",monospace;font-size:clamp(20px,3.3vw,38px);color:var(--red);text-shadow:3px 3px 0 #501e19,0 0 18px rgba(217,74,58,.35)}
+.machine{width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
+.marquee{text-align:center;padding:5px 0 15px;border-bottom:4px solid #0c0c0b}
+.marquee h1{margin:0;font-family:"Press Start 2P",monospace;font-size:clamp(20px,3.3vw,38px);color:var(--red);text-shadow:3px 3px 0 #501e19}
 .marquee p{margin:10px 0 0;font-size:21px;letter-spacing:4px;color:#c8bfa5}
 .screen-frame{margin:20px auto 0;padding:15px;max-width:1000px;background:#080807;border:4px solid #4b493d;box-shadow:inset 0 0 0 4px #161612,0 7px 0 #0a0a08}
 .screen{position:relative;background:#182b23;overflow:hidden;container-type:inline-size}
 canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 #fx{position:absolute;left:0;top:0;height:100%;pointer-events:none;z-index:6}
-.scan,.glass,.roll{position:absolute;pointer-events:none;z-index:7}
-.scan,.glass{inset:0}
+.scan,.glass{position:absolute;inset:0;pointer-events:none;z-index:7}
 .scan{background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.14) 4px);opacity:.55}
-.glass{box-shadow:inset 0 0 70px rgba(0,0,0,.5);background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.28) 100%)}
-.roll{left:0;right:0;height:24%;top:-30%;background:linear-gradient(transparent,rgba(150,255,190,.055),transparent);animation:roll 7s linear infinite}
-@keyframes roll{to{top:110%}}
-.nocrt .scan,.nocrt .glass,.nocrt .roll{display:none}
+.glass{box-shadow:inset 0 0 70px rgba(0,0,0,.5)}
+.nocrt .scan,.nocrt .glass{display:none}
 
 /* ---------- control deck under the screen ---------- */
 .deck{max-width:1000px;margin:18px auto 0;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 24px;border:3px solid #0b0b09;border-radius:8px;
@@ -89,9 +90,6 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 @keyframes blink{50%{opacity:.3}}
 @keyframes shIn{from{opacity:0}to{opacity:1}}
 @keyframes shOut{to{opacity:0}}
-@keyframes sheen{0%{left:-30%}55%,100%{left:130%}}
-@keyframes bob{50%{transform:translateX(.55cqw)}}
-@keyframes shim{0%{transform:translateX(-120%)}60%,100%{transform:translateX(120%)}}
 
 /* Every section flies in on its own: squashed and fast, overshoots, wobbles, settles.
    --d is the direction (1 = enters from the left, leaves to the right), --i is its place in the order */
@@ -114,54 +112,52 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .leaving *:not(.sec):not(.shade){animation:none!important}
 .leaving>.shade{animation:shOut .6s both}                 /* the dark backdrop fades away on its own; it never moves */
 .noanim .sec,.noanim .pz,.noanim .shade{animation:none!important}
-.noanim .mi.sel:before,.noanim .mi.sel:after,.noanim .logobox:after{animation:none!important}
 .pz{animation:fade .3s both}
 
 .bx{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 2.4cqw rgba(60,200,110,.18)}
 
 .kick{padding:.7cqw 2cqw}
 .kicker{font-family:"Press Start 2P",monospace;font-size:1.1cqw;letter-spacing:.7cqw;color:var(--gold)}
-.logobox{position:relative;overflow:hidden;padding:1.1cqw 3cqw 1.6cqw;margin:1cqw 0}
-.logobox:after{content:"";position:absolute;top:-20%;bottom:-20%;width:16%;left:-30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.2),transparent);transform:skewX(-20deg);animation:sheen 4.6s ease-in-out 1.8s infinite;pointer-events:none}
-.logo{font-family:"Press Start 2P",monospace;font-size:12.5cqw;line-height:1;font-weight:normal;margin:0;letter-spacing:1cqw;color:var(--red);text-shadow:.7cqw .7cqw 0 #501e19,0 0 3.5cqw rgba(217,74,58,.55);animation:glow 3.2s ease-in-out .9s infinite}
-.tagbox{padding:.6cqw 2cqw;margin-bottom:1.4cqw}
+.logobox{padding:1.2cqw 3cqw 1.8cqw;margin:1.1cqw 0}
+.logo{font-family:"Press Start 2P",monospace;font-size:14cqw;line-height:1;font-weight:normal;margin:0;letter-spacing:1cqw;color:var(--red);text-shadow:.7cqw .7cqw 0 #501e19,0 0 3.5cqw rgba(217,74,58,.55);animation:glow 3.2s ease-in-out .9s infinite}
+.tagbox{padding:.6cqw 2cqw;margin-bottom:1.8cqw}
 .tag{font-size:2.2cqw;letter-spacing:.4cqw;color:#c8bfa5}
 .menu{display:flex;flex-direction:column;align-items:center}
 .menu.h{flex-direction:row;gap:1.2cqw}
-.mi{position:relative;overflow:hidden;box-sizing:border-box;width:30cqw;min-width:30cqw;white-space:nowrap;font-family:"Press Start 2P",monospace;font-size:1.55cqw;padding:1cqw 2.4cqw;margin:.4cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;user-select:none;
+.mi{position:relative;box-sizing:border-box;width:26cqw;min-width:26cqw;white-space:nowrap;font-family:"Press Start 2P",monospace;font-size:1.6cqw;padding:1.05cqw 3cqw;margin:.45cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;cursor:pointer;user-select:none;
   transition:transform .3s cubic-bezier(.34,1.7,.5,1),background .12s,color .12s,border-color .12s,box-shadow .12s}
 .mi.sel{color:#000;background:var(--cream);border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
-.mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0;animation:bob .7s ease-in-out infinite}
-.mi.sel:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-120%);animation:shim 1.7s ease-in-out infinite;pointer-events:none}
-.menu.h .mi{width:auto;min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
+.mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0}
+.menu .mi[data-act="local"]{text-indent:-.8cqw}
+.menu.h .mi{min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
 .menu.h .mi.sel{transform:scale(1.06)}
 .menu.h .mi.sel:before{display:none}
 .rec,.hint,.ver{padding:.5cqw 1.1cqw;font-size:1.8cqw;color:#9bd8b0}
 .rec{left:2.5cqw;bottom:2cqw}
 .sc>.hint{left:0;right:0;margin:0 auto;width:max-content;bottom:2cqw}
-.title-hint{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;margin-top:1cqw!important}
+.title-hint{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;margin-top:1.1cqw!important}
 .hint .blk{display:inline-block;animation:blink 2.2s infinite}
 .ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
 
-.panel{width:88cqw;background:rgba(0,0,0,.96);border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 3cqw rgba(0,0,0,.8);padding:1.6cqw 2.4cqw}
+.panel{width:88cqw;background:rgba(0,0,0,.96);border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 3cqw rgba(0,0,0,.8);padding:1.8cqw 2.4cqw}
 .panel.narrow{width:44cqw}
-.ph{font-family:"Press Start 2P",monospace;font-size:2.3cqw;font-weight:normal;color:var(--red);text-shadow:.3cqw .3cqw 0 #501e19;margin:0 0 1cqw;letter-spacing:.3cqw}
+.ph{font-family:"Press Start 2P",monospace;font-size:2.3cqw;font-weight:normal;color:var(--red);text-shadow:.3cqw .3cqw 0 #501e19;margin:0 0 1.2cqw;letter-spacing:.3cqw}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:2.6cqw;text-align:left}
-.gh{font-family:"Press Start 2P",monospace;font-size:.95cqw;color:var(--gold);letter-spacing:.2cqw;margin:.7cqw 0 .3cqw;border-bottom:.2cqw solid #1f4d33;padding-bottom:.45cqw}
-.row{display:flex;justify-content:space-between;align-items:center;font-size:2.15cqw;padding:.2cqw 1cqw;color:#bdb59e;cursor:pointer;border-left:.4cqw solid transparent}
+.gh{font-family:"Press Start 2P",monospace;font-size:.95cqw;color:var(--gold);letter-spacing:.2cqw;margin:.8cqw 0 .4cqw;border-bottom:.2cqw solid #1f4d33;padding-bottom:.5cqw}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:2.3cqw;padding:.25cqw 1cqw;color:#bdb59e;cursor:pointer;border-left:.4cqw solid transparent}
 .row.sel{background:rgba(242,232,201,.09);border-left-color:var(--red);color:var(--cream)}
 .val{display:flex;align-items:center;justify-content:space-between;gap:.8cqw;min-width:17cqw}
 .val b{font-weight:normal;text-align:center;flex:1}
 .ar{font-style:normal;color:var(--gold);padding:0 .8cqw;cursor:pointer;user-select:none;opacity:.35}
 .row.sel .ar{opacity:1}
-.row.big{width:34cqw;margin:.4cqw;padding:.8cqw 1.2cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;font-size:2.2cqw;
+.row.big{width:32cqw;margin:.45cqw;padding:.8cqw 1.2cqw;border:.3cqw solid var(--phos);background:#000;color:#bfe8cc;font-size:2.2cqw;
   transition:transform .3s cubic-bezier(.34,1.7,.5,1),background .12s,color .12s,border-color .12s,box-shadow .12s}
 .row.big .val{min-width:13cqw}
 .row.big.sel{background:var(--cream);color:#000;border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
 .row.big.sel .ar{color:#000}
-.sdesc{height:2.6cqw;font-size:2.1cqw;color:var(--gold);text-align:center;margin-top:.8cqw}
-.psub{font-size:2.2cqw;color:#c8bfa5;margin-bottom:1.2cqw;line-height:1.1}
-.panel.narrow .mi{width:34cqw;min-width:34cqw}
+.sdesc{height:2.6cqw;font-size:2.1cqw;color:var(--gold);text-align:center;margin-top:.9cqw}
+.psub{font-size:2.2cqw;color:#c8bfa5;margin-bottom:1.4cqw;line-height:1.1}
+.panel.narrow .mi{min-width:32cqw}
 .kv{display:flex;justify-content:space-between;font-size:2.2cqw;border-bottom:.15cqw dotted #1f4d33;padding:.3cqw 0}
 .kv b{font-weight:normal;color:var(--cream)}
 .tip{font-size:2cqw;color:#bdb59e;margin:.5cqw 0;line-height:1.05}
@@ -175,8 +171,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .ovt{padding:.8cqw 2.6cqw}
 .ov-title{font-family:"Press Start 2P",monospace;font-size:5.8cqw;letter-spacing:.8cqw}
 .win .ov-title{color:#ffd877;text-shadow:.5cqw .5cqw 0 #5a4313,0 0 4cqw rgba(255,216,119,.6)}
-.lose .ov-title,.p2win .ov-title{color:var(--red);text-shadow:.5cqw .5cqw 0 #501e19,0 0 4cqw rgba(217,74,58,.5)}
-.p2win .ov-title{color:#ff9d8c}
+.lose .ov-title{color:var(--red);text-shadow:.5cqw .5cqw 0 #501e19,0 0 4cqw rgba(217,74,58,.5)}
 .ovs{padding:.35cqw 1.6cqw}
 .ov-sub{font-size:2.2cqw;letter-spacing:.5cqw;color:#c8bfa5}
 .ovsc{padding:.7cqw 3cqw}
@@ -193,7 +188,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .rk-A{color:#8be0a0;border-color:#8be0a0;box-shadow:0 0 2.4cqw rgba(139,224,160,.4)}
 .rk-B{color:#9cc9ff;border-color:#9cc9ff}
 .rk-C{color:#ffb35c;border-color:#ffb35c}
-.rk-D{color:#ff6b5a;border-color:#ff6b5a;box-shadow:0 0 2.4cqw rgba(255,107,90,.35)}
+.rk-D{color:#ff6b5a;border-color:#ff6b5a}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.8cqw}
 .stat{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .2cqw #000,inset 0 0 0 .32cqw #1f4d33;padding:.9cqw 1.5cqw;min-width:15cqw;text-align:left}
 .stat small{display:block;font-family:"Press Start 2P",monospace;font-size:.8cqw;letter-spacing:.12cqw;color:#9d957d;margin-bottom:.55cqw}
@@ -210,6 +205,8 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 </style>
 </head>
 <body>
+<div class="outer-art left" aria-hidden="true"></div>
+<div class="outer-art right" aria-hidden="true"></div>
 <main class="machine">
 <header class="marquee"><h1>PONG</h1><p id="marqueeSub">PLAYER VS COMPUTER</p></header>
 <section class="screen-frame"><div class="screen" id="scr">
@@ -217,7 +214,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 <div class="ui" id="ui"></div>
 <div class="ui2" id="uo"></div>
 <canvas id="fx" width="960" height="540"></canvas>
-<div class="scan"></div><div class="glass"></div><div class="roll"></div>
+<div class="scan"></div><div class="glass"></div>
 </div></section>
 <section class="deck">
 <div class="instructions" id="instructions">P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES</div>
@@ -240,7 +237,6 @@ const $ = id => document.getElementById(id);
 const cv = $("game"), ctx = cv.getContext("2d"), fx = $("fx").getContext("2d");
 const W = 960, H = 540, WALL = 18, SLOWW = 200, SLOWD = .55;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-const rnd = (a, b) => a + Math.random() * (b - a);
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -258,9 +254,9 @@ const MODES = {
 const INFO = {
   normal: "NO GIMMICKS. JUST PONG.", gravity: "A CENTRAL WELL BENDS THE BALL'S PATH.",
   fast: "BOTH PADDLES MOVE TWICE AS FAST.", bumpers: "BOUNCY BUMPERS SUPERCHARGE THE BALL.",
-  sticky: "THE BALL STICKS. AIM, THEN RELEASE.", slow: "THE BALL CRAWLS THROUGH THE MIDDLE.",
+  sticky: "THE BALL STICKS. AIM, THEN PRESS SPACE.", slow: "THE BALL CRAWLS THROUGH THE MIDDLE.",
   spinner: "PADDLES SPIN NONSTOP. TIME YOUR HITS.", bricks: "SMASH THROUGH THE BRICK WALLS.",
-  speed: "THE BALL KEEPS GETTING FASTER.", mirror: "CONTROLS ARE REVERSED.",
+  speed: "THE BALL KEEPS GETTING FASTER.", mirror: "YOUR CONTROLS ARE REVERSED.",
   closing: "THE WALLS CLOSE IN OVER TIME.", portal: "TWO PORTALS TELEPORT THE BALL.",
   ice: "SLIPPERY PADDLES. PLAN AHEAD.", barrier: "A MOVING WALL BLOCKS THE MIDDLE.",
   giant: "ENORMOUS PADDLES.", ghost: "THE BALL VANISHES IN THE MIDDLE.",
@@ -271,7 +267,7 @@ const ORDER = Object.keys(MODES);
 const pauseBtn = $("pause"), ui = $("ui"), uo = $("uo");
 const diff = { value: "normal" };            // current difficulty (set from the menus)
 const modeSel = { value: "cycle" };          // current twist mode (set from the menus)
-let cycleIndex = -1;                         // next concrete twist used by the TWIST button
+let cycleIndex = -1;                             // next concrete twist used by the cycle button
 
 /* ---------- twist picker (custom dropdown) ---------- */
 const pick = $("pick"), mbtn = $("mbtn"), mtxt = $("mtxt"), mpop = $("mpop");
@@ -289,9 +285,9 @@ function placePop() {
   mpop.style.width = w + "px";
   mpop.style.left = clamp(f.left + f.width / 2 - w / 2, 10, vw - w - 10) + "px";
   const h = Math.min(mpop.scrollHeight + 6, 340), up = r.top - 14, dn = vh - r.bottom - 14;
-  if (up >= h || (dn < h && up >= dn)) {
+  if (up >= h || (dn < h && up >= dn)) {          // open upward
     mpop.style.top = "auto"; mpop.style.bottom = (vh - r.top + 12) + "px"; mpop.style.maxHeight = Math.min(340, up) + "px";
-  } else {
+  } else {                                        // open downward
     mpop.style.bottom = "auto"; mpop.style.top = (r.bottom + 12) + "px"; mpop.style.maxHeight = Math.min(340, dn) + "px";
   }
 }
@@ -306,20 +302,22 @@ function openPop() {
 function closePop() { pick.classList.remove("open"); mpop.classList.remove("open"); }
 function pickMode(v) {
   setS("mode", v); save(); closePop(); sfx("select");
-  if (v === "cycle") cycleIndex = -1; else cycleIndex = ORDER.indexOf(v);
+  if (v === "cycle") cycleIndex = -1;
+  else cycleIndex = ORDER.indexOf(v);
   if (screen === "playing" || screen === "pause") startMatch();
 }
 function cycleMode() {
-  // The main TWIST button advances one concrete twist at a time.
+  // The main TWIST button always advances one concrete twist at a time.
+  // It never gets stuck on the special CYCLE ALL setting.
   cycleIndex = (cycleIndex + 1) % ORDER.length;
   pickMode(ORDER[cycleIndex]);
 }
 mbtn.addEventListener("click", e => {
   e.stopPropagation(); mbtn.blur();
   // Main button advances twists; click the arrow area to open the full picker.
-  const r = mbtn.getBoundingClientRect();
-  if (e.clientX >= r.right - 44) mpop.classList.contains("open") ? closePop() : openPop();
-  else cycleMode();
+  if (e.offsetX >= mbtn.clientWidth - 44) {
+    mpop.classList.contains("open") ? closePop() : openPop();
+  } else cycleMode();
 });
 mpop.addEventListener("click", e => { const o = e.target.closest(".opt"); if (o) pickMode(o.dataset.v); });
 document.addEventListener("click", e => { if (!e.target.closest("#pick")) closePop(); });
@@ -346,7 +344,7 @@ function popKey(e, k) {
 
 /* ---------- settings ---------- */
 const DEFV = { players: "cpu", diff: "normal", win: 7, mode: "cycle", ball: 1, psize: 1, pspeed: 1, rotate: true,
-  bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true, slowmo: true, anim: true, fxp: true };
+  bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true, slowmo: true, anim: true };
 const S = { ...DEFV };
 const nums = a => a.map(n => ["" + n, n]);
 const ONOFF = [["ON", true], ["OFF", false]];
@@ -357,24 +355,23 @@ const SETTINGS = [
   ["mode", "GAMEPLAY", "TWIST MODE", "LOCK ONE TWIST FOR EVERY ROUND, OR CYCLE THROUGH ALL OF THEM.", [["CYCLE ALL", "cycle"], ...ORDER.map(k => [MODES[k], k])]],
   ["ball", "GAMEPLAY", "BALL SPEED", "HOW FAST THE BALL TRAVELS.", [["SLOW", .75], ["NORMAL", 1], ["FAST", 1.3], ["INSANE", 1.7]]],
   ["psize", "GAMEPLAY", "PADDLE SIZE", "LENGTH OF BOTH PADDLES (APPLIES NEXT ROUND).", [["SMALL", .7], ["NORMAL", 1], ["LARGE", 1.4]]],
-  ["pspeed", "GAMEPLAY", "PADDLE SPEED", "HOW FAST THE HUMAN PADDLES MOVE.", [["SLOW", .75], ["NORMAL", 1], ["FAST", 1.3]]],
-  ["rotate", "GAMEPLAY", "ROTATION", "ALLOW PADDLE ROTATION (AND SMASHES) FOR EVERYONE.", ONOFF],
+  ["pspeed", "GAMEPLAY", "YOUR SPEED", "HOW FAST YOUR PADDLE MOVES.", [["SLOW", .75], ["NORMAL", 1], ["FAST", 1.3]]],
+  ["rotate", "GAMEPLAY", "ROTATION", "ALLOW PADDLE ROTATION (AND SMASHES) FOR YOU AND THE CPU.", ONOFF],
   ["bumpers", "TWIST TUNING", "BUMPER COUNT", "BUMPER MAYHEM: HOW MANY BUMPERS ARE ON THE COURT.", nums([1, 2, 3, 4, 5, 6, 7, 8])],
   ["gravR", "TWIST TUNING", "GRAVITY RADIUS", "GRAVITY WELL: HOW FAR THE PULL REACHES.", nums([100, 140, 180, 220, 260, 300, 340, 380])],
   ["gravS", "TWIST TUNING", "GRAVITY POWER", "GRAVITY WELL: HOW HARD THE BALL IS BENT.", nums([1, 2, 3, 4, 5, 6, 8, 10, 12])],
   ["vol", "AUDIO & VIDEO", "SOUND", "SOUND EFFECTS VOLUME.", [["OFF", 0], ["LOW", .35], ["MEDIUM", .7], ["HIGH", 1]]],
-  ["crt", "AUDIO & VIDEO", "CRT EFFECT", "SCANLINES, SCREEN GLASS AND THE SLOW ROLLING LINE.", ONOFF],
+  ["crt", "AUDIO & VIDEO", "CRT EFFECT", "SCANLINES AND SCREEN GLASS.", ONOFF],
   ["shake", "AUDIO & VIDEO", "SCREEN SHAKE", "THE SCREEN SHAKES WHEN SOMEONE SCORES OR SMASHES.", ONOFF],
   ["slowmo", "AUDIO & VIDEO", "SMASH SLOW-MO", "A BRIEF SLOW MOTION MOMENT WHEN A SMASH LANDS.", ONOFF],
-  ["fxp", "AUDIO & VIDEO", "HIT EFFECTS", "SPARKS, SHOCKWAVES AND SCREEN PUNCH ON HITS AND GOALS.", ONOFF],
-  ["anim", "AUDIO & VIDEO", "ANIMATIONS", "BOUNCY MENUS, BALL SQUASH & STRETCH, AND SCORE POPS.", ONOFF]
+  ["anim", "AUDIO & VIDEO", "ANIMATIONS", "BOUNCY MENUS, SQUASH & STRETCH ON THE BALL AND PADDLES, AND SCORE POPS.", ONOFF]
 ].map(([id, grp, label, tip, opts]) => ({ id, grp, label, tip, opts }));
 
 const HOOK = {   // extra work to do when a setting changes
-  players: () => { updatePlayerModeUI(); updateSettingsVisibility(); },
+  players: v => { updatePlayerModeUI(); updateSettingsVisibility(); },
   diff: v => diff.value = v,
   mode: v => { modeSel.value = v; cycleIndex = v === "cycle" ? -1 : ORDER.indexOf(v); markPop(); },
-  win: () => updatePlayerModeUI(),
+  win: v => updatePlayerModeUI(),
   crt: v => $("scr").classList.toggle("nocrt", !v),
   bumpers: v => { $("bn").value = v; $("bnv").textContent = v; },
   gravR: v => { $("gr").value = v; $("grv").textContent = v; },
@@ -395,6 +392,7 @@ SETTINGS.forEach(s => {
   if (v !== undefined && typeof v === typeof DEFV[s.id] && (typeof v !== "string" || s.opts.some(o => o[1] === v))) S[s.id] = v;
 });
 SETTINGS.forEach(s => setS(s.id, S[s.id]));
+updatePlayerModeUI();
 
 const rec = Object.assign({ w: 0, l: 0, streak: 0, best: 0, rally: 0, games: 0 }, store.get("pong_rec") || {});
 
@@ -418,16 +416,14 @@ function beep(f, d = .06, type = "square", v = 1, slide = 0) {
 }
 const seq = (notes, step, type, d) => notes.forEach((f, i) => setTimeout(() => beep(f, d, type), i * step));
 const SFX = {
-  hit: () => beep(420 + Math.min(M.rally, 14) * 26 + Math.random() * 20, .06),   // rallies climb in pitch
-  wall: () => beep(250, .05, "square", .7),
+  hit: () => beep(460 + Math.random() * 70, .06), wall: () => beep(250, .05, "square", .7),
   bump: () => beep(720, .09, "triangle", 1, -300), brick: () => beep(330, .08, "sawtooth", .8, -120),
   portal: () => beep(900, .12, "sine", .9, -600), stick: () => beep(200, .07, "triangle"),
   release: () => beep(600, .08, "square", .8, 200), move: () => beep(520, .03, "square", .5),
   tick: () => beep(700, .04, "square", .6), select: () => seq([660, 880], 60, "square", .08),
-  score: () => seq([520, 780], 100, "square", .12), score2: () => seq([440, 660], 100, "square", .12),
-  lose: () => seq([300, 200], 120, "sawtooth", .16),
+  score: () => seq([520, 780], 100, "square", .12), lose: () => seq([300, 200], 120, "sawtooth", .16),
   win: () => seq([523, 659, 784, 1047], 130, "square", .2), defeat: () => seq([392, 330, 262, 196], 170, "sawtooth", .24),
-  ready: () => seq([880, 1320], 70, "square", .1), matchpoint: () => seq([660, 660, 990], 110, "square", .1),
+  ready: () => seq([880, 1320], 70, "square", .1),
   smash: () => { beep(110, .3, "sawtooth", 1.6, -60); setTimeout(() => beep(1100, .18, "square", 1, -900), 25); setTimeout(() => beep(300, .22, "triangle", 1, -200), 80); }
 };
 const sfx = n => SFX[n] && SFX[n]();
@@ -437,24 +433,25 @@ const BPOS = [[.35,.28],[.65,.72],[.35,.72],[.65,.28],[.5,.15],[.5,.85],[.43,.5]
 const bumpers = () => BPOS.slice(0, S.bumpers).map(([x, y]) => ({ x: W * x, y: H * y, r: 17 }));
 const PORTALS = [{ x: W * .4, y: H * .27, r: 24 }, { x: W * .6, y: H * .73, r: 24 }];
 
-const P1C = { body: "#efe6c4", edge: "#d5ad54", glow: "#d5ad54", txt: "#e9d9a0" };    // player 1 = cream & gold
-const P2C = { body: "#f4c8bb", edge: "#d94a3a", glow: "#e0675a", txt: "#f0a090" };    // player 2 / CPU = coral & red
-const mk = (x, col) => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
-  rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0, flash: 0, col });
-const player = mk(62.5, P1C), cpu = mk(W - 62.5, P2C);
+// s / sv = the paddle's stretch spring; dx / dy = its current thickness and length scale (the hitbox uses them too);
+// ik = how hard the paddle was just hit (a quick thinning flex); gh = motion-smear afterimages while it spins
+const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
+  rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0,
+  s: 0, sv: 0, dx: 1, dy: 1, ik: 0, gh: [], smearT: 0 });
+const player = mk(62.5), cpu = mk(W - 62.5);
 const barrier = { x: W / 2, y: H / 2, w: 14, h: 110, angle: 0, vx: 0, vy: 0, omega: 0 };
-const newStats = () => ({ hits: 0, hits2: 0, rally: 0, longest: 0, top: 0, time: 0, smashes: 0, smashes2: 0, hist: [] });
+const newStats = () => ({ hits: 0, hits2: 0, rally: 0, longest: 0, top: 0, time: 0, smashes: 0, hist: [] });
+const PW = p => p.w * (p.dx || 1), PH = p => p.h * (p.dy || 1);   // real (stretched) paddle size
 
 let balls = [], bricks = [], brickBarrierActive = false, scoreP = 0, scoreC = 0, round = 1, M = newStats(), res = null;
 let ready = .8, countdown = false, cdN = 0, clock = 0, bt = 0, wy = WALL, twist = "normal", cpuY = H / 2;
 let debug = false, keys = {}, last = performance.now(), shakeT = 0, popP = 0, popC = 0;
-let slowT = 0, flashT = 0, rings = [], pops = [], parts = [];
-let comboT = 0, comboPop = 0, camZ = 0, hitStop = 0, goalFlash = { side: "", y: 0, t: 0 }, mp = null;
+let slowT = 0, flashT = 0, sparks = [], rings = [], pops = [];
+let comboT = 0, comboPop = 0;
 let screen = "title", settingsFrom = "title", selI = 0, slideDir = 1;
 
 const spdMul = () => twist === "fast" ? 2.1 : twist === "speed" ? 1.3 : 1;
 const smashOn = () => S.rotate && twist !== "sticky" && twist !== "spinner";   // smashing needs free rotation
-const localMode = () => S.players === "local";
 
 // How good the CPU is at each level
 const HOME = W - 62.5;
@@ -476,6 +473,7 @@ function predictY(b, x) {
   return y + top;
 }
 
+function localMode() { return S.players === "local"; }
 function updateSettingsVisibility() {
   const row = ui.querySelector('.row[data-id="diff"]');
   if (row) row.style.display = localMode() ? "none" : "";
@@ -486,11 +484,10 @@ function updatePlayerModeUI() {
   const sub = $("marqueeSub"), ins = $("instructions"), foot = $("foot");
   if (sub) sub.textContent = local ? "LOCAL 2 PLAYER" : "PLAYER VS COMPUTER";
   if (ins) ins.innerHTML = local
-    ? 'P1 <b>WASD</b> + <b>SPACE</b> &nbsp;|&nbsp; P2 <b>ARROWS</b> + <b>ENTER</b> (ROTATES THE OTHER WAY) · <b>ESC</b> PAUSE'
-    : '<b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES';
+    ? 'P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH &nbsp;|&nbsp; P2 <b>ARROWS</b> MOVE · <b>ENTER</b> ROTATE/SMASH · <b>ESC</b> PAUSE'
+    : 'P1 <b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES';
   if (foot) foot.innerHTML = local ? "FIRST TO " + S.win + " &bull; LOCAL 2 PLAYER" : "FIRST TO " + S.win + " &bull; EVERY ROUND HAS A NEW TWIST";
 }
-updatePlayerModeUI();
 
 function chooseTwist() {
   twist = modeSel.value === "cycle" ? ORDER[(round - 1) % ORDER.length] : modeSel.value;
@@ -511,61 +508,38 @@ function serve(dir, first) {
   if (twist === "bricks") for (const x of [W * .36, W * .64]) for (let i = 0; i < 8; i++)
     bricks.push({ x, y: WALL + 32 + i * 63, w: 20, h: 52, angle: 0, vx: 0, vy: 0, omega: 0, alive: true });
   countdown = !!first; cdN = 0; ready = first ? 2.4 : .8; bt = 0; wy = WALL;
-  const lastPt = S.win - 1;                                   // "MATCH POINT" banner
-  mp = (scoreP === lastPt || scoreC === lastPt) ? (scoreP === lastPt && scoreC === lastPt ? "DECIDING POINT" : "MATCH POINT") : null;
-  if (mp && screen === "playing") sfx("matchpoint");
 }
 
 function startMatch() {
   scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0; comboT = 0; comboPop = 0;
-  rings = []; pops = []; parts = []; slowT = 0; flashT = 0; camZ = 0; hitStop = 0; goalFlash.t = 0;
-  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.flash = 0; });
+  sparks = []; rings = []; pops = []; slowT = 0; flashT = 0;
+  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh = []; p.smearT = 0; });
   player.x = 62.5; cpu.x = HOME; cpuX = HOME; cpuY = H / 2; sawIncoming = false;
   chooseTwist(); serve(Math.random() < .5 ? -1 : 1, true);
   showScreen("playing");
 }
 
-// Pixel particle burst: n squares fly out around direction (nx, ny), within +/- spread radians
-function burst(x, y, nx, ny, n, col, spd, spread, size) {
-  if (!S.fxp) return;
-  for (let i = 0; i < n; i++) {
-    const t = rnd(-spread, spread), sp = rnd(spd * .3, spd), c = Math.cos(t), s = Math.sin(t), l = rnd(.25, .6);
-    parts.push({ x, y, vx: (nx * c - ny * s) * sp, vy: (nx * s + ny * c) * sp, l, m: l, c: col, s: size || 3 });
-  }
-  if (parts.length > 420) parts.splice(0, parts.length - 420);
-}
-
-function point(side, y) {
+function point(side) {
   side === "p" ? (scoreP++, popP = .45) : (scoreC++, popC = .45);
   M.hist.push({ m: twist, w: side });
   M.longest = Math.max(M.longest, M.rally); M.rally = 0; comboT = 0; comboPop = 0;
-  shakeT = .3; camZ = Math.max(camZ, .02);
-  goalFlash = { side, y: clamp(y, WALL, H - WALL), t: 1 };
-  if (side === "p") burst(W - 6, goalFlash.y, -1, 0, 36, P1C.edge, 520, 1.2, 4);
-  else burst(6, goalFlash.y, 1, 0, 36, P2C.edge, 520, 1.2, 4);
-  sfx(side === "p" ? "score" : (localMode() ? "score2" : "lose"));
+  shakeT = .3; sfx(side === "p" ? "score" : "lose");
   if (scoreP >= S.win || scoreC >= S.win) { endMatch(); return; }
   round++; chooseTwist(); serve(side === "p" ? 1 : -1, false);
 }
 
 function endMatch() {
-  const win = scoreP > scoreC, t = S.win, L = ["D", "C", "B", "A", "S"], loc = localMode();
-  let r = 0, newRally = false, sub;
-  if (loc) {
-    const lo = win ? scoreC : scoreP;
-    sub = lo === 0 ? "FLAWLESS VICTORY" : lo >= t - 1 ? "NAIL-BITING FINISH" : "WELL PLAYED";
-  } else {
-    r = win ? (scoreC === 0 ? 4 : scoreC <= t * .4 ? 3 : 2) : (scoreP >= t * .6 ? 1 : 0);
-    if (win) r = clamp(r + (S.diff === "hard" ? 1 : S.diff === "easy" ? -1 : 0), 2, 4);
-    newRally = M.longest > rec.rally;
-    rec.games++; rec.rally = Math.max(rec.rally, M.longest);
-    if (win) { rec.w++; rec.streak++; rec.best = Math.max(rec.best, rec.streak); } else { rec.l++; rec.streak = 0; }
-    store.set("pong_rec", rec);
-    sub = win ? (scoreC === 0 ? "FLAWLESS VICTORY" : scoreC >= t - 1 ? "NAIL-BITING FINISH" : "WELL PLAYED")
-              : (scoreP >= t - 1 ? "SO CLOSE!" : "BETTER LUCK NEXT TIME");
-  }
-  res = { win, local: loc, winner: win ? 1 : 2, rank: L[r], sub, newRally };
-  sfx(win || loc ? "win" : "defeat");
+  const win = scoreP > scoreC, t = S.win, L = ["D", "C", "B", "A", "S"];
+  let r = win ? (scoreC === 0 ? 4 : scoreC <= t * .4 ? 3 : 2) : (scoreP >= t * .6 ? 1 : 0);
+  if (win && !localMode()) r = clamp(r + (S.diff === "hard" ? 1 : S.diff === "easy" ? -1 : 0), 2, 4);
+  const newRally = M.longest > rec.rally;
+  rec.games++; rec.rally = Math.max(rec.rally, M.longest);
+  if (win) { rec.w++; rec.streak++; rec.best = Math.max(rec.best, rec.streak); } else { rec.l++; rec.streak = 0; }
+  store.set("pong_rec", rec);
+  const sub = win ? (scoreC === 0 ? "FLAWLESS VICTORY" : scoreC >= t - 1 ? "NAIL-BITING FINISH" : "WELL PLAYED")
+                  : (scoreP >= t - 1 ? "SO CLOSE!" : "BETTER LUCK NEXT TIME");
+  res = { win, rank: L[r], sub, newRally };
+  sfx(win ? "win" : "defeat");
   showScreen("over", { fresh: true });
 }
 
@@ -610,10 +584,9 @@ function renderTitle() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div>
     <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
     <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
-    <div class="bx tagbox sec"><span class="tag">${ORDER.length} TWISTS &middot; 1 OR 2 PLAYERS &middot; ONE COURT</span></div>
-    <div class="menu"><div class="mi sec" data-act="play">PLAY VS CPU</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
-    <div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div>
-    <div class="bx rec sec">${line}</div><div class="bx ver sec">V3.0</div></div>`;
+    <div class="bx tagbox sec"><span class="tag">${ORDER.length} TWISTS &middot; 3 SKILL LEVELS &middot; ONE COURT</span></div>
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V2.6</div></div>`;
 }
 
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
@@ -641,41 +614,32 @@ function renderHowto() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec"><h3 class="ph">HOW TO PLAY</h3>
     <div class="cols how"><div><div class="gh">CONTROLS</div>${kv.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join("")}
     <div class="gh">TIPS</div><div class="tip">HIT WITH THE EDGE OF YOUR PADDLE TO ANGLE THE BALL.</div>
-    <div class="tip">EVERY HIT CHARGES YOUR SMASH METER. AT 4 HITS, ROTATE JUST BEFORE THE BALL ARRIVES AND SMASH IT MID-SPIN!</div>
-    <div class="tip">PLAYER 2 AND THE CPU ROTATE THE OPPOSITE WAY TO PLAYER 1. FIRST TO ${S.win} WINS.</div></div>
+    <div class="tip">EVERY HIT CHARGES YOUR SMASH METER. AT 4 HITS, use your rotate key just before the ball arrives and smash it mid-spin!</div>
+    <div class="tip">EVERY ROUND ADDS A NEW TWIST. FIRST TO ${S.win} WINS.</div></div>
     <div><div class="gh">THE TWISTS</div><div class="tw">${ORDER.map(k => `<div><b>${MODES[k]}</b><span>${INFO[k]}</span></div>`).join("")}</div></div></div>
     <div class="menu h" style="margin-top:1.2cqw"><div class="mi" data-act="howback">BACK</div></div></div></div>`;
 }
 
 function renderPause() {
-  const dRow = localMode() ? "" : rowHtml(SETTINGS.find(s => s.id === "diff"), "big");   // difficulty only matters vs the CPU
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow pz"><h3 class="ph">PAUSED</h3>
     <div class="psub">ROUND ${round} &middot; ${MODES[twist]}<br>${scoreP} - ${scoreC}<br><span class="lo">${localMode() ? "LOCAL 2 PLAYER" : "VS COMPUTER"}</span></div>
-    <div class="menu"><div class="mi" data-act="resume">RESUME</div>${dRow}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
+    <div class="menu"><div class="mi" data-act="resume">RESUME</div>${rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
 }
 
 const fmtTime = t => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
 function renderOver(opt) {
-  const fresh = opt && opt.fresh, loc = res.local, w = res.win, p1w = scoreP > scoreC;
-  const cls = loc ? (res.winner === 1 ? "win" : "win p2win") : (w ? "win" : "lose");
-  const title = loc ? "P" + res.winner + " WINS" : (w ? "VICTORY" : "DEFEAT");
+  const fresh = opt && opt.fresh, w = res.win;
   const st = (label, val, to) => `<div class="stat sec"><small>${label}</small><b${to != null ? ` data-to="${to}"` : ""}>${to != null ? (fresh ? 0 : to) : val}</b></div>`;
   const chips = M.hist.map((h, i) => `<div class="chip ${h.w}" title="ROUND ${i + 1}: ${MODES[h.m]}">${i + 1}</div>`).join("");
-  const badge = loc
-    ? `<div class="rank rk-${res.winner === 1 ? "S" : "D"} sec"><small>WINNER</small><b>P${res.winner}</b></div>`
-    : `<div class="rank rk-${res.rank} sec"><small>RANK</small><b>${res.rank}</b></div>`;
-  const stats = loc
-    ? st("LONGEST RALLY", 0, M.longest) + st("P1 HITS", 0, M.hits) + st("P2 HITS", 0, M.hits2) + st("MATCH TIME", fmtTime(M.time)) + st("P1 SMASHES", 0, M.smashes) + st("P2 SMASHES", 0, M.smashes2)
-    : st("LONGEST RALLY", 0, M.longest) + st("YOUR HITS", 0, M.hits) + st("TOP SPEED PX/S", 0, Math.round(M.top)) + st("MATCH TIME", fmtTime(M.time)) + st("DIFFICULTY", S.diff.toUpperCase()) + st("SMASHES", 0, M.smashes);
-  const recLine = loc ? "FRIENDLY MATCH &middot; NOT COUNTED IN YOUR RECORD"
-    : `RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}`;
-  ui.innerHTML = `<div class="sc over ${cls}"><div class="shade"></div>
-    <div class="bx ovt sec"><div class="ov-title">${title}</div></div>
+  ui.innerHTML = `<div class="sc over ${w ? "win" : "lose"}"><div class="shade"></div>
+    <div class="bx ovt sec"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div>
     <div class="bx ovs sec"><div class="ov-sub">${res.sub}</div></div>
-    <div class="bx ovsc sec"><div class="ov-score"><span class="nm">P1</span><b class="${p1w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${p1w ? "lo" : "hi"}">${scoreC}</b><span class="nm">${loc ? "P2" : "CPU"}</span></div></div>
-    <div class="ov-mid">${badge}<div class="stats">${stats}</div></div>
+    <div class="bx ovsc sec"><div class="ov-score"><span class="nm">P1</span><b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b><span class="nm">${localMode() ? "P2" : "CPU"}</span></div></div>
+    <div class="ov-mid"><div class="rank rk-${res.rank} sec"><small>RANK</small><b>${res.rank}</b></div>
+      <div class="stats">${st("LONGEST RALLY", 0, M.longest)}${st(localMode() ? "P1 HITS" : "YOUR HITS", 0, M.hits)}${st(localMode() ? "P2 HITS" : "TOP SPEED PX/S", 0, localMode() ? M.hits2 : Math.round(M.top))}
+      ${st("MATCH TIME", fmtTime(M.time))}${st(localMode() ? "MATCH TYPE" : "DIFFICULTY", localMode() ? "LOCAL 2P" : S.diff.toUpperCase())}${st("SMASHES", 0, M.smashes)}</div></div>
     <div class="bx chipsbox sec"><div class="chips">${chips}</div></div>
-    <div class="bx recbox sec"><div class="recl">${recLine}</div></div>
+    <div class="bx recbox sec"><div class="recl">RECORD ${rec.w}W - ${rec.l}L &middot; STREAK ${rec.streak}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
     <div class="menu h"><div class="mi sec" data-act="rematch">REMATCH</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="menu">MAIN MENU</div></div></div>`;
   if (fresh) {
     ui.querySelectorAll("[data-to]").forEach(el => {
@@ -686,7 +650,7 @@ function renderOver(opt) {
         if (k < 1) requestAnimationFrame(f);
       })(performance.now());
     });
-    if (w || loc) confT = 2.2;
+    if (w) confT = 2.2;
   }
 }
 
@@ -764,8 +728,10 @@ window.onkeydown = e => {
     if (twist === "sticky") balls.forEach(b => { if (b.stuck === player) release(b); });
     else rotate(player);
   }
-  // Local P2 has its own rotate/smash key: Enter (both the main and the numpad Enter).
-  if ((e.code === "Enter" || e.code === "NumpadEnter") && !e.repeat && localMode()) {
+  // Local P2 gets a dedicated rotate/smash control. Use both Enter variants so
+  // the control works reliably on full-size and numpad keyboards.
+  const p2RotateKey = e.code === "Enter" || e.code === "NumpadEnter";
+  if (p2RotateKey && !e.repeat && localMode()) {
     e.preventDefault();
     if (twist === "sticky") balls.forEach(b => { if (b.stuck === cpu) release(b); });
     else rotate(cpu);
@@ -779,19 +745,16 @@ window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 function release(b) {
   const p = b.stuck; if (!p) return;
   const dir = p === player ? 1 : -1, sp = 520 * S.ball;
-  const human = p === player || localMode();
-  const vy = human ? clamp(p.vy * .7, -380, 380) : (Math.random() - .5) * 400;
+  const vy = p === cpu ? (Math.random() - .5) * 400 : clamp(p.vy * .7, -380, 380);
   b.vx = dir * Math.sqrt(sp * sp - vy * vy); b.vy = vy;
   b.stuck = null; b.smash = false; b.glow = .3; p.cool = .2; sfx("release");
 }
 
 /* ---------- paddles ---------- */
-// Player 1 turns clockwise; player 2 / the CPU turn the other way (counter-clockwise).
 function rotate(p) {
   if (twist === "spinner" || !S.rotate) return;
-  const dir = p === cpu ? -1 : 1;
-  if (p.rot) { p.from = p.angle; p.to += dir * Math.PI / 2; }      // already turning: keep going
-  else { p.from = p.angle; p.to = p.angle + dir * Math.PI / 2; p.rot = true; }
+  if (p.rot) { p.from = p.angle; p.to += Math.PI / 2; }      // already turning: keep going
+  else { p.from = p.angle; p.to = p.angle + Math.PI / 2; p.rot = true; }
   p.t = 0; p.dur = .22;
 }
 
@@ -810,39 +773,77 @@ function spin(p, dt) {
   p.omega = (p.angle - old) / dt;
 }
 
+/* Paddle squash & stretch.
+   The paddle is a spring. The faster it spins, the more it is pulled longer (and thinner);
+   when the spin slows down it snaps back with a small overshoot (a little squash) and settles.
+   The hitbox uses the same stretched size, so what you see is what the ball hits. */
+function flex(p, dt) {
+  if (!S.anim) { p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh.length = 0; p.smearT = 0; return; }
+  const target = clamp(Math.abs(p.omega) * .012, 0, .26);
+  const n = 3, h = dt / n;
+  for (let i = 0; i < n; i++) {
+    p.sv += (420 * (target - p.s) - 15 * p.sv) * h;
+    p.s += p.sv * h;
+  }
+  p.s = clamp(p.s, -.2, .34);
+  const sy = Math.min(1.2, 1 + p.s * .9);
+  p.dy = sy; p.dx = 1 / Math.pow(sy, 1.4);               // longer = thinner, shorter = thicker
+  p.ik = Math.max(0, p.ik - dt * 5.5);                    // impact flex fades quickly
+  p.smearT = Math.max(0, p.smearT - dt);
+  if (p.smearT > 0 && Math.abs(p.omega) > 5) p.gh.push({ x: p.x, y: p.y, a: p.angle, dx: p.dx, dy: p.dy, l: 1 });   // smear is reserved for smash attacks
+  p.gh.forEach(g => g.l -= dt * 7);
+  p.gh = p.gh.filter(g => g.l > 0).slice(-6);
+}
+
 function clampPaddle(p, side) {
-  const c = Math.cos(p.angle), s = Math.sin(p.angle);
-  const ex = (p.w / 2) * Math.abs(c) + (p.h / 2) * Math.abs(s);
-  const ey = (p.w / 2) * Math.abs(s) + (p.h / 2) * Math.abs(c);
+  const w = PW(p), h = PH(p), c = Math.cos(p.angle), s = Math.sin(p.angle);
+  const ex = (w / 2) * Math.abs(c) + (h / 2) * Math.abs(s);
+  const ey = (w / 2) * Math.abs(s) + (h / 2) * Math.abs(c);
   const br = brickBarrierActive;
   p.x = side === 0 ? clamp(p.x, WALL + ex, (br ? W * .36 - 16 : W / 2 - WALL) - ex)
                    : clamp(p.x, (br ? W * .64 + 16 : W / 2 + WALL) + ex, W - WALL - ex);
   p.y = clamp(p.y, wy + ey, H - wy - ey);
 }
 
-// One mover for any human paddle. In local 2P, P1 is WASD only and P2 is arrows only.
-function moveHuman(p, side, dx, dy, dt) {
+function movePlayer(dt) {
+  // In local 2 player, P1 is WASD-only so the arrow keys belong exclusively to P2.
+  // In solo mode, the player keeps the original WASD / ARROWS controls.
+  const local = localMode();
+  let dx = local
+    ? ((keys.d ? 1 : 0) - (keys.a ? 1 : 0))
+    : ((keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0));
+  let dy = local
+    ? ((keys.s ? 1 : 0) - (keys.w ? 1 : 0))
+    : ((keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0));
   if (twist === "mirror") { dx = -dx; dy = -dy; }
-  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = p.x, oy = p.y;
+  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = player.x, oy = player.y;
   let tx = dx / l * sp, ty = dy / l * sp;
   if (twist === "ice") {
     const k = Math.min(1, dt * 2.2);
-    p.mvx += (tx - p.mvx) * k; p.mvy += (ty - p.mvy) * k;
-    tx = p.mvx; ty = p.mvy;
+    player.mvx += (tx - player.mvx) * k; player.mvy += (ty - player.mvy) * k;
+    tx = player.mvx; ty = player.mvy;
   }
-  p.x += tx * dt; p.y += ty * dt;
-  clampPaddle(p, side);
-  p.vx = (p.x - ox) / dt; p.vy = (p.y - oy) / dt;
-  if (twist === "ice") { p.mvx = p.vx; p.mvy = p.vy; }
+  player.x += tx * dt; player.y += ty * dt;
+  clampPaddle(player, 0);
+  player.vx = (player.x - ox) / dt; player.vy = (player.y - oy) / dt;
+  if (twist === "ice") { player.mvx = player.vx; player.mvy = player.vy; }
 }
-function movePlayer(dt) {
-  const local = localMode();
-  const dx = local ? ((keys.d ? 1 : 0) - (keys.a ? 1 : 0)) : ((keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0));
-  const dy = local ? ((keys.s ? 1 : 0) - (keys.w ? 1 : 0)) : ((keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0));
-  moveHuman(player, 0, dx, dy, dt);
-}
+
 function moveLocalP2(dt) {
-  moveHuman(cpu, 1, (keys.arrowright ? 1 : 0) - (keys.arrowleft ? 1 : 0), (keys.arrowdown ? 1 : 0) - (keys.arrowup ? 1 : 0), dt);
+  let dx = (keys.arrowright ? 1 : 0) - (keys.arrowleft ? 1 : 0);
+  let dy = (keys.arrowdown ? 1 : 0) - (keys.arrowup ? 1 : 0);
+  if (twist === "mirror") { dx = -dx; dy = -dy; }
+  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = cpu.x, oy = cpu.y;
+  let tx = dx / l * sp, ty = dy / l * sp;
+  if (twist === "ice") {
+    const k = Math.min(1, dt * 2.2);
+    cpu.mvx += (tx - cpu.mvx) * k; cpu.mvy += (ty - cpu.mvy) * k;
+    tx = cpu.mvx; ty = cpu.mvy;
+  }
+  cpu.x += tx * dt; cpu.y += ty * dt;
+  clampPaddle(cpu, 1);
+  cpu.vx = (cpu.x - ox) / dt; cpu.vy = (cpu.y - oy) / dt;
+  if (twist === "ice") { cpu.mvx = cpu.vx; cpu.mvy = cpu.vy; }
 }
 
 function moveCpu(dt) {
@@ -861,6 +862,7 @@ function moveCpu(dt) {
 }
 
 function think() {
+  if (localMode()) return;
   const L = LV();
   let b = balls[0];
   balls.forEach(o => { if (o.vx > 0 && (b.vx <= 0 || o.x > b.x)) b = o; });
@@ -895,21 +897,23 @@ function think() {
   } else if (!incoming && sideways) { rotate(cpu); cpu.rotCool = .9; }
 }
 
-/* ---------- smash & hit effects ---------- */
-function smashFx(b, p) {
+/* ---------- smash effects ---------- */
+function smashFx(b) {
   sfx("smash");
   if (S.slowmo) slowT = SLOWD;
-  flashT = .16; shakeT = .45; hitStop = .05; camZ = Math.max(camZ, .05);
-  burst(b.x, b.y, 1, 0, 44, "#ffb36b", 560, Math.PI, 4);
-  burst(b.x, b.y, 1, 0, 16, "#fff2dc", 380, Math.PI, 3);
-  if (S.fxp) rings.push({ x: b.x, y: b.y, t: 0, max: 130, c: "#ffbe6e" });
-  pops.push({ x: clamp(b.x, 90, W - 90), y: b.y - 28, t: 0, c: p.col.edge === P2C.edge ? "#ff9d8c" : "#ffb36b" });
+  flashT = .16; shakeT = .45;
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * 6.283, s = 120 + Math.random() * 420, l = .5 + Math.random() * .4;
+    sparks.push({ x: b.x, y: b.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l, m: l });
+  }
+  rings.push({ x: b.x, y: b.y, t: 0 });
+  pops.push({ x: clamp(b.x, 90, W - 90), y: b.y - 28, t: 0 });
 }
 function fxUpdate(dt) {
-  rings = rings.filter(r => (r.t += dt * (r.max > 60 ? 2 : 4.5)) < 1);
+  sparks = sparks.filter(s => (s.l -= dt) > 0);
+  sparks.forEach(s => { s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= 1 - 3 * dt; s.vy *= 1 - 3 * dt; });
+  rings = rings.filter(r => (r.t += dt * 2) < 1);
   pops = pops.filter(p => (p.t += dt * 1.1) < 1);
-  parts = parts.filter(p => (p.l -= dt) > 0);
-  parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - 2.6 * dt; p.vy = p.vy * (1 - 2.6 * dt) + 150 * dt; });
 }
 
 // Ball squash & stretch: remember where and how hard the ball was hit; drawBall() turns that into a quick wobble.
@@ -920,7 +924,7 @@ function hitRect(b, p) {
   const c = Math.cos(p.angle), s = Math.sin(p.angle);
   const rx = b.x - p.x, ry = b.y - p.y;
   const lx = rx * c + ry * s, ly = -rx * s + ry * c;
-  const hw = p.w / 2, hh = p.h / 2;
+  const hw = p.w * (p.dx || 1) / 2, hh = p.h * (p.dy || 1) / 2;
   const dx = lx - clamp(lx, -hw, hw), dy = ly - clamp(ly, -hh, hh);
   const d = Math.hypot(dx, dy);
   if (d >= b.r) return null;
@@ -944,23 +948,22 @@ function bounce(b, p, isPaddle) {
   if (vn >= 0) return true;
   b.vx -= 2 * vn * h.nx; b.vy -= 2 * vn * h.ny;
   if (!isPaddle) { squashBall(b, h.nx, h.ny, .8); return true; }
-  M.rally++; M.longest = Math.max(M.longest, M.rally);
   sfx("hit");
+  M.rally++; M.longest = Math.max(M.longest, M.rally);
   comboT = 1.15; comboPop = .42;
   if (p === player) M.hits++; else M.hits2++;
   const k = clamp(h.ly / (p.h / 2), -1, 1) * 100;
   b.vx += -h.ny * k; b.vy += h.nx * k;
-  const human = p === player || localMode();
   if (smashOn() && p.charge >= 4 && Math.abs(p.omega) > 6) {
     // SMASH: fully charged, and the paddle was swinging fast when it met the ball
     const c = Math.hypot(b.vx, b.vy) || 1, sp = 1250 * S.ball;
     b.vx *= sp / c; b.vy *= sp / c; b.smash = true;
-    p.charge = 0; p.cool = .08;
-    if (p === player) M.smashes++; else M.smashes2++;
-    smashFx(b, p);
+    p.charge = 0; p.cool = .08; p.sv += 7; p.smearT = .22;       // motion smear is only enabled for the smash itself
+    if (p === player) M.smashes++;
+    smashFx(b);
   } else {
     b.smash = false;
-    if (smashOn() && p.charge < 4) { p.charge++; if (p.charge === 4 && human) sfx("ready"); }
+    if (smashOn() && p.charge < 4) { p.charge++; if (p.charge === 4 && p === player) sfx("ready"); }
     if (p.cool <= 0) {
       const turbo = twist === "speed";
       let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * 1.02, (turbo ? 1000 : 740) * S.ball);
@@ -971,13 +974,7 @@ function bounce(b, p, isPaddle) {
   }
   const spd = Math.hypot(b.vx, b.vy);
   squashBall(b, h.nx, h.ny, b.smash ? 1.5 : .65 + Math.min(.5, spd / 1400));
-  p.flash = 1;                                                    // the paddle lights up for an instant
-  const cx = b.x - h.nx * b.r, cy = b.y - h.ny * b.r;             // contact point: pixel sparks + a tiny shockwave
-  if (!b.smash) {
-    burst(cx, cy, h.nx, h.ny, 7 + Math.min(10, spd / 110 | 0), p.col.edge, 250 + spd * .25, .9, 3);
-    if (S.fxp) rings.push({ x: cx, y: cy, t: 0, max: 30, c: p.col.glow });
-    camZ = Math.max(camZ, .006 + Math.min(.012, spd / 90000));
-  }
+  p.ik = b.smash ? 1 : Math.min(1, .5 + spd / 1700);        // the paddle flexes (gets thinner) for a moment
   if (Math.abs(b.vx) < 150) b.vx = (b.vx < 0 ? -1 : 1) * 150;
   if (twist === "sticky") { b.stuck = p; b.stT = 0; sfx("stick"); }
   return true;
@@ -994,25 +991,19 @@ function bump(b, o) {
   const s = Math.hypot(b.vx, b.vy) || 1, t = clamp(s * 1.12, 620 * S.ball, 820 * S.ball);
   b.vx *= t / s; b.vy *= t / s; b.glow = .4; b.smash = false; sfx("bump");
   squashBall(b, nx, ny, 1.1);
-  burst(o.x + nx * o.r, o.y + ny * o.r, nx, ny, 10, "#e5d59b", 320, 1, 3);
-  if (S.fxp) rings.push({ x: o.x, y: o.y, t: 0, max: 36, c: "#d5ad54" });
 }
 
-function wallHit(b, ny) {
-  sfx("wall"); squashBall(b, 0, ny, .75);
-  burst(b.x, b.y - ny * b.r, 0, ny, 5, "#cdd8b8", 170, .8, 2);
-}
 function walls(b) {
-  if (b.y - b.r < wy) { b.y = wy + b.r; if (b.vy < 0) { b.vy = -b.vy; wallHit(b, 1); } }
-  else if (b.y + b.r > H - wy) { b.y = H - wy - b.r; if (b.vy > 0) { b.vy = -b.vy; wallHit(b, -1); } }
+  if (b.y - b.r < wy) { b.y = wy + b.r; if (b.vy < 0) { b.vy = -b.vy; sfx("wall"); squashBall(b, 0, 1, .75); } }
+  else if (b.y + b.r > H - wy) { b.y = H - wy - b.r; if (b.vy > 0) { b.vy = -b.vy; sfx("wall"); squashBall(b, 0, -1, .75); } }
 }
 
 function stepBall(b, dt) {
   if (b.stuck) {
     const p = b.stuck, side = p === player ? 1 : -1;
-    const ex = (p.w / 2) * Math.abs(Math.cos(p.angle)) + (p.h / 2) * Math.abs(Math.sin(p.angle));
+    const ex = (PW(p) / 2) * Math.abs(Math.cos(p.angle)) + (PH(p) / 2) * Math.abs(Math.sin(p.angle));
     b.x = p.x + side * (ex + b.r + 1); b.y = p.y; b.vx = b.vy = 0; b.stT += dt;
-    if ((p === cpu && !localMode() && b.stT > .55) || b.stT > 2.5) release(b);
+    if ((p === cpu && b.stT > .55) || b.stT > 2.5) release(b);
     return;
   }
   if (twist === "slow" && Math.abs(b.x - W / 2) < SLOWW) dt *= .2;
@@ -1041,8 +1032,8 @@ function stepBall(b, dt) {
   if (twist === "bricks") {
     for (const k of bricks) {
       if (!k.alive) continue;
-      if (b.smash) { if (hitRect(b, k)) { k.alive = false; b.glow = .3; sfx("brick"); burst(k.x, k.y, 0, 0, 14, "#d5ad54", 300, Math.PI, 3); } }
-      else if (bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; sfx("brick"); burst(k.x, k.y, 0, 0, 14, "#d5ad54", 300, Math.PI, 3); break; }
+      if (b.smash) { if (hitRect(b, k)) { k.alive = false; b.glow = .3; sfx("brick"); } }
+      else if (bounce(b, k, false)) { k.alive = false; b.vx *= 1.05; b.vy *= 1.05; b.glow = .3; sfx("brick"); break; }
     }
     if (!bricks.some(k => k.alive)) brickBarrierActive = false;
   }
@@ -1051,9 +1042,7 @@ function stepBall(b, dt) {
     for (let i = 0; i < 2; i++) {
       const o = PORTALS[i];
       if (b.pc <= 0 && Math.hypot(b.x - o.x, b.y - o.y) < o.r) {
-        burst(o.x, o.y, 0, 0, 12, i ? "#ffa24a" : "#6fb7ff", 260, Math.PI, 3);
         b.x = PORTALS[1 - i].x; b.y = PORTALS[1 - i].y; b.pc = .5; sfx("portal");
-        burst(b.x, b.y, 0, 0, 12, i ? "#6fb7ff" : "#ffa24a", 260, Math.PI, 3);
       }
     }
   }
@@ -1077,18 +1066,18 @@ function update(dt) {
     const A = H / 2 - WALL - 60, py = barrier.y;
     barrier.y = H / 2 - Math.cos(bt * 1.4) * A;
     barrier.vy = (barrier.y - py) / sd;
-    let scored = null, sy = H / 2;
+    let scored = null;
     for (const b of balls) {
       stepBall(b, sd);
-      if (b.x < -30) { scored = "c"; sy = b.y; break; }
-      if (b.x > W + 30) { scored = "p"; sy = b.y; break; }
+      if (b.x < -30) { scored = "c"; break; }
+      if (b.x > W + 30) { scored = "p"; break; }
     }
-    if (scored) { point(scored, sy); break; }
+    if (scored) { point(scored); break; }
   }
-  player.flash = Math.max(0, player.flash - dt * 5.5); cpu.flash = Math.max(0, cpu.flash - dt * 5.5);
+  flex(player, dt); flex(cpu, dt);                    // paddle squash & stretch
   if (ready > 0) {
     ready -= dt;
-    if (countdown) { const c = Math.ceil(Math.max(ready, 0) / .8); if (c > 0 && c !== cdN) { cdN = c; sfx("tick"); } }
+    if (countdown) { const n = Math.ceil(Math.max(ready, 0) / .8); if (n > 0 && n !== cdN) { cdN = n; sfx("tick"); } }
   }
   balls.forEach(b => { b.ht += dt; b.trail.push([b.x, b.y]); if (b.trail.length > (b.smash ? 30 : 20)) b.trail.shift(); });
 }
@@ -1112,26 +1101,6 @@ function fxStep(dt) {
 }
 
 /* ---------- drawing ---------- */
-// The court background is painted once: dark green, a dot-matrix floor, centre circle with ticks, gold corner brackets
-const courtBg = document.createElement("canvas"); courtBg.width = W; courtBg.height = H;
-(function () {
-  const c = courtBg.getContext("2d");
-  c.fillStyle = "#193127"; c.fillRect(0, 0, W, H);
-  let g = c.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 620);
-  g.addColorStop(0, "#21402f"); g.addColorStop(1, "#0f2018"); c.fillStyle = g; c.fillRect(0, 0, W, H);
-  c.fillStyle = "rgba(130,210,160,.08)";
-  for (let y = 12; y < H; y += 24) for (let x = 12; x < W; x += 24) c.fillRect(x, y, 2, 2);
-  c.strokeStyle = "rgba(190,230,200,.22)"; c.lineWidth = 3; c.beginPath(); c.arc(W / 2, H / 2, 65, 0, Math.PI * 2); c.stroke();
-  c.fillStyle = "rgba(190,230,200,.35)";
-  for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; c.save(); c.translate(W / 2 + Math.cos(a) * 78, H / 2 + Math.sin(a) * 78); c.rotate(a); c.fillRect(-4, -1.5, 8, 3); c.restore(); }
-  c.strokeStyle = "rgba(213,173,84,.5)"; c.lineWidth = 3;
-  [[WALL + 10, WALL + 10, 1, 1], [W - WALL - 10, WALL + 10, -1, 1], [WALL + 10, H - WALL - 10, 1, -1], [W - WALL - 10, H - WALL - 10, -1, -1]].forEach(([x, y, sx, sy]) => {
-    c.beginPath(); c.moveTo(x + sx * 22, y); c.lineTo(x, y); c.lineTo(x, y + sy * 22); c.stroke();
-  });
-  g = c.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 660);
-  g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.5)"); c.fillStyle = g; c.fillRect(0, 0, W, H);
-})();
-
 function drawRetro(t) {          // dark green retro background for the menus
   const s = t / 1000, hz = H * .46;
   ctx.fillStyle = "#04100a"; ctx.fillRect(0, 0, W, H);
@@ -1142,19 +1111,13 @@ function drawRetro(t) {          // dark green retro background for the menus
     ctx.fillStyle = "rgba(150,255,190," + (.2 + .4 * Math.sin(s * 2 + i * 1.7)) + ")";
     ctx.fillRect((i * 173) % W, (i * 97) % (hz - 40), 2, 2);
   }
-  const pr = 170 + Math.sin(s * 1.4) * 4;              // striped sun that breathes
-  ctx.save(); ctx.beginPath(); ctx.arc(W / 2, hz, pr, Math.PI, 0); ctx.clip();
-  g = ctx.createLinearGradient(0, hz - pr, 0, hz);
+  ctx.save(); ctx.beginPath(); ctx.arc(W / 2, hz, 170, Math.PI, 0); ctx.clip();   // striped sun
+  g = ctx.createLinearGradient(0, hz - 170, 0, hz);
   g.addColorStop(0, "#2f9a5c"); g.addColorStop(1, "#14602f");
-  ctx.fillStyle = g; ctx.fillRect(W / 2 - pr, hz - pr, pr * 2, pr);
+  ctx.fillStyle = g; ctx.fillRect(W / 2 - 170, hz - 170, 340, 170);
   ctx.fillStyle = "#0b2f1b";
-  for (let k = 0; k < 7; k++) ctx.fillRect(W / 2 - pr, hz - 8 - k * 22, pr * 2, 3 + (6 - k) * 1.6);
+  for (let k = 0; k < 7; k++) ctx.fillRect(W / 2 - 170, hz - 8 - k * 22, 340, 3 + (6 - k) * 1.6);
   ctx.restore();
-  for (let x = 0; x < W; x += 20) {                    // stepped pixel mountains along the horizon
-    const hh = Math.round((24 + 20 * Math.sin(x * .012 + 1) + 14 * Math.sin(x * .031) + ((x * 7) % 11) / 3) / 6) * 6;
-    ctx.fillStyle = "#0a2a19"; ctx.fillRect(x, hz - hh, 20, hh);
-    ctx.fillStyle = "rgba(90,255,150,.22)"; ctx.fillRect(x, hz - hh, 20, 2);
-  }
   g = ctx.createLinearGradient(0, hz, 0, H);           // floor with a moving grid
   g.addColorStop(0, "#0d3a22"); g.addColorStop(1, "#030c07");
   ctx.fillStyle = g; ctx.fillRect(0, hz, W, H - hz);
@@ -1166,47 +1129,32 @@ function drawRetro(t) {          // dark green retro background for the menus
   }
   ctx.stroke();
   ctx.fillStyle = "rgba(90,255,150,.5)"; ctx.fillRect(0, hz - 1, W, 2);
-  for (let i = 0; i < 34; i++) {                       // drifting pixel embers
-    const x = (((i * 137 + Math.sin(s * .8 + i) * 18) % W) + W) % W, y = H - ((s * (14 + (i % 5) * 5) + i * 71) % H);
-    ctx.fillStyle = "rgba(150,255,190," + (.15 + .35 * Math.abs(Math.sin(s * 1.5 + i))) + ")";
-    ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
-  }
   const v = ctx.createRadialGradient(W / 2, H / 2, 150, W / 2, H / 2, 640);
   v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.65)");
   ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
 }
 
-function drawCourt(t) {
-  ctx.drawImage(courtBg, 0, 0);
-  let g = ctx.createLinearGradient(0, 0, 38, 0);       // goal glows: gold on P1's side, red on P2's
-  g.addColorStop(0, "rgba(213,173,84,.22)"); g.addColorStop(1, "rgba(213,173,84,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, 38, H);
-  g = ctx.createLinearGradient(W, 0, W - 38, 0);
-  g.addColorStop(0, "rgba(217,74,58,.24)"); g.addColorStop(1, "rgba(217,74,58,0)"); ctx.fillStyle = g; ctx.fillRect(W - 38, 0, 38, H);
-  ctx.save();                                          // neon border that gently pulses
-  ctx.strokeStyle = "rgba(160,235,190," + (.55 * (.8 + .2 * Math.sin(t / 700))) + ")"; ctx.lineWidth = 3;
-  ctx.shadowColor = "#6dffa8"; ctx.shadowBlur = 10;
-  ctx.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
+// One paddle body. dx / dy are the stretch, thin is the quick impact flex (visual only, always inside the hitbox).
+function paddleBody(x, y, a, w, h, dx, dy, thin, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(a); ctx.scale(dx * (1 - .3 * thin), dy);
+  ctx.fillStyle = "#e8dfbd"; ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(-w / 2 + 2, -h / 2 + 3, 3, h - 6);
   ctx.restore();
-  ctx.fillStyle = "rgba(200,230,200,.4)";              // classic pixel centre line
-  for (let y = WALL + 8; y < H - WALL - 8; y += 26) ctx.fillRect(W / 2 - 3, y, 6, 14);
 }
 
 function drawPaddle(p) {
-  const full = p.charge >= 4 && smashOn(), w = p.w, h = p.h, c = p.col;
-  const pulse = full ? .65 + .35 * Math.sin(performance.now() / 90) : 0;
-  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-  ctx.shadowColor = full ? "#ff9a4a" : c.glow; ctx.shadowBlur = full ? 14 + pulse * 12 : 9;     // glows orange when a smash is ready
-  ctx.fillStyle = c.body; ctx.fillRect(-w / 2, -h / 2, w, h);
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = c.edge; ctx.fillRect(-w / 2, -h / 2, w, 3); ctx.fillRect(-w / 2, h / 2 - 3, w, 3);   // coloured end caps
-  ctx.fillStyle = "rgba(0,0,0,.16)";                                                                   // LED segment lines
-  for (let y = -h / 2 + 9; y < h / 2 - 6; y += 7) ctx.fillRect(-w / 2, y, w, 1.5);
-  ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(-w / 2 + 2, -h / 2 + 3, 3, h - 6);
-  ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(w / 2 - 4, -h / 2 + 3, 2, h - 6);
-  if (full) { ctx.fillStyle = "rgba(255,170,90," + (.25 + pulse * .3) + ")"; ctx.fillRect(-w / 2, -h / 2, w, h); }
-  if (p.flash > 0) { ctx.fillStyle = "rgba(255,255,255," + (p.flash * .75) + ")"; ctx.fillRect(-w / 2, -h / 2, w, h); }
-  if (debug) { ctx.strokeStyle = "#ff5a4a"; ctx.lineWidth = 1; ctx.strokeRect(-w / 2, -h / 2, w, h); }
-  ctx.restore();
+  p.gh.forEach(g => {                                   // motion smear while spinning
+    ctx.save(); ctx.fillStyle = "#e8dfbd";
+    paddleBody(g.x, g.y, g.a, p.w, p.h, g.dx, g.dy, 0, g.l * .28);
+    ctx.restore();
+  });
+  const f = p.ik * p.ik * (3 - 2 * p.ik);               // smoothstep for the impact flex
+  paddleBody(p.x, p.y, p.angle, p.w, p.h, p.dx, p.dy, f, 1);
+  if (debug) {                                          // the real hitbox
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+    ctx.strokeStyle = "#ff5a4a"; ctx.lineWidth = 1; ctx.strokeRect(-PW(p) / 2, -PH(p) / 2, PW(p), PH(p));
+    ctx.restore();
+  }
 }
 
 function ring(x, y, r, col) {
@@ -1214,52 +1162,54 @@ function ring(x, y, r, col) {
   ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke();
 }
 
-// Classic blocky Pong score digits (3x5 pixel font), drawn with a soft glow
-const DIG = ["111101101101111", "010110010010111", "111001111100111", "111001111001111", "101101111001001",
-  "111100111001111", "111100111101111", "111001001001001", "111101111101111", "111101111001111"];
-function drawDigits(n, cx, cy, B, col, glow, scale) {
-  const s = String(n), w = s.length * 3 * B + (s.length - 1) * B;
-  ctx.save(); ctx.translate(cx, cy); ctx.scale(scale, scale);
-  ctx.fillStyle = col; ctx.shadowColor = glow; ctx.shadowBlur = 12;
-  for (let d = 0; d < s.length; d++) {
-    const pat = DIG[+s[d]], ox = -w / 2 + d * 4 * B;
-    for (let i = 0; i < 15; i++) if (pat[i] === "1") ctx.fillRect(ox + (i % 3) * B + .5, -2.5 * B + ((i / 3) | 0) * B + .5, B - 1, B - 1);
-  }
-  ctx.restore();
-}
-const popScale = t => t > 0 && S.anim ? 1 + .55 * Math.sin((1 - t / .45) * Math.PI) : 1;
-
-// Smash meter: 4 beveled segments, one per hit. x is the edge it lines up with.
+// Smash meter: 4 segments, one per hit. x is the edge it lines up with.
 function drawMeter(p, x, right) {
-  const full = p.charge >= 4, w = 96, x0 = right ? x - w : x;
-  const pulse = full ? .75 + .25 * Math.sin(performance.now() / 100) : 1;
-  ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(x0 - 3, 41, w + 6, 14);
-  ctx.strokeStyle = full ? "#ffb36b" : "#3a382e"; ctx.lineWidth = 1; ctx.strokeRect(x0 - 2.5, 41.5, w + 5, 13);
+  const full = p.charge >= 4, w = 90, x0 = right ? x - w : x;
+  const pulse = full ? .7 + .3 * Math.sin(performance.now() / 110) : 1;
+  ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(x0 - 2, 40, w + 4, 12);
   ctx.save(); ctx.globalAlpha = pulse;
-  if (full) { ctx.shadowColor = "#ff9a4a"; ctx.shadowBlur = 10; }
   for (let i = 0; i < 4; i++) {
-    const on = i < p.charge;
-    ctx.fillStyle = on ? (full ? "#ffb36b" : p.col.edge) : "#26251e"; ctx.fillRect(x0 + i * 24, 44, 22, 8);
-    if (on) { ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.fillRect(x0 + i * 24, 44, 22, 2); }
+    ctx.fillStyle = i < p.charge ? (full ? "#ffb36b" : "#d5ad54") : "#2b2a22";
+    ctx.fillRect(x0 + i * 23, 42, 21, 8);
   }
-  ctx.restore();
   ctx.textAlign = right ? "right" : "left"; ctx.font = "15px VT323";
   ctx.fillStyle = full ? "#ffb36b" : "#8d856f";
-  ctx.fillText(full ? "SMASH READY" : "SMASH " + p.charge + "/4", x, 70);
+  ctx.fillText(full ? "SMASH READY" : "SMASH " + p.charge + "/4", x, 66);
+  ctx.restore();
 }
 
-// Live rally / combo counter: counts every paddle hit in the current rally, resets when a point is scored.
+// Live rally / combo counter. It counts every paddle-to-ball hit in the current rally
+// and resets the instant a point is scored. The punchy pop mirrors the score and smash UI.
 function drawCombo() {
   if (M.rally <= 0 || comboT <= 0) return;
+  // Every hit gets its own arcade burst: fade in, overshoot big, settle smaller, then fade away.
   const hitAge = clamp((.42 - comboPop) / .42, 0, 1);
-  const zoom = S.anim ? (hitAge < .48 ? .62 + .72 * (hitAge / .48) : 1.34 - .34 * ((hitAge - .48) / .52)) : 1;
-  const fade = Math.min(clamp(hitAge / .12, 0, 1), clamp(comboT / .34, 0, 1));
+  const zoom = S.anim
+    ? (hitAge < .48
+      ? .62 + .72 * (hitAge / .48)
+      : 1.34 - .34 * ((hitAge - .48) / .52))
+    : 1;
+  const inA = clamp(hitAge / .12, 0, 1);
+  const outA = clamp(comboT / .34, 0, 1);
+  const fade = Math.min(inA, outA);
   ctx.save();
-  ctx.translate(W - 58, 92); ctx.scale(zoom, zoom); ctx.textAlign = "right"; ctx.globalAlpha = fade;
-  ctx.shadowColor = "rgba(213,173,84,.45)"; ctx.shadowBlur = S.anim ? 10 : 0;
-  ctx.font = '9px "Press Start 2P"'; ctx.fillStyle = "#d5ad54"; ctx.fillText("RALLY", 0, -4);
-  ctx.font = '18px "Press Start 2P"'; ctx.fillStyle = M.rally >= 4 ? "#ffb36b" : "#f2e8c9"; ctx.fillText("x" + M.rally, 0, 18);
+  ctx.translate(W - 58, 92);
+  ctx.scale(zoom, zoom);
+  ctx.textAlign = "right";
+  ctx.globalAlpha = fade;
+  ctx.shadowColor = "rgba(213,173,84,.45)";
+  ctx.shadowBlur = S.anim ? 10 : 0;
+  ctx.font = '9px "Press Start 2P"'; ctx.fillStyle = "#d5ad54";
+  ctx.fillText("RALLY", 0, -4);
+  ctx.font = '18px "Press Start 2P"'; ctx.fillStyle = M.rally >= 4 ? "#ffb36b" : "#f2e8c9";
+  ctx.fillText("x" + M.rally, 0, 18);
   ctx.restore();
+}
+
+// Score numbers pop bigger for a moment when they change
+function drawScore(n, x, t) {
+  const s = t > 0 && S.anim ? 1 + .55 * Math.sin((1 - t / .45) * Math.PI) : 1;
+  ctx.save(); ctx.translate(x, 52); ctx.scale(s, s); ctx.fillText(n, 0, 15); ctx.restore();
 }
 
 // The ball: slightly stretched along its path, and a quick, deep squash against whatever it hits that springs back fast
@@ -1278,18 +1228,30 @@ function drawBall(b) {
   ctx.restore();
 }
 
+function drawCourt() {
+  ctx.fillStyle = "#193127"; ctx.fillRect(0, 0, W, H);
+  const v = ctx.createRadialGradient(W / 2, H / 2, 90, W / 2, H / 2, 650);
+  v.addColorStop(0, "rgba(49,83,61,.15)"); v.addColorStop(1, "rgba(0,0,0,.42)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(218,224,188,.34)"; ctx.lineWidth = 3;
+  ctx.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
+  ctx.setLineDash([7, 12]); ctx.beginPath(); ctx.moveTo(W / 2, WALL); ctx.lineTo(W / 2, H - WALL); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, 65, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(218,224,188,.15)"; ctx.stroke();
+
+}
+
 function drawGame() {
-  const now = performance.now();
   ctx.save();
   if (S.shake && shakeT > 0) { const a = shakeT * 28; ctx.translate((Math.random() - .5) * a, (Math.random() - .5) * a); }
-  if (S.fxp && S.anim && camZ > .0005) { ctx.translate(W / 2, H / 2); ctx.scale(1 + camZ, 1 + camZ); ctx.translate(-W / 2, -H / 2); }   // camera punch
-  drawCourt(now);
+  drawCourt();
 
   if (twist === "gravity") {
     ctx.beginPath(); ctx.arc(W / 2, H / 2, S.gravR, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(76,125,104,.10)"; ctx.fill();
     ctx.strokeStyle = "rgba(198,218,177,.48)"; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([]);
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, 13 + Math.sin(now / 180) * 3, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, 13 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(218,224,188,.55)"; ctx.fill();
   }
   if (twist === "slow") {
@@ -1302,8 +1264,8 @@ function drawGame() {
     const col = i ? "#ffa24a" : "#6fb7ff";
     ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fill();
-    ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.stroke(); ctx.restore();
-    ctx.beginPath(); ctx.arc(o.x, o.y, o.r * (.45 + .15 * Math.sin(now / 160 + i)), 0, Math.PI * 2);
+    ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(o.x, o.y, o.r * (.45 + .15 * Math.sin(performance.now() / 160 + i)), 0, Math.PI * 2);
     ctx.fillStyle = col; ctx.globalAlpha = .45; ctx.fill(); ctx.globalAlpha = 1;
     if (debug) ring(o.x, o.y, o.r, "#ff5a4a");
   });
@@ -1315,15 +1277,12 @@ function drawGame() {
   });
   if (twist === "barrier") {
     ctx.fillStyle = "#d5ad54"; ctx.fillRect(barrier.x - barrier.w / 2, barrier.y - barrier.h / 2, barrier.w, barrier.h);
-    ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillRect(barrier.x - barrier.w / 2 + 2, barrier.y - barrier.h / 2, 3, barrier.h);
     if (debug) { ctx.strokeStyle = "#ff5a4a"; ctx.strokeRect(barrier.x - barrier.w / 2, barrier.y - barrier.h / 2, barrier.w, barrier.h); }
   }
   if (twist === "bricks") bricks.forEach((k, i) => {
     if (!k.alive) return;
     ctx.fillStyle = i % 2 ? "#d5ad54" : "#c9923f";
     ctx.fillRect(k.x - k.w / 2, k.y - k.h / 2, k.w, k.h);
-    ctx.fillStyle = "rgba(255,255,255,.28)"; ctx.fillRect(k.x - k.w / 2, k.y - k.h / 2, k.w, 3);
-    ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(k.x - k.w / 2, k.y + k.h / 2 - 3, k.w, 3);
     if (debug) { ctx.strokeStyle = "#ff5a4a"; ctx.strokeRect(k.x - k.w / 2, k.y - k.h / 2, k.w, k.h); }
   });
   if (twist === "closing" && wy > WALL) {
@@ -1331,33 +1290,26 @@ function drawGame() {
     ctx.fillStyle = "#d94a3a"; ctx.fillRect(0, wy - 4, W, 4); ctx.fillRect(0, H - wy, W, 4);
   }
 
-  if (goalFlash.t > 0 && S.fxp) {                    // the goal that was just scored in lights up
-    const right = goalFlash.side === "p", x = right ? W : 0, col = right ? "213,173,84" : "217,74,58";
-    const g = ctx.createRadialGradient(x, goalFlash.y, 4, x, goalFlash.y, 220);
-    g.addColorStop(0, "rgba(" + col + "," + (.6 * goalFlash.t) + ")"); g.addColorStop(1, "rgba(" + col + ",0)");
-    ctx.fillStyle = g; ctx.fillRect(right ? W - 230 : 0, 0, 230, H);
-  }
-
   drawPaddle(player); drawPaddle(cpu);
 
-  // scoreboard: blocky glowing digits, coloured player tags and smash meters
-  const lbl2 = localMode() ? "P2" : "CPU";
-  drawDigits(scoreP, W * .43, 46, 9, "#f6ecc8", P1C.glow, popScale(popP));
-  drawDigits(scoreC, W * .57, 46, 9, "#ffd9cd", P2C.glow, popScale(popC));
-  ctx.font = '11px "Press Start 2P"'; ctx.textAlign = "center";
-  ctx.fillStyle = P1C.txt; ctx.fillText("P1", W * .25, 33);
-  ctx.fillStyle = P2C.txt; ctx.fillText(lbl2, W * .75, 33);
-  const lw1 = ctx.measureText("P1").width / 2, lw2 = ctx.measureText(lbl2).width / 2;
-  drawCombo();
-  if (smashOn()) {
-    drawMeter(player, W * .25 - lw1, false);
-    drawMeter(cpu, W * .75 + lw2, true);
-  }
   ctx.textAlign = "center";
+  ctx.fillStyle = "#e9dfbd"; ctx.font = '42px "Press Start 2P"';
+  drawScore(scoreP, W * .43, popP); drawScore(scoreC, W * .57, popC);
+  ctx.font = "17px VT323"; ctx.fillStyle = "#cfc6a7";
+  ctx.fillText("P1", W * .25, 35); ctx.fillText(localMode() ? "P2" : "CPU", W * .75, 35);
+  drawCombo();
+
+  if (smashOn()) {                  // smash meters: yours left-aligned, the CPU's right-aligned
+    const pw = ctx.measureText("P1").width / 2, cw = ctx.measureText(localMode() ? "P2" : "CPU").width / 2;
+    drawMeter(player, W * .25 - pw, false);
+    drawMeter(cpu, W * .75 + cw, true);
+    ctx.textAlign = "center";
+  }
 
   for (const b of balls) {
     const a = twist === "ghost" ? clamp((Math.abs(b.x - W / 2) - 40) / 150, 0, 1) : 1;
-    if (b.smash) {                                   // fiery trail only during a smash
+    // No ordinary motion smear. The trail/speed streaks only appear during a smash.
+    if (b.smash) {
       b.trail.forEach((p, i) => {
         const t = i / b.trail.length;
         ctx.globalAlpha = t * .42 * a; ctx.fillStyle = "#ffb36b";
@@ -1375,18 +1327,13 @@ function drawGame() {
     if (b.glow > 0 || b.smash) {
       ctx.save(); ctx.strokeStyle = b.smash ? "#ffb36b" : "#fff0bd"; ctx.lineWidth = 4; ctx.globalAlpha = .65 * a;
       ctx.shadowColor = b.smash ? "#ff7a2a" : "#e4bd5e"; ctx.shadowBlur = b.smash ? 26 : 18;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 10 + Math.sin(now / 40) * 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 10 + Math.sin(performance.now() / 40) * 3, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
     }
     ctx.globalAlpha = a; ctx.fillStyle = b.smash ? "#fff2dc" : "#f3e9c6"; ctx.shadowColor = b.smash ? "#ff9a4a" : "#dbe7c0"; ctx.shadowBlur = b.smash ? 16 : 8;
     drawBall(b);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     if (debug) ring(b.x, b.y, b.r, "#5affb0");
-  }
-  if (ready > 0 && balls[0] && screen === "playing") {   // a pulsing "get ready" ring on the ball at every serve
-    const b = balls[0], ph = (now / 650) % 1;
-    ctx.strokeStyle = "rgba(255,240,200," + (.55 * (1 - ph)) + ")"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(b.x, b.y, 14 + ph * 34, 0, Math.PI * 2); ctx.stroke();
   }
 
   if (twist === "dark" && balls[0]) {
@@ -1395,50 +1342,40 @@ function drawGame() {
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
 
-  rings.forEach(r => {                               // shockwaves, pixel sparks and callouts
-    ctx.globalAlpha = (1 - r.t) * (r.max > 60 ? 1 : .8); ctx.strokeStyle = r.c || "#ffbe6e"; ctx.lineWidth = (r.max > 60 ? 6 : 3) * (1 - r.t) + 1;
-    ctx.beginPath(); ctx.arc(r.x, r.y, 6 + r.t * r.max, 0, Math.PI * 2); ctx.stroke();
+  rings.forEach(r => {                              // smash shockwaves, sparks and callouts
+    ctx.strokeStyle = "rgba(255,190,110," + (1 - r.t) + ")"; ctx.lineWidth = 6 * (1 - r.t) + 1;
+    ctx.beginPath(); ctx.arc(r.x, r.y, 10 + r.t * 130, 0, Math.PI * 2); ctx.stroke();
   });
-  ctx.globalAlpha = 1;
-  parts.forEach(p => {
-    ctx.globalAlpha = clamp(p.l / p.m * 1.4, 0, 1); ctx.fillStyle = p.c;
-    ctx.fillRect(Math.round(p.x - p.s / 2), Math.round(p.y - p.s / 2), p.s, p.s);
+  sparks.forEach(s => {
+    const k = s.l / s.m;
+    ctx.fillStyle = "rgba(255," + (150 + k * 100 | 0) + ",90," + k + ")"; ctx.fillRect(s.x - 2, s.y - 2, 4, 4);
   });
-  ctx.globalAlpha = 1;
   pops.forEach(p => {
-    ctx.save(); ctx.globalAlpha = 1 - p.t; ctx.font = '22px "Press Start 2P"'; ctx.textAlign = "center";
+    ctx.save(); ctx.globalAlpha = 1 - p.t; ctx.font = '22px "Press Start 2P"';
     ctx.fillStyle = "#000"; ctx.fillText("SMASH!", p.x + 3, p.y - p.t * 34 + 3);
-    ctx.fillStyle = p.c || "#ffb36b"; ctx.fillText("SMASH!", p.x, p.y - p.t * 34); ctx.restore();
+    ctx.fillStyle = "#ffb36b"; ctx.fillText("SMASH!", p.x, p.y - p.t * 34); ctx.restore();
   });
 
-  ctx.font = '17px "Press Start 2P"'; ctx.textAlign = "center"; ctx.fillStyle = "rgba(232,223,189,.72)";
+  ctx.font = '17px "Press Start 2P"'; ctx.fillStyle = "rgba(232,223,189,.72)";
   ctx.fillText("ROUND " + round + "  —  " + MODES[twist], W / 2, H - 25);
 
-  if (ready > 0 && screen === "playing") {           // round banner, countdown and match-point warning
+  if (ready > 0 && screen === "playing") {       // round banner and countdown
     ctx.save(); ctx.globalAlpha = clamp(ready / .35, 0, 1);
     ctx.fillStyle = "#d5ad54"; ctx.font = '14px "Press Start 2P"'; ctx.fillText("ROUND " + round, W / 2, H / 2 - 118);
     ctx.fillStyle = "#f2e8c9"; ctx.font = '26px "Press Start 2P"'; ctx.fillText(MODES[twist], W / 2, H / 2 - 78);
     ctx.fillStyle = "#c8bfa5"; ctx.font = "24px VT323"; ctx.fillText(INFO[twist], W / 2, H / 2 - 48);
     ctx.restore();
-    if (countdown) {
+    if (countdown) {                             // each number pops big, then settles
       const n = Math.ceil(ready / .8), fr = ready / .8 - (n - 1), s = S.anim ? 1 + .7 * fr * fr : 1;
       ctx.save(); ctx.translate(W / 2, H / 2 + 92); ctx.scale(s, s);
       ctx.fillStyle = "#f2e8c9"; ctx.font = '56px "Press Start 2P"'; ctx.fillText(n, 0, 28); ctx.restore();
     }
-    if (mp) {
-      const pl = .6 + .4 * Math.sin(now / 130);
-      ctx.save(); ctx.font = '16px "Press Start 2P"'; ctx.shadowColor = "#d94a3a"; ctx.shadowBlur = 12;
-      ctx.fillStyle = "rgba(255,120,100," + (.55 + .45 * pl) + ")"; ctx.fillText(mp, W / 2, H / 2 + (countdown ? 170 : 130)); ctx.restore();
-    }
-  } else if (screen === "playing") {
-    const held = balls.find(b => b.stuck && (b.stuck === player || localMode()));
-    if (held) {
-      ctx.fillStyle = "#d9d0b1"; ctx.font = '16px "Press Start 2P"';
-      ctx.fillText(held.stuck === player ? "MOVE TO AIM - SPACE TO RELEASE" : "P2: MOVE TO AIM - ENTER TO RELEASE", W / 2, H / 2 + 120);
-    }
+  } else if (screen === "playing" && balls.some(b => b.stuck === player)) {
+    ctx.fillStyle = "#d9d0b1"; ctx.font = '16px "Press Start 2P"';
+    ctx.fillText("MOVE TO AIM - SPACE TO RELEASE", W / 2, H / 2 + 120);
   }
 
-  if (slowT > 0) {                                   // warm vignette while time is slowed
+  if (slowT > 0) {                                 // warm vignette while time is slowed
     const k = slowT / SLOWD, g = ctx.createRadialGradient(W / 2, H / 2, 160, W / 2, H / 2, 620);
     g.addColorStop(0, "rgba(40,15,0,0)"); g.addColorStop(1, "rgba(40,15,0," + (.55 * k) + ")");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -1454,12 +1391,7 @@ function loop(t) {
   slowT = Math.max(0, slowT - real); flashT = Math.max(0, flashT - real);
   popP = Math.max(0, popP - real); popC = Math.max(0, popC - real);
   comboT = Math.max(0, comboT - real); comboPop = Math.max(0, comboPop - real);
-  camZ *= Math.exp(-9 * real); if (camZ < .0004) camZ = 0;
-  goalFlash.t = Math.max(0, goalFlash.t - real * 2.2);
-  if (screen === "playing") {
-    if (hitStop > 0) hitStop -= real;                // a tiny freeze-frame on smashes
-    else { update(dt); fxUpdate(dt); }
-  }
+  if (screen === "playing") { update(dt); fxUpdate(dt); }
   shakeT = Math.max(0, shakeT - real);
   fxStep(real);
   retroOn() ? drawRetro(t) : drawGame();
