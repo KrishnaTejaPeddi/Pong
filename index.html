@@ -447,7 +447,7 @@ const DEFV = { players: "cpu", diff: "normal", win: 7, mode: "cycle", mods: [], 
   bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true, slowmo: true, anim: true };
 const S = { ...DEFV, mods: [] };
 const online = { peer: null, conn: null, role: null, room: "", connected: false,
-  previousPlayers: "cpu", sendClock: 0, lastStatus: "" };
+  previousPlayers: "cpu", sendClock: 0, lastStatus: "", connectTimer: null };
 const remoteKeys = { arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
 const nums = a => a.map(n => ["" + n, n]);
 const ONOFF = [["ON", true], ["OFF", false]];
@@ -1222,16 +1222,27 @@ function sendOnline(message) {
   try { online.conn.send(message); return true; } catch (_) { return false; }
 }
 function resetRemoteKeys() { Object.keys(remoteKeys).forEach(k => remoteKeys[k] = false); }
+function clearOnlineTimer() {
+  if (online.connectTimer !== null) { clearTimeout(online.connectTimer); online.connectTimer = null; }
+}
+function failOnline(message) {
+  clearOnlineTimer();
+  cleanupOnline({ restore: true });
+  if (screen !== "online") showScreen("online");
+  onlineStatus(message);
+}
 function cleanupOnline(options = {}) {
   const conn = online.conn, peer = online.peer;
   const wasOnline = online.role !== null || !!peer || !!conn || onlineMode();
+  clearOnlineTimer();
   if (options.notify && conn && conn.open) { try { conn.send({ type: "end" }); } catch (_) {} }
   online.role = null; online.connected = false; online.conn = null; online.peer = null;
   online.room = ""; online.sendClock = 0; resetRemoteKeys();
+  const codeEl = $("netcode"); if (codeEl) { codeEl.style.display = "none"; codeEl.textContent = ""; }
   if (options.restore !== false && wasOnline) S.players = online.previousPlayers || "cpu";
   if (peer && !peer.destroyed) { try { peer.destroy(); } catch (_) {} }
 }
-function peerOptions() { return { host: "0.peerjs.com", port: 443, path: "/", secure: true, debug: 0 }; }
+function peerOptions() { return { host: "0.peerjs.com", port: 443, path: "/", secure: true, debug: 1 }; }
 function makeRoomCode() { const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let out = ""; for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)]; return out; }
 function showRoomCode(code) {
   const el = $("netcode"); if (el) { el.style.display = "block"; el.textContent = "ROOM CODE: " + code; }
@@ -1246,14 +1257,25 @@ function createOnlineRoom() {
   try { peer = new Peer("pong-" + code.toLowerCase(), peerOptions()); }
   catch (err) { online.role = null; S.players = online.previousPlayers; onlineStatus("Could not create a room. Please try again."); return; }
   online.peer = peer;
-  peer.on("open", () => { onlineStatus("Room ready. Waiting for your friend to join…"); });
+  let peerOpened = false;
+  online.connectTimer = setTimeout(() => {
+    if (online.peer === peer && !peerOpened) failOnline("The online service did not answer within 15 seconds. Try again; the public signaling service can occasionally stall.");
+  }, 15000);
+  peer.on("open", () => {
+    if (online.peer !== peer) return;
+    peerOpened = true; clearOnlineTimer();
+    onlineStatus("Room ready. Waiting for your friend to join…");
+  });
   peer.on("connection", conn => {
+    if (online.peer !== peer) { try { conn.close(); } catch (_) {} return; }
     if (online.connected) { try { conn.close(); } catch (_) {} return; }
     attachOnlineConnection(conn, "host");
   });
   peer.on("error", err => {
-    if (err && err.type === "unavailable-id") onlineStatus("Room code collision. Go back and create a new room.");
-    else onlineStatus("Connection error: " + ((err && err.type) || "network") + ". Try again or reload the page.");
+    if (online.peer !== peer) return;
+    const type = (err && err.type) || "network";
+    if (type === "unavailable-id") failOnline("Room code collision. Create a new room and share the new code.");
+    else failOnline("Online service error (" + type + "). Try again. If it keeps happening, the public signaling service may be having trouble.");
   });
 }
 function joinOnlineRoom() {
@@ -1267,20 +1289,35 @@ function joinOnlineRoom() {
   try { peer = new Peer(peerOptions()); }
   catch (err) { online.role = null; S.players = online.previousPlayers; onlineStatus("Could not start networking. Please try again."); return; }
   online.peer = peer;
+  let peerOpened = false;
+  online.connectTimer = setTimeout(() => {
+    if (online.peer === peer && !peerOpened) failOnline("Could not reach the online service within 15 seconds. Check your internet connection and try again.");
+  }, 15000);
   peer.on("open", () => {
+    if (online.peer !== peer) return;
+    peerOpened = true; clearOnlineTimer();
     let conn;
     try { conn = peer.connect("pong-" + code.toLowerCase(), { reliable: true }); }
-    catch (err) { onlineStatus("Could not connect. Check the code and try again."); return; }
+    catch (err) { failOnline("Could not start the connection. Check the room code and try again."); return; }
     attachOnlineConnection(conn, "guest");
   });
   peer.on("error", err => {
-    if (err && err.type === "peer-unavailable") onlineStatus("Room not found. Check the code and try again.");
-    else onlineStatus("Connection error: " + ((err && err.type) || "network") + ". Check your connection.");
+    if (online.peer !== peer) return;
+    const type = (err && err.type) || "network";
+    if (type === "peer-unavailable") failOnline("Room not found. Check the code and make sure the host is still waiting in the room.");
+    else failOnline("Online service error (" + type + "). Check your internet connection and try again.");
   });
 }
 function attachOnlineConnection(conn, role) {
   online.conn = conn; online.role = role;
+  online.connectTimer = setTimeout(() => {
+    if (online.conn === conn && !conn.open && !online.connected) {
+      failOnline("The two browsers could not establish a direct connection within 15 seconds. Try again; a school/work Wi-Fi or strict router may block peer-to-peer connections.");
+    }
+  }, 15000);
   conn.on("open", () => {
+    if (online.conn !== conn) return;
+    clearOnlineTimer();
     online.connected = true;
     if (role === "host") {
       onlineStatus("Friend connected! Starting match…");
@@ -1308,7 +1345,8 @@ function attachOnlineConnection(conn, role) {
     }
   });
   conn.on("close", () => {
-    if (!online.role) return;
+    if (online.conn !== conn || !online.role) return;
+    clearOnlineTimer();
     online.connected = false; resetRemoteKeys();
     if (role === "host") {
       if (screen === "playing") showScreen("pause");
@@ -1319,7 +1357,10 @@ function attachOnlineConnection(conn, role) {
       showScreen("online"); onlineStatus(online.lastStatus);
     }
   });
-  conn.on("error", err => onlineStatus("Peer connection error. Check both players' internet connections."));
+  conn.on("error", err => {
+    if (online.conn !== conn) return;
+    failOnline("Peer-to-peer connection failed. Try again, and check whether either network blocks direct connections.");
+  });
 }
 function makeOnlineSnapshot() {
   return {
