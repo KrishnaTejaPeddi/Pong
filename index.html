@@ -133,6 +133,13 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .mi.sel{color:#000;background:var(--cream);border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
 .mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0}
 .menu .mi[data-act="local"]{text-indent:-.8cqw}
+.multiplayer-panel{width:78cqw;max-width:900px;text-align:center}
+.menu.h.multiplayer-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.4cqw;width:100%;margin:1.5cqw 0}
+.mi.multi-choice{width:100%;min-width:0;min-height:14cqw;margin:0;padding:1.5cqw;white-space:normal;text-indent:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1cqw;text-align:center;line-height:1.45}
+.multi-choice-title{font-family:"Press Start 2P",monospace;font-size:1.35cqw;line-height:1.7;color:inherit}
+.multi-choice-copy{font:2.1cqw VT323,monospace;letter-spacing:.08cqw;white-space:normal;color:#bdb59e}
+.mi.multi-choice.sel .multi-choice-copy{color:#333}
+.menu .mi.multi-choice[data-act="local"]{text-indent:0}
 .menu.h .mi{min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
 .menu.h .mi.sel{transform:scale(1.06)}
 .menu.h .mi.sel:before{display:none}
@@ -1020,7 +1027,7 @@ function endMatch() {
 }
 
 /* ---------- screens ---------- */
-const retroOn = () => screen === "title" || screen === "howto" || screen === "over" || screen === "shop" || (screen === "settings" && settingsFrom !== "pause");
+const retroOn = () => screen === "title" || screen === "multiplayer" || screen === "howto" || screen === "over" || screen === "shop" || (screen === "settings" && settingsFrom !== "pause");
 const items = () => [...ui.querySelectorAll(".row,.mi")].filter(e => getComputedStyle(e).display !== "none");
 function sel(i, quiet) {
   if (screen === "shop") return;                       // the shop has its own selection
@@ -1048,7 +1055,7 @@ function showScreen(name, opt) {
   ui.classList.add("on");
   ui.classList.toggle("retro", retroOn());
   ui.classList.toggle("noanim", !S.anim);
-  ({ title: renderTitle, online: renderOnline, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver, shop: renderShop })[name](opt);
+  ({ title: renderTitle, multiplayer: renderMultiplayer, online: renderOnline, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver, shop: renderShop })[name](opt);
   const sc = ui.firstElementChild;                  // number the sections so they bounce in one after another
   sc.style.setProperty("--d", slideDir); sc.style.setProperty("--st", name === "over" ? "36ms" : "70ms");
   sc.querySelectorAll(".sec").forEach((e, i) => e.style.setProperty("--i", i));
@@ -1062,9 +1069,21 @@ function renderTitle() {
     <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
     <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
     <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; 3 SKILL LEVELS</span></div>
-    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="online">ONLINE 2 PLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="multiplayer">MULTIPLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
     <div class="bx wallet sec"><i class="coin"></i>${shop.coins}</div>
     <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V4.1</div></div>`;
+}
+
+function renderMultiplayer() {
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel multiplayer-panel sec">
+    <h3 class="ph">MULTIPLAYER</h3>
+    <div class="online-copy">CHOOSE HOW YOU WANT TO PLAY.</div>
+    <div class="menu h multiplayer-options">
+      <div class="mi multi-choice" data-act="local"><span class="multi-choice-title">LOCAL 2 PLAYER</span><span class="multi-choice-copy">TWO PLAYERS, ONE KEYBOARD.</span></div>
+      <div class="mi multi-choice" data-act="online"><span class="multi-choice-title">ONLINE 2 PLAYER</span><span class="multi-choice-copy">PLAY A FRIEND OVER THE INTERNET.</span></div>
+    </div>
+    <div class="menu h"><div class="mi" data-act="multipback">BACK</div></div>
+  </div></div>`;
 }
 
 function renderOnline() {
@@ -1189,8 +1208,10 @@ function act(a) {
   slideDir = ["back", "howback", "menu", "quit", "shopback"].includes(a) ? -1 : 1;   // going back flies the other way
   if (a === "local") { cleanupOnline({ restore: true }); setS("players", "local"); save(); startMatch(); }
   else if (a === "play") { cleanupOnline({ restore: true }); setS("players", "cpu"); save(); startMatch(); }
+  else if (a === "multiplayer") showScreen("multiplayer");
   else if (a === "online") { online.lastStatus = "Waiting for a room."; showScreen("online"); }
-  else if (a === "onlineback") { cleanupOnline({ restore: true }); showScreen("title"); }
+  else if (a === "multipback") showScreen("title");
+  else if (a === "onlineback") { cleanupOnline({ restore: true }); showScreen("multiplayer"); }
   else if (a === "rematch" || a === "restart") {
     if (online.role === "guest") sendOnline({ type: "action", action: "rematch" });
     else startMatch();
@@ -1242,7 +1263,18 @@ function cleanupOnline(options = {}) {
   if (options.restore !== false && wasOnline) S.players = online.previousPlayers || "cpu";
   if (peer && !peer.destroyed) { try { peer.destroy(); } catch (_) {} }
 }
-function peerOptions() { return { host: "0.peerjs.com", port: 443, path: "/", secure: true, debug: 1 }; }
+// Use an alternate PeerServer instead of 0.peerjs.com, which has had intermittent
+// multi-minute delays before emitting its OPEN message. Both players must use this same host.
+function peerOptions() {
+  return {
+    host: "peer-server-m6ay.onrender.com",
+    port: 443,
+    path: "/peerjs",
+    secure: true,
+    debug: 1,
+    config: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }
+  };
+}
 function makeRoomCode() { const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let out = ""; for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)]; return out; }
 function showRoomCode(code) {
   const el = $("netcode"); if (el) { el.style.display = "block"; el.textContent = "ROOM CODE: " + code; }
@@ -1259,8 +1291,8 @@ function createOnlineRoom() {
   online.peer = peer;
   let peerOpened = false;
   online.connectTimer = setTimeout(() => {
-    if (online.peer === peer && !peerOpened) failOnline("The online service did not answer within 15 seconds. Try again; the public signaling service can occasionally stall.");
-  }, 15000);
+    if (online.peer === peer && !peerOpened) failOnline("The alternate online service did not answer within 60 seconds. It may be starting up or unavailable; try again in a moment.");
+  }, 60000);
   peer.on("open", () => {
     if (online.peer !== peer) return;
     peerOpened = true; clearOnlineTimer();
@@ -1291,8 +1323,8 @@ function joinOnlineRoom() {
   online.peer = peer;
   let peerOpened = false;
   online.connectTimer = setTimeout(() => {
-    if (online.peer === peer && !peerOpened) failOnline("Could not reach the online service within 15 seconds. Check your internet connection and try again.");
-  }, 15000);
+    if (online.peer === peer && !peerOpened) failOnline("Could not reach the alternate online service within 60 seconds. It may be starting up or unavailable; try again in a moment.");
+  }, 60000);
   peer.on("open", () => {
     if (online.peer !== peer) return;
     peerOpened = true; clearOnlineTimer();
@@ -1312,9 +1344,9 @@ function attachOnlineConnection(conn, role) {
   online.conn = conn; online.role = role;
   online.connectTimer = setTimeout(() => {
     if (online.conn === conn && !conn.open && !online.connected) {
-      failOnline("The two browsers could not establish a direct connection within 15 seconds. Try again; a school/work Wi-Fi or strict router may block peer-to-peer connections.");
+      failOnline("The two browsers could not establish a direct connection within 25 seconds. Try again; a school/work Wi-Fi or strict router may block peer-to-peer connections.");
     }
-  }, 15000);
+  }, 25000);
   conn.on("open", () => {
     if (online.conn !== conn) return;
     clearOnlineTimer();
@@ -1424,6 +1456,7 @@ function menuKey(e, k) {
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "enter", "escape"].includes(k)) e.preventDefault();
   if (k === "escape") {
     if (screen === "pause") act("resume"); else if (screen === "settings") act("back");
+    else if (screen === "multiplayer") act("multipback");
     else if (screen === "howto") act("howback"); else if (screen === "over") act("menu");
     return;
   }
