@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PONG // ARCADE</title>
-<script defer src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 :root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54;--phos:#3f8a5c}
@@ -37,6 +37,8 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .scan{background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.14) 4px);opacity:.55}
 .glass{box-shadow:inset 0 0 70px rgba(0,0,0,.5)}
 .nocrt .scan,.nocrt .glass{display:none}
+.toast{position:absolute;left:50%;top:3cqw;transform:translateX(-50%) translateY(-1cqw);z-index:9;pointer-events:none;opacity:0;transition:all .25s;font-family:"Press Start 2P",monospace;font-size:1.2cqw;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:.8cqw 1.6cqw;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%)}
 
 /* ---------- control deck under the screen ---------- */
 .deck{max-width:1000px;margin:18px auto 0;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 24px;border:3px solid #0b0b09;border-radius:8px;
@@ -132,14 +134,6 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
   transition:transform .3s cubic-bezier(.34,1.7,.5,1),background .12s,color .12s,border-color .12s,box-shadow .12s}
 .mi.sel{color:#000;background:var(--cream);border-color:var(--cream);transform:translateX(.8cqw) scale(1.05);box-shadow:0 0 2.5cqw rgba(242,232,201,.35)}
 .mi.sel:before{content:"";position:absolute;left:1cqw;top:50%;margin-top:-.7cqw;border:.7cqw solid transparent;border-left:1.1cqw solid var(--red);border-right:0}
-.menu .mi[data-act="local"]{text-indent:-.8cqw}
-.multiplayer-panel{width:78cqw;max-width:900px;text-align:center}
-.menu.h.multiplayer-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.4cqw;width:100%;margin:1.5cqw 0}
-.mi.multi-choice{width:100%;min-width:0;min-height:14cqw;margin:0;padding:1.5cqw;white-space:normal;text-indent:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1cqw;text-align:center;line-height:1.45}
-.multi-choice-title{font-family:"Press Start 2P",monospace;font-size:1.35cqw;line-height:1.7;color:inherit}
-.multi-choice-copy{font:2.1cqw VT323,monospace;letter-spacing:.08cqw;white-space:normal;color:#bdb59e}
-.mi.multi-choice.sel .multi-choice-copy{color:#333}
-.menu .mi.multi-choice[data-act="local"]{text-indent:0}
 .menu.h .mi{min-width:0;font-size:1.2cqw;padding:1cqw 2.2cqw}
 .menu.h .mi.sel{transform:scale(1.06)}
 .menu.h .mi.sel:before{display:none}
@@ -149,6 +143,11 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .title-hint{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;margin-top:1.1cqw!important}
 .hint .blk{display:inline-block;animation:blink 2.2s infinite}
 .ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
+
+/* online lobby */
+.codebig{font-family:"Press Start 2P",monospace;font-size:4.2cqw;letter-spacing:.8cqw;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:1cqw 1.6cqw 1cqw 2.4cqw;margin:1cqw 0}
+.codein{font-family:"Press Start 2P",monospace;font-size:3.6cqw;letter-spacing:.8cqw;text-align:center;text-transform:uppercase;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:1cqw;width:30cqw;margin:1cqw 0;outline:none}
+.codein:focus{border-color:var(--cream)}
 
 /* coins and the shop */
 .coin{display:inline-block;width:1.5cqw;height:1.5cqw;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2a8,#d5ad54 60%,#8a6417);border:.2cqw solid #7a5a1c;vertical-align:-.25cqw;margin-right:.6cqw}
@@ -173,15 +172,6 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .card.eq .cs{color:var(--gold)}
 .card.poor .cs{color:#c97a6a}
 .sc.shop .mi:hover{background:var(--cream);color:#000}
-.online-panel{width:62cqw;max-width:700px;padding:2cqw 2.4cqw;text-align:center}
-.online-copy{font-size:2.1cqw;color:#bdb59e;line-height:1.2;margin:.5cqw 0 1.2cqw}
-.net-actions{display:flex;justify-content:center;align-items:center;gap:.8cqw;flex-wrap:wrap;margin:1cqw 0}
-.net-btn{font:1.15cqw "Press Start 2P",monospace;color:#bfe8cc;background:#000;border:.25cqw solid var(--phos);padding:1cqw 1.2cqw;cursor:pointer;min-height:4cqw}
-.net-btn:hover{color:#000;background:var(--cream);border-color:var(--cream)}
-.net-input{font:2.3cqw VT323,monospace;letter-spacing:.45cqw;text-transform:uppercase;color:var(--cream);background:#07130d;border:.25cqw solid #4b493d;padding:.7cqw 1cqw;width:15cqw;min-width:140px;outline:none}
-.net-input:focus{border-color:var(--gold)}
-.net-status{min-height:2.8cqw;font-size:2.15cqw;color:var(--gold);margin:1cqw 0;overflow-wrap:anywhere}
-.net-code{font:2.1cqw "Press Start 2P",monospace;letter-spacing:.5cqw;color:var(--cream);padding:1.1cqw;background:#07130d;border:.25cqw dashed var(--gold);margin:.7cqw auto;max-width:80%}
 
 .panel{width:88cqw;background:rgba(0,0,0,.96);border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 3cqw rgba(0,0,0,.8);padding:1.8cqw 2.4cqw}
 .panel.narrow{width:44cqw}
@@ -262,6 +252,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 <div class="ui" id="ui"></div>
 <div class="ui2" id="uo"></div>
 <canvas id="fx" width="960" height="540"></canvas>
+<div class="toast" id="toast"></div>
 <div class="scan"></div><div class="glass"></div>
 </div></section>
 <section class="deck">
@@ -288,10 +279,16 @@ const TAU = Math.PI * 2;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const fract = x => x - Math.floor(x);
 const rnd = (s, i) => fract(Math.sin(s * 12.9898 + i * 78.233) * 43758.5453);   // repeatable pseudo-random numbers
+const r1 = n => Math.round(n * 10) / 10, r2 = n => Math.round(n * 100) / 100;
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
+
+// Online play state. role is "host" (left paddle, runs the real game), "guest" (right paddle, sends its paddle and draws what the host sends) or null.
+const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], skinG: "classic", pad: null, fresh: false, padAge: 0,
+  snap: null, snapT: 0, lastRx: 0, rem: [false, false], back: null, esc: 0, timer: 0, status: "" };
+const online = () => net.role !== null;
 
 const MODES = {
   normal: "CLASSIC PONG", gravity: "GRAVITY WELL", fast: "SUPER SPEED PADDLES",
@@ -398,6 +395,7 @@ function placePop() {
   }
 }
 function openPop() {
+  if (online()) { showToast("TWISTS ARE CHOSEN BY THE HOST IN ONLINE MATCHES"); return; }
   if (screen === "playing") showScreen("pause");
   pick.classList.add("open"); mpop.classList.add("open");
   placePop();
@@ -453,9 +451,6 @@ function popKey(e, k) {
 const DEFV = { players: "cpu", diff: "normal", win: 7, mode: "cycle", mods: [], ball: 1, psize: 1, pspeed: 1, rotate: true,
   bumpers: 4, gravR: 260, gravS: 5, vol: .7, crt: true, shake: true, slowmo: true, anim: true };
 const S = { ...DEFV, mods: [] };
-const online = { peer: null, conn: null, role: null, room: "", connected: false,
-  previousPlayers: "cpu", sendClock: 0, lastStatus: "", connectTimer: null };
-const remoteKeys = { arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
 const nums = a => a.map(n => ["" + n, n]);
 const ONOFF = [["ON", true], ["OFF", false]];
 const SETTINGS = [
@@ -538,7 +533,9 @@ const SFX = {
   coin: () => seq([988, 1319], 70, "square", .1), deny: () => beep(170, .16, "sawtooth", .9, -60),
   smash: () => { beep(110, .3, "sawtooth", 1.6, -60); setTimeout(() => beep(1100, .18, "square", 1, -900), 25); setTimeout(() => beep(300, .22, "triangle", 1, -200), 80); }
 };
-const sfx = n => SFX[n] && SFX[n]();
+// In an online match the host also tells the guest which game sounds to play
+const NETSFX = new Set(["hit", "wall", "bump", "brick", "portal"]);
+const sfx = n => { if (SFX[n]) SFX[n](); if (net.role === "host" && net.up && NETSFX.has(n)) net.ev.push(["s", n]); };
 
 /* ---------- shop: coins, paddle and ball skins, court themes, hit effects ---------- */
 const rect = (c, col, x, y, w, h) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
@@ -722,7 +719,7 @@ const VFX = {
     c.globalAlpha = 1 - p; c.strokeStyle = "#ffd877"; c.lineWidth = 5 * (1 - p) + .8; c.beginPath(); c.arc(0, 0, 8 + ease(p) * 46 * pw, 0, TAU); c.stroke();
     c.strokeStyle = "#f2e8c9"; c.lineWidth = 2 * (1 - p) + .5; c.beginPath(); c.arc(0, 0, 4 + ease(Math.max(0, p - .15)) * 30 * pw, 0, TAU); c.stroke();
     c.strokeStyle = "#ffd877"; c.lineWidth = 2;
-    for (let i = 0; i < 8; i++) { const a = ang + (i - 3.5) * .28, d0 = 14 * pw + p * 20, d1 = d0 + 10 * pw * (1 - p); c.beginPath(); c.moveTo(Math.cos(a) * d0, Math.sin(a) * d0); c.lineTo(Math.cos(a) * d1, Math.sin(a) * d1); c.stroke(); }
+        for (let i = 0; i < 8; i++) { const a = ang + (i - 3.5) * .28, d0 = 14 * pw + p * 20, d1 = d0 + 10 * pw * (1 - p); c.beginPath(); c.moveTo(Math.cos(a) * d0, Math.sin(a) * d0); c.lineTo(Math.cos(a) * d1, Math.sin(a) * d1); c.stroke(); }
     c.globalAlpha = 1;
   } },
   bolt: { name: "LIGHTNING", price: 350, draw(c, p, s, pw) {
@@ -749,6 +746,7 @@ const VFX = {
 const CATS = [{ key: "paddle", label: "PADDLES", set: PADDLES }, { key: "ball", label: "BALLS", set: BALLS }, { key: "court", label: "COURTS", set: COURTS }, { key: "vfx", label: "EFFECTS", set: VFX }];
 const rarity = p => p === 0 ? ["STARTER", 0] : p < 200 ? ["COMMON", 1] : p < 400 ? ["RARE", 2] : p < 650 ? ["EPIC", 3] : ["LEGEND", 4];
 const LEGACY = { paddle: { rainbow: 600 }, ball: { fire: 120, ice: 120, plasma: 250, eclipse: 400, rainbow: 600 } };   // skins that were replaced: coins are refunded
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function loadShop() {
   const d = { coins: 0, owned: { paddle: ["classic"], ball: ["classic"], court: ["classic"], vfx: ["none"] }, eq: { paddle: "classic", ball: "classic", court: "classic", vfx: "none" } };
@@ -808,10 +806,18 @@ function paintPreview(cv2, cat, id, now) {
 }
 const paintShop = now => shopPV.forEach(p => paintPreview(p.cv, p.cat, p.id, now));
 
+// A short message across the top of the screen
+let toastT = 0;
+function showToast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2600);
+}
+
 function addCoins(n, x, y, big) {
   shop.coins += n; M.coins += n; saveShop();
   coinPops.push({ x: clamp(x, 40, W - 40), y: y - 22, t: 0, txt: "+" + n, big });
   if (big) sfx("coin");
+  if (net.role === "host" && net.up) net.ev.push(["c", n, r1(x), r1(y), big ? 1 : 0]);   // your friend earns the same coins
 }
 
 function showCard() {                                   // keep the selected card inside the scrolling grid
@@ -825,9 +831,9 @@ function renderShopBody(msg) {
   $("shopCoins").textContent = shop.coins;
   ui.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.tab === shopTab));
   $("sgrid").innerHTML = ids.map((id, i) => {
-    const it = cat.set[id], own = shop.owned[cat.key].includes(id), eq = shop.eq[cat.key] === id, r = rarity(it.price);
-    const st = eq ? "EQUIPPED" : own ? "OWNED - EQUIP" : `<i class="coin"></i>${it.price}`;
-    return `<div class="card ${eq ? "eq" : ""} ${!own && shop.coins < it.price ? "poor" : ""} ${i === shopI ? "sel" : ""}" data-i="${i}"><canvas class="pv" width="240" height="72"></canvas><div class="cn">${it.name}<span class="rt r${r[1]}">${r[0]}</span></div><div class="cs">${st}</div></div>`;
+    const it = cat.set[id], ow = shop.owned[cat.key].includes(id), eq = shop.eq[cat.key] === id, r = rarity(it.price);
+    const st = eq ? "EQUIPPED" : ow ? "OWNED - EQUIP" : `<i class="coin"></i>${it.price}`;
+    return `<div class="card ${eq ? "eq" : ""} ${!ow && shop.coins < it.price ? "poor" : ""} ${i === shopI ? "sel" : ""}" data-i="${i}"><canvas class="pv" width="240" height="72"></canvas><div class="cn">${it.name}<span class="rt r${r[1]}">${r[0]}</span></div><div class="cs">${st}</div></div>`;
   }).join("");
   shopPV = [...ui.querySelectorAll(".pv")].map((c2, i) => ({ cv: c2, cat: cat.key, id: ids[i] }));
   $("shopMsg").textContent = msg || "Q / E TABS    ARROWS SELECT    ENTER BUY OR EQUIP";
@@ -836,9 +842,9 @@ function renderShopBody(msg) {
 function updateShopSel() { ui.querySelectorAll(".card").forEach(c => c.classList.toggle("sel", +c.dataset.i === shopI)); showCard(); }
 function shopTabSet(n) { shopTab = n; shopI = 0; renderShopBody(); sfx("move"); }
 function buyEquip(cat, id) {
-  const it = cat.set[id], own = shop.owned[cat.key].includes(id);
+  const it = cat.set[id], ow = shop.owned[cat.key].includes(id);
   let msg, denied = false;
-  if (own) { shop.eq[cat.key] = id; msg = "EQUIPPED " + it.name; sfx("select"); }
+  if (ow) { shop.eq[cat.key] = id; msg = "EQUIPPED " + it.name; sfx("select"); }
   else if (shop.coins >= it.price) { shop.coins -= it.price; shop.owned[cat.key].push(id); shop.eq[cat.key] = id; msg = "UNLOCKED " + it.name + "!"; sfx("coin"); }
   else { msg = "NEED " + (it.price - shop.coins) + " MORE COINS"; denied = true; sfx("deny"); }
   saveShop(); renderShopBody(msg);
@@ -859,21 +865,28 @@ function shopKey(e, k) {
 }
 
 /* ---------- game state ---------- */
+// In an online match the guest plays with the host's settings. cf() gives the settings the game rules should read.
+function cf() { return (net.role === "guest" && net.cfg) || S; }
+function localMode() { return S.players === "local"; }
+const twoP = () => localMode() || online();            // two humans (same keyboard or online)
+
 const BPOS = [[.35,.28],[.65,.72],[.35,.72],[.65,.28],[.5,.15],[.5,.85],[.43,.5],[.57,.5]];
-const bumpers = () => BPOS.slice(0, S.bumpers).map(([x, y]) => ({ x: W * x, y: H * y, r: 17 }));
+const bumpers = () => BPOS.slice(0, cf().bumpers).map(([x, y]) => ({ x: W * x, y: H * y, r: 17 }));
 const PORTALS = [{ x: W * .4, y: H * .27, r: 24 }, { x: W * .6, y: H * .73, r: 24 }];
 const PILLARS = [{ x: W / 2, y: H * .27, w: 20, h: 120, angle: 0, vx: 0, vy: 0, omega: 0 }, { x: W / 2, y: H * .73, w: 20, h: 120, angle: 0, vx: 0, vy: 0, omega: 0 }];
 const PADS = [{ x: W * .36, y: H * .28, w: 38, h: 76 }, { x: W * .64, y: H * .72, w: 38, h: 76 }];
 
 // s / sv = the paddle's stretch spring; dx / dy = its current thickness and length scale (the hitbox uses them too);
 // ik = how hard the paddle was just hit (a quick thinning flex); gh = motion-smear afterimages while it spins; sk = shrink flash (Paddle Decay)
+// tx / ty = where a remote paddle is heading (online guests smooth the host's paddle toward it)
 const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
   rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0,
-  s: 0, sv: 0, dx: 1, dy: 1, ik: 0, gh: [], smearT: 0, sk: 0 });
+  s: 0, sv: 0, dx: 1, dy: 1, ik: 0, gh: [], smearT: 0, sk: 0, tx: x, ty: H / 2 });
 const player = mk(62.5), cpu = mk(W - 62.5);
 const barrier = { x: W / 2, y: H / 2, w: 14, h: 110, angle: 0, vx: 0, vy: 0, omega: 0 };
 const newStats = () => ({ rally: 0, longest: 0, top: 0, time: 0, coins: 0, hist: [], p: [{ hits: 0, sm: 0, top: 0, pts: 0 }, { hits: 0, sm: 0, top: 0, pts: 0 }] });
 const PW = p => p.w * (p.dx || 1), PH = p => p.h * (p.dy || 1);   // real (stretched) paddle size
+const resetPaddle = p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh = []; p.smearT = 0; p.sk = 0; p.vx = p.vy = p.omega = 0; p.mvx = p.mvy = 0; p.angle = 0; p.rot = false; p.ty = H / 2; };
 
 let balls = [], pickups = [], pickT = 0, scoreP = 0, scoreC = 0, round = 1, M = newStats(), res = null, overView = 0;
 let ready = .8, countdown = false, cdN = 0, clock = 0, bt = 0, wy = WALL, cpuY = H / 2;
@@ -883,8 +896,8 @@ let comboT = 0, comboPop = 0;
 let screen = "title", settingsFrom = "title", selI = 0, slideDir = 1;
 
 const spdMul = () => Math.max(has("fast") ? 2.1 : 1, has("speed") ? 1.3 : 1);
-const smashOn = () => S.rotate && !has("spinner");   // smashing needs free rotation
-const smashNeed = () => has("fever") ? 2 : 4;          // hits needed to charge a smash
+const smashOn = () => cf().rotate && !has("spinner");   // smashing needs free rotation
+const smashNeed = () => has("fever") ? 2 : 4;            // hits needed to charge a smash
 
 // How good the CPU is at each level. predict: 0 = just follow the ball, 1 = predict wall bounces, 2 = full physics simulation
 const HOME = W - 62.5;
@@ -895,6 +908,7 @@ const LEVELS = {
 };
 const LV = () => LEVELS[diff.value] || LEVELS.normal;
 let cpuX = HOME, sawIncoming = false, cpuErr = 0, cpuPower = false;
+
 function predictY(b, x) {
   const t = (x - b.x) / b.vx;
   if (t <= 0) return b.y;
@@ -946,26 +960,22 @@ function simArrival(b, tx) {
   return s.y;
 }
 
-function localMode() { return S.players === "local" || S.players === "online"; }
-function onlineMode() { return S.players === "online"; }
-function modeName() { return onlineMode() ? "ONLINE 2 PLAYER" : localMode() ? "LOCAL 2 PLAYER" : "VS COMPUTER"; }
 function updateSettingsVisibility() {
   const row = ui.querySelector('.row[data-id="diff"]');
   if (row) row.style.display = localMode() ? "none" : "";
 }
 
 function updatePlayerModeUI() {
-  const local = localMode();
+  const local = localMode(), onl = online();
   const sub = $("marqueeSub"), ins = $("instructions"), foot = $("foot");
-  if (sub) sub.textContent = modeName();
-  if (ins) ins.innerHTML = onlineMode()
-    ? (online.role === "guest"
-      ? 'P2 (YOU) <b>ARROWS</b> MOVE · <b>ENTER</b> ROTATE/SMASH · <b>ESC</b> PAUSE'
-      : 'P1 (YOU) <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH · P2 IS ONLINE · <b>ESC</b> PAUSE')
+  const win = net.role === "guest" && net.cfg ? net.cfg.win : S.win;
+  if (sub) sub.textContent = onl ? "ONLINE 2 PLAYER" : local ? "LOCAL 2 PLAYER" : "PLAYER VS COMPUTER";
+  if (ins) ins.innerHTML = onl
+    ? 'MOVE <b>WASD</b>/<b>ARROWS</b> · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> TWICE TO LEAVE THE MATCH'
     : local
-      ? 'P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH &nbsp;|&nbsp; P2 <b>ARROWS</b> MOVE · <b>ENTER</b> ROTATE/SMASH · <b>ESC</b> PAUSE'
-      : 'P1 <b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES';
-  if (foot) foot.innerHTML = "FIRST TO " + S.win + " &bull; " + modeName();
+    ? 'P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH &nbsp;|&nbsp; P2 <b>ARROWS</b> MOVE · <b>ENTER</b> ROTATE/SMASH · <b>ESC</b> PAUSE'
+    : 'P1 <b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES';
+  if (foot) foot.innerHTML = onl ? "FIRST TO " + win + " &bull; ONLINE 2 PLAYER" : local ? "FIRST TO " + win + " &bull; LOCAL 2 PLAYER" : "FIRST TO " + win + " &bull; EVERY ROUND HAS A NEW TWIST";
 }
 
 // Works out which modes are active for the coming round
@@ -978,12 +988,12 @@ function chooseTwist() {
   const h = clamp(Math.round((has("tiny") ? 62 : has("giant") ? 180 : 105) * S.psize), 40, 240);
   [player, cpu].forEach(p => { p.h = h; p.rot = false; p.angle = 0; p.omega = 0; p.mvx = p.mvy = 0; p.sk = 0; p.charge = Math.min(p.charge, smashNeed()); });
   document.querySelectorAll("#tw label").forEach(l => l.style.display = has(l.dataset.m) ? "" : "none");
-  $("tw").style.display = has("bumpers") || has("gravity") ? "flex" : "none";
+  $("tw").style.display = !online() && (has("bumpers") || has("gravity")) ? "flex" : "none";
 }
 
 function serve(dir, first) {
   const r = has("heavy") ? 17 : has("micro") ? 5 : has("snow") ? 8 : 10;
-  const sp = (has("heavy") ? 320 : has("speed") ? 520 : 390) * S.ball;
+  const sp = (has("heavy") ? 320 : has("speed") ? 520 : 390) * cf().ball;
   const a = (Math.random() - .5) * .5;
   balls = [{ x: W / 2, y: H / 2, r, vx: dir * sp * Math.cos(a), vy: sp * Math.sin(a), glow: 0, trail: [],
     spin: Math.random() < .5 ? -1 : 1, pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, roll: 0 }];
@@ -992,13 +1002,15 @@ function serve(dir, first) {
 }
 
 function startMatch() {
-  if (onlineMode() && online.role === "guest") return;
   scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0; comboT = 0; comboPop = 0;
-  sparks = []; rings = []; pops = []; coinPops = []; vfxList = []; slowT = 0; flashT = 0;
-  [player, cpu].forEach(p => { p.y = H / 2; p.cool = 0; p.power = 0; p.rotCool = 0; p.charge = 0; p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh = []; p.smearT = 0; p.sk = 0; });
-  player.x = 62.5; cpu.x = HOME; cpuX = HOME; cpuY = H / 2; sawIncoming = false;
+  sparks = []; rings = []; pops = []; coinPops = []; vfxList = []; pickups = []; slowT = 0; flashT = 0;
+  [player, cpu].forEach(resetPaddle);
+  player.x = player.tx = 62.5; cpu.x = cpu.tx = HOME; cpuX = HOME; cpuY = H / 2; sawIncoming = false;
+  net.rem = [false, false]; net.pad = null; net.ev = [];
   chooseTwist(); serve(Math.random() < .5 ? -1 : 1, true);
+  updatePlayerModeUI();
   showScreen("playing");
+  if (net.role === "host" && net.up) send({ t: "start", cfg: cfgPacket() });
 }
 
 function point(side) {
@@ -1007,27 +1019,34 @@ function point(side) {
   M.hist.push({ m: modeLabel(), w: side });
   M.longest = Math.max(M.longest, M.rally); M.rally = 0; comboT = 0; comboPop = 0;
   shakeT = .3; sfx(side === "p" ? "score" : "lose");
-  if (scoreP >= S.win || scoreC >= S.win) { endMatch(); return; }
+  if (net.role === "host" && net.up) net.ev.push(["pt", side]);
+  if (scoreP >= cf().win || scoreC >= cf().win) { endMatch(); return; }
   round++; chooseTwist(); serve(side === "p" ? 1 : -1, false);
 }
 
-function endMatch() {
-  const win = scoreP > scoreC, t = S.win, L = ["D", "C", "B", "A", "S"];
-  let r = win ? (scoreC === 0 ? 4 : scoreC <= t * .4 ? 3 : 2) : (scoreP >= t * .6 ? 1 : 0);
-  if (win && !localMode()) r = clamp(r + (S.diff === "hard" ? 1 : S.diff === "easy" ? -1 : 0), 2, 4);
+// Works out rank and the end screen. mine / opp are the scores from the point of view of whoever is looking at this screen.
+function finishMatch(mine, opp, adj) {
+  const win = mine > opp, t = cf().win, L = ["D", "C", "B", "A", "S"];
+  let r = win ? (opp === 0 ? 4 : opp <= t * .4 ? 3 : 2) : (mine >= t * .6 ? 1 : 0);
+  if (win && adj) r = clamp(r + (S.diff === "hard" ? 1 : S.diff === "easy" ? -1 : 0), 2, 4);
   const newRally = M.longest > rec.rally;
   rec.games++; rec.rally = Math.max(rec.rally, M.longest);
   if (win) { rec.w++; rec.streak++; rec.best = Math.max(rec.best, rec.streak); } else { rec.l++; rec.streak = 0; }
   store.set("pong_rec", rec); saveShop();
-  const sub = win ? (scoreC === 0 ? "FLAWLESS VICTORY" : scoreC >= t - 1 ? "NAIL-BITING FINISH" : "WELL PLAYED")
-                  : (scoreP >= t - 1 ? "SO CLOSE!" : "BETTER LUCK NEXT TIME");
+  const sub = win ? (opp === 0 ? "FLAWLESS VICTORY" : opp >= t - 1 ? "NAIL-BITING FINISH" : "WELL PLAYED")
+                  : (mine >= t - 1 ? "SO CLOSE!" : "BETTER LUCK NEXT TIME");
   res = { win, rank: L[r], sub, newRally };
   sfx(win ? "win" : "defeat");
   showScreen("over", { fresh: true });
 }
+function endMatch() {
+  if (net.role === "host" && net.up) send({ t: "end", sc: [scoreP, scoreC], ev: net.ev.splice(0),
+    st: { lg: M.longest, top: r1(M.top), time: r1(M.time), hist: M.hist, p: M.p } });
+  finishMatch(scoreP, scoreC, !twoP());
+}
 
 /* ---------- screens ---------- */
-const retroOn = () => screen === "title" || screen === "multiplayer" || screen === "howto" || screen === "over" || screen === "shop" || (screen === "settings" && settingsFrom !== "pause");
+const retroOn = () => ["title", "howto", "over", "shop", "lobby", "host", "join"].includes(screen) || (screen === "settings" && settingsFrom !== "pause");
 const items = () => [...ui.querySelectorAll(".row,.mi")].filter(e => getComputedStyle(e).display !== "none");
 function sel(i, quiet) {
   if (screen === "shop") return;                       // the shop has its own selection
@@ -1055,12 +1074,14 @@ function showScreen(name, opt) {
   ui.classList.add("on");
   ui.classList.toggle("retro", retroOn());
   ui.classList.toggle("noanim", !S.anim);
-  ({ title: renderTitle, multiplayer: renderMultiplayer, online: renderOnline, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver, shop: renderShop })[name](opt);
+  ({ title: renderTitle, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver, shop: renderShop,
+     lobby: renderLobby, host: renderHost, join: renderJoin })[name](opt);
   const sc = ui.firstElementChild;                  // number the sections so they bounce in one after another
   sc.style.setProperty("--d", slideDir); sc.style.setProperty("--st", name === "over" ? "36ms" : "70ms");
   sc.querySelectorAll(".sec").forEach((e, i) => e.style.setProperty("--i", i));
   slideDir = 1;
   sel(0, true);
+  if (name === "join") setTimeout(() => { const i = $("codeIn"); if (i && screen === "join") i.focus(); }, 120);
 }
 
 function renderTitle() {
@@ -1068,38 +1089,37 @@ function renderTitle() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div>
     <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
     <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
-    <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; 3 SKILL LEVELS</span></div>
-    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="multiplayer">MULTIPLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; PLAY ONLINE</span></div>
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="online">ONLINE 2P</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
     <div class="bx wallet sec"><i class="coin"></i>${shop.coins}</div>
-    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V4.1</div></div>`;
+    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.0</div></div>`;
 }
 
-function renderMultiplayer() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel multiplayer-panel sec">
-    <h3 class="ph">MULTIPLAYER</h3>
-    <div class="online-copy">CHOOSE HOW YOU WANT TO PLAY.</div>
-    <div class="menu h multiplayer-options">
-      <div class="mi multi-choice" data-act="local"><span class="multi-choice-title">LOCAL 2 PLAYER</span><span class="multi-choice-copy">TWO PLAYERS, ONE KEYBOARD.</span></div>
-      <div class="mi multi-choice" data-act="online"><span class="multi-choice-title">ONLINE 2 PLAYER</span><span class="multi-choice-copy">PLAY A FRIEND OVER THE INTERNET.</span></div>
-    </div>
-    <div class="menu h"><div class="mi" data-act="multipback">BACK</div></div>
-  </div></div>`;
+function renderLobby() {
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
+    <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES THE ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
+    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
+}
+function renderHost() {
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">HOSTING</h3>
+    <div class="psub">GIVE THIS ROOM CODE TO YOUR FRIEND</div>
+    <div class="codebig" id="roomCode" style="display:inline-block">${net.code || "-----"}</div>
+    <div class="psub" id="netStatus">${net.status}</div>
+    <div class="menu"><div class="mi" data-act="lobbyback">CANCEL</div></div></div></div>`;
+}
+function renderJoin() {
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">JOIN A GAME</h3>
+    <div class="psub">TYPE THE 5 CHARACTER ROOM CODE</div>
+    <input id="codeIn" class="codein" maxlength="5" autocomplete="off" spellcheck="false" placeholder="-----">
+    <div class="psub" id="netStatus">${net.status}</div>
+    <div class="menu"><div class="mi" data-act="connect">CONNECT</div><div class="mi" data-act="lobbyback">BACK</div></div></div></div>`;
+}
+function refreshNetUI() {
+  const s = $("netStatus"), c = $("roomCode");
+  if (s) s.textContent = net.status;
+  if (c) c.textContent = net.code || "-----";
 }
 
-function renderOnline() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel online-panel sec">
-    <h3 class="ph">ONLINE 2 PLAYER</h3>
-    <div class="online-copy">CREATE A ROOM AND SHARE THE CODE, OR ENTER A FRIEND'S CODE.<br>THE GAME CONNECTS DIRECTLY BETWEEN YOUR BROWSERS.</div>
-    <div class="net-code" id="netcode" style="display:none"></div>
-    <div class="net-actions"><button class="net-btn" data-online="create" type="button">CREATE ROOM</button></div>
-    <div class="online-copy">HAVE A ROOM CODE?</div>
-    <div class="net-actions"><input class="net-input" id="roomInput" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" aria-label="Room code"><button class="net-btn" data-online="join" type="button">JOIN ROOM</button></div>
-    <div class="net-status" id="netstatus" aria-live="polite">Waiting for a room.</div>
-    <div class="menu h"><div class="mi" data-act="onlineback">BACK</div></div>
-    </div></div>`;
-  if (online.room) { const c = $("netcode"); c.style.display = "block"; c.textContent = "ROOM CODE: " + online.room; }
-  if (online.lastStatus) onlineStatus(online.lastStatus);
-}
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
 function optIndex(s) {
   const v = S[s.id]; let i = s.opts.findIndex(o => o[1] === v);
@@ -1130,31 +1150,31 @@ function renderShop() {
 }
 
 function renderHowto() {
-  const kv = onlineMode() ? [["P1 MOVE", "W A S D"], ["P1 ROTATE / SMASH", "SPACE"], ["P2 MOVE", "ARROW KEYS"], ["P2 ROTATE / SMASH", "ENTER"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]] : localMode()
+  const kv = localMode()
     ? [["P1 MOVE", "W A S D"], ["P1 ROTATE / SMASH", "SPACE"], ["P2 MOVE", "ARROW KEYS"], ["P2 ROTATE / SMASH", "ENTER"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]]
     : [["MOVE", "WASD / ARROWS"], ["ROTATE / SMASH", "SPACE (SPAM IT!)"], ["PAUSE", "ESC OR P"], ["RESTART", "R"], ["HITBOXES", "H"]];
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec"><h3 class="ph">HOW TO PLAY</h3>
     <div class="cols how"><div><div class="gh">CONTROLS</div>${kv.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join("")}
     <div class="gh">TIPS</div><div class="tip">HIT WITH THE EDGE OF YOUR PADDLE TO ANGLE THE BALL.</div>
-    <div class="tip">EVERY HIT CHARGES SMASH. WHEN IT IS FULL, TAP ROTATE JUST BEFORE THE BALL ARRIVES!</div>
-    <div class="tip">FIRST TO ${S.win} WINS. LONG RALLIES EARN COINS. PICK AND MIX TWISTS WITH THE TWIST BUTTON.</div></div>
+    <div class="tip">EVERY HIT CHARGES SMASH. WHEN FULL, TAP ROTATE JUST BEFORE THE BALL ARRIVES!</div>
+    <div class="tip">FIRST TO ${S.win} WINS. LONG RALLIES EARN COINS. MIX TWISTS WITH THE TWIST BUTTON. ONLINE USES THE HOST'S TWISTS.</div></div>
     <div><div class="gh">THE TWISTS</div><div class="tw">${ORDER.map(k => `<div><b>${MODES[k]}</b><span>${INFO[k]}</span></div>`).join("")}</div></div></div>
     <div class="menu h" style="margin-top:1.2cqw"><div class="mi" data-act="howback">BACK</div></div></div></div>`;
 }
 
 function renderPause() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow pz"><h3 class="ph">PAUSED</h3>
-    <div class="psub">ROUND ${round} &middot; ${modeLabel()}<br>${scoreP} - ${scoreC}<br><span class="lo">${modeName()}</span></div>
-    <div class="menu"><div class="mi" data-act="resume">RESUME</div>${onlineMode() ? "" : rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div>${onlineMode() ? "" : '<div class="mi" data-act="settings">SETTINGS</div>'}<div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
+    <div class="psub">ROUND ${round} &middot; ${modeLabel()}<br>${scoreP} - ${scoreC}<br><span class="lo">${localMode() ? "LOCAL 2 PLAYER" : "VS COMPUTER"}</span></div>
+    <div class="menu"><div class="mi" data-act="resume">RESUME</div>${rowHtml(SETTINGS[0], "big")}<div class="mi" data-act="restart">NEW GAME</div><div class="mi" data-act="settings">SETTINGS</div><div class="mi" data-act="quit">QUIT TO MENU</div></div></div></div>`;
 }
 
 const fmtTime = t => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
 
-// The six boxes on the end screen. In local 2P you can click P1 or P2 to see that player's own numbers.
+// The six boxes on the end screen. With two human players you can click P1 or P2 to see that player's own numbers.
 function statItems(view) {
   const P = M.p, tot = P[0].hits + P[1].hits || 1;
-  if (!localMode()) return [["LONGEST RALLY", M.longest], ["YOUR HITS", P[0].hits], ["TOP SPEED PX/S", Math.round(M.top)], ["MATCH TIME", null, "", fmtTime(M.time)], ["DIFFICULTY", null, "", S.diff.toUpperCase()], ["SMASHES", P[0].sm]];
-  if (view === 0) return [["LONGEST RALLY", M.longest], ["P1 HITS", P[0].hits], ["P2 HITS", P[1].hits], ["MATCH TIME", null, "", fmtTime(M.time)], ["MATCH TYPE", null, "", onlineMode() ? "ONLINE 2P" : "LOCAL 2P"], ["SMASHES", P[0].sm + P[1].sm]];
+  if (!twoP()) return [["LONGEST RALLY", M.longest], ["YOUR HITS", P[0].hits], ["TOP SPEED PX/S", Math.round(M.top)], ["MATCH TIME", null, "", fmtTime(M.time)], ["DIFFICULTY", null, "", S.diff.toUpperCase()], ["SMASHES", P[0].sm]];
+  if (view === 0) return [["LONGEST RALLY", M.longest], ["P1 HITS", P[0].hits], ["P2 HITS", P[1].hits], ["MATCH TIME", null, "", fmtTime(M.time)], ["MATCH TYPE", null, "", online() ? "ONLINE 2P" : "LOCAL 2P"], ["SMASHES", P[0].sm + P[1].sm]];
   const q = P[view - 1];
   return [["POINTS WON", q.pts], ["HITS", q.hits], ["SMASHES", q.sm], ["TOP HIT SPEED", Math.round(q.top)], ["HIT SHARE", Math.round(100 * q.hits / tot), "%"], ["LONGEST RALLY", M.longest]];
 }
@@ -1176,23 +1196,28 @@ function setOverView(v) {
 }
 
 function renderOver(opt) {
-  const fresh = opt && opt.fresh, w = online.role === "guest" ? !res.win : res.win, loc = localMode();
+  const fresh = opt && opt.fresh, w = res.win, two = twoP(), leftWon = scoreP > scoreC;
   if (fresh) overView = 0;
   const chips = M.hist.map((h, i) => `<div class="chip ${h.w}" title="ROUND ${i + 1}: ${h.m}">${i + 1}</div>`).join("");
-  const nm = (p, label) => loc ? `<span class="nm ptog${overView === p ? " on" : ""}" data-p="${p}" title="CLICK FOR ${label} STATS">${label}</span>` : `<span class="nm">${label}</span>`;
+  const nm = (p, label) => two ? `<span class="nm ptog${overView === p ? " on" : ""}" data-p="${p}" title="CLICK FOR ${label} STATS">${label}</span>` : `<span class="nm">${label}</span>`;
+  const hint = online() ? `YOU ARE ${net.role === "host" ? "P1" : "P2"} - CLICK P1 OR P2 FOR THEIR STATS` : "CLICK P1 OR P2 FOR THEIR STATS";
+  const menu = online()
+    ? `<div class="menu h"><div class="mi sec" data-act="rematch">REMATCH</div><div class="mi sec" data-act="menu">LEAVE</div></div>`
+    : `<div class="menu h"><div class="mi sec" data-act="rematch">REMATCH</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="menu">MAIN MENU</div></div>`;
   ui.innerHTML = `<div class="sc over ${w ? "win" : "lose"}"><div class="shade"></div>
     <div class="bx ovt sec"><div class="ov-title">${w ? "VICTORY" : "DEFEAT"}</div></div>
-    <div class="bx ovs sec"><div class="ov-sub">${online.role === "guest" ? (res.win ? "PLAYER 1 WINS" : "PLAYER 2 WINS") : res.sub}</div></div>
-    <div class="bx ovsc sec"><div class="ov-score">${nm(1, "P1")}<b class="${w ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${w ? "lo" : "hi"}">${scoreC}</b>${nm(2, loc ? "P2" : "CPU")}</div>${loc ? '<div class="tg">CLICK P1 OR P2 FOR THEIR STATS</div>' : ""}</div>
+    <div class="bx ovs sec"><div class="ov-sub">${res.sub}</div></div>
+    <div class="bx ovsc sec"><div class="ov-score">${nm(1, "P1")}<b class="${leftWon ? "hi" : "lo"}">${scoreP}</b><span class="dash">-</span><b class="${leftWon ? "lo" : "hi"}">${scoreC}</b>${nm(2, two ? "P2" : "CPU")}</div>${two ? `<div class="tg">${hint}</div>` : ""}</div>
     <div class="ov-mid"><div class="rank rk-${res.rank} sec"><small>RANK</small><b>${res.rank}</b></div>
       <div class="stats" id="ovStats">${statsHtml(overView, true, fresh)}</div></div>
     <div class="bx chipsbox sec"><div class="chips">${chips}</div></div>
     <div class="bx recbox sec"><div class="recl">RECORD ${rec.w}W - ${rec.l}L | STREAK ${rec.streak} | COINS +${M.coins}${res.newRally ? '<span class="badge">NEW BEST RALLY</span>' : ""}</div></div>
-    <div class="menu h"><div class="mi sec" data-act="rematch">REMATCH</div>${onlineMode() ? "" : '<div class="mi sec" data-act="settings">SETTINGS</div>'}<div class="mi sec" data-act="menu">MAIN MENU</div></div></div>`;
+    ${menu}</div>`;
   if (fresh) {
     runCounters($("ovStats"), 1000, 900);
     if (w) confT = 2.2;
   }
+  if (online()) refreshRematch();
 }
 
 function change(row, d) {
@@ -1205,237 +1230,34 @@ function change(row, d) {
 
 function act(a) {
   sfx("select");
-  slideDir = ["back", "howback", "menu", "quit", "shopback"].includes(a) ? -1 : 1;   // going back flies the other way
-  if (a === "local") { cleanupOnline({ restore: true }); setS("players", "local"); save(); startMatch(); }
-  else if (a === "play") { cleanupOnline({ restore: true }); setS("players", "cpu"); save(); startMatch(); }
-  else if (a === "multiplayer") showScreen("multiplayer");
-  else if (a === "online") { online.lastStatus = "Waiting for a room."; showScreen("online"); }
-  else if (a === "multipback") showScreen("title");
-  else if (a === "onlineback") { cleanupOnline({ restore: true }); showScreen("multiplayer"); }
-  else if (a === "rematch" || a === "restart") {
-    if (online.role === "guest") sendOnline({ type: "action", action: "rematch" });
-    else startMatch();
-  }
-  else if (a === "shop") { if (onlineMode()) { onlineStatus("The shop is unavailable during an online match."); return; } shopFrom = screen; showScreen("shop"); }
+  slideDir = ["back", "howback", "menu", "quit", "shopback", "lobbyback", "netquit"].includes(a) ? -1 : 1;   // going back flies the other way
+  if (a === "local") { setS("players", "local"); save(); startMatch(); }
+  else if (a === "play") { setS("players", "cpu"); save(); startMatch(); }
+  else if (a === "rematch") { if (online()) netRematch(); else startMatch(); }
+  else if (a === "restart") startMatch();
+  else if (a === "shop") { shopFrom = screen; showScreen("shop"); }
   else if (a === "shopback") showScreen(shopFrom);
-  else if (a === "settings") { if (onlineMode()) { onlineStatus("Settings are locked during an online match."); return; } settingsFrom = screen; showScreen("settings"); }
+  else if (a === "settings") { settingsFrom = screen; showScreen("settings"); }
   else if (a === "howto") showScreen("howto");
-  else if (a === "howback") showScreen("title");
-  else if (a === "menu" || a === "quit") { if (onlineMode()) cleanupOnline({ notify: true, restore: true }); showScreen("title"); }
-  else if (a === "back") showScreen(settingsFrom);
-  else if (a === "resume") {
-    if (online.role === "guest") sendOnline({ type: "action", action: "resume" });
-    else showScreen("playing");
+  else if (a === "online") showScreen("lobby");
+  else if (a === "hostgame") { startHost(0); showScreen("host"); }
+  else if (a === "joingame") { leaveNet(); net.status = ""; net.code = ""; showScreen("join"); }
+  else if (a === "connect") startJoin(($("codeIn") || {}).value);
+  else if (a === "lobbyback") { leaveNet(); showScreen("lobby"); }
+  else if (a === "netquit") showScreen("title");
+  else if (a === "howback" || a === "menu" || a === "quit") {
+    if (online()) { send({ t: "bye" }); leaveNet(); }
+    showScreen("title");
   }
+  else if (a === "back") showScreen(settingsFrom);
+  else if (a === "resume") showScreen("playing");
   else if (a === "defaults") {
     SETTINGS.forEach(s => setS(s.id, DEFV[s.id])); S.mods = []; markPop(); save();
     const i = selI; renderSettings(); sel(i, true);
   }
 }
 
-// ---------- online multiplayer ----------
-function onlineStatus(message) {
-  online.lastStatus = message;
-  const el = $("netstatus"); if (el) el.textContent = message;
-}
-function sendOnline(message) {
-  if (!online.conn || !online.conn.open) return false;
-  try { online.conn.send(message); return true; } catch (_) { return false; }
-}
-function resetRemoteKeys() { Object.keys(remoteKeys).forEach(k => remoteKeys[k] = false); }
-function clearOnlineTimer() {
-  if (online.connectTimer !== null) { clearTimeout(online.connectTimer); online.connectTimer = null; }
-}
-function failOnline(message) {
-  clearOnlineTimer();
-  cleanupOnline({ restore: true });
-  if (screen !== "online") showScreen("online");
-  onlineStatus(message);
-}
-function cleanupOnline(options = {}) {
-  const conn = online.conn, peer = online.peer;
-  const wasOnline = online.role !== null || !!peer || !!conn || onlineMode();
-  clearOnlineTimer();
-  if (options.notify && conn && conn.open) { try { conn.send({ type: "end" }); } catch (_) {} }
-  online.role = null; online.connected = false; online.conn = null; online.peer = null;
-  online.room = ""; online.sendClock = 0; resetRemoteKeys();
-  const codeEl = $("netcode"); if (codeEl) { codeEl.style.display = "none"; codeEl.textContent = ""; }
-  if (options.restore !== false && wasOnline) S.players = online.previousPlayers || "cpu";
-  if (peer && !peer.destroyed) { try { peer.destroy(); } catch (_) {} }
-}
-// Use an alternate PeerServer instead of 0.peerjs.com, which has had intermittent
-// multi-minute delays before emitting its OPEN message. Both players must use this same host.
-function peerOptions() {
-  return {
-    host: "peer-server-m6ay.onrender.com",
-    port: 443,
-    path: "/peerjs",
-    secure: true,
-    debug: 1,
-    config: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }
-  };
-}
-function makeRoomCode() { const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let out = ""; for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)]; return out; }
-function showRoomCode(code) {
-  const el = $("netcode"); if (el) { el.style.display = "block"; el.textContent = "ROOM CODE: " + code; }
-}
-function createOnlineRoom() {
-  if (typeof Peer !== "function") { onlineStatus("Online library failed to load. Check your internet connection and reload."); return; }
-  cleanupOnline({ restore: true });
-  online.previousPlayers = S.players === "online" ? "cpu" : S.players;
-  const code = makeRoomCode(); online.room = code; online.role = "host"; S.players = "online";
-  showRoomCode(code); onlineStatus("Creating room… keep this page open and share the code.");
-  let peer;
-  try { peer = new Peer("pong-" + code.toLowerCase(), peerOptions()); }
-  catch (err) { online.role = null; S.players = online.previousPlayers; onlineStatus("Could not create a room. Please try again."); return; }
-  online.peer = peer;
-  let peerOpened = false;
-  online.connectTimer = setTimeout(() => {
-    if (online.peer === peer && !peerOpened) failOnline("The alternate online service did not answer within 60 seconds. It may be starting up or unavailable; try again in a moment.");
-  }, 60000);
-  peer.on("open", () => {
-    if (online.peer !== peer) return;
-    peerOpened = true; clearOnlineTimer();
-    onlineStatus("Room ready. Waiting for your friend to join…");
-  });
-  peer.on("connection", conn => {
-    if (online.peer !== peer) { try { conn.close(); } catch (_) {} return; }
-    if (online.connected) { try { conn.close(); } catch (_) {} return; }
-    attachOnlineConnection(conn, "host");
-  });
-  peer.on("error", err => {
-    if (online.peer !== peer) return;
-    const type = (err && err.type) || "network";
-    if (type === "unavailable-id") failOnline("Room code collision. Create a new room and share the new code.");
-    else failOnline("Online service error (" + type + "). Try again. If it keeps happening, the public signaling service may be having trouble.");
-  });
-}
-function joinOnlineRoom() {
-  if (typeof Peer !== "function") { onlineStatus("Online library failed to load. Check your internet connection and reload."); return; }
-  const input = $("roomInput"), code = (input ? input.value : "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-  if (code.length !== 6) { onlineStatus("Enter the 6-character room code."); if (input) input.focus(); return; }
-  cleanupOnline({ restore: true }); online.previousPlayers = S.players === "online" ? "cpu" : S.players;
-  online.room = code; online.role = "guest"; S.players = "online"; showRoomCode(code);
-  onlineStatus("Connecting to room " + code + "…");
-  let peer;
-  try { peer = new Peer(peerOptions()); }
-  catch (err) { online.role = null; S.players = online.previousPlayers; onlineStatus("Could not start networking. Please try again."); return; }
-  online.peer = peer;
-  let peerOpened = false;
-  online.connectTimer = setTimeout(() => {
-    if (online.peer === peer && !peerOpened) failOnline("Could not reach the alternate online service within 60 seconds. It may be starting up or unavailable; try again in a moment.");
-  }, 60000);
-  peer.on("open", () => {
-    if (online.peer !== peer) return;
-    peerOpened = true; clearOnlineTimer();
-    let conn;
-    try { conn = peer.connect("pong-" + code.toLowerCase(), { reliable: true }); }
-    catch (err) { failOnline("Could not start the connection. Check the room code and try again."); return; }
-    attachOnlineConnection(conn, "guest");
-  });
-  peer.on("error", err => {
-    if (online.peer !== peer) return;
-    const type = (err && err.type) || "network";
-    if (type === "peer-unavailable") failOnline("Room not found. Check the code and make sure the host is still waiting in the room.");
-    else failOnline("Online service error (" + type + "). Check your internet connection and try again.");
-  });
-}
-function attachOnlineConnection(conn, role) {
-  online.conn = conn; online.role = role;
-  online.connectTimer = setTimeout(() => {
-    if (online.conn === conn && !conn.open && !online.connected) {
-      failOnline("The two browsers could not establish a direct connection within 25 seconds. Try again; a school/work Wi-Fi or strict router may block peer-to-peer connections.");
-    }
-  }, 25000);
-  conn.on("open", () => {
-    if (online.conn !== conn) return;
-    clearOnlineTimer();
-    online.connected = true;
-    if (role === "host") {
-      onlineStatus("Friend connected! Starting match…");
-      S.players = "online"; startMatch(); updatePlayerModeUI(); broadcastOnlineState();
-    } else {
-      onlineStatus("Connected! Loading match…"); sendOnline({ type: "hello" });
-    }
-  });
-  conn.on("data", message => {
-    if (!message || typeof message !== "object") return;
-    if (role === "host") {
-      if (message.type === "keys" && message.keys) {
-        remoteKeys.arrowup = !!message.keys.up; remoteKeys.arrowdown = !!message.keys.down;
-        remoteKeys.arrowleft = !!message.keys.left; remoteKeys.arrowright = !!message.keys.right;
-      } else if (message.type === "rotate") rotate(cpu);
-      else if (message.type === "action") {
-        if (message.action === "pause" && screen === "playing") showScreen("pause");
-        else if (message.action === "resume" && screen === "pause") showScreen("playing");
-        else if (message.action === "rematch" && online.connected) startMatch();
-        else if (message.action === "leave") { resetRemoteKeys(); if (screen === "playing") showScreen("pause"); onlineStatus("Your friend left. Share the same code to reconnect."); }
-      }
-    } else {
-      if (message.type === "state" && message.state) applyOnlineState(message.state);
-      else if (message.type === "end") { cleanupOnline({ restore: true }); onlineStatus("The host ended the session."); showScreen("online"); }
-    }
-  });
-  conn.on("close", () => {
-    if (online.conn !== conn || !online.role) return;
-    clearOnlineTimer();
-    online.connected = false; resetRemoteKeys();
-    if (role === "host") {
-      if (screen === "playing") showScreen("pause");
-      onlineStatus("Player disconnected. Share the same code to reconnect.");
-    } else {
-      cleanupOnline({ restore: true });
-      online.lastStatus = "Connection lost. Return to the menu and rejoin.";
-      showScreen("online"); onlineStatus(online.lastStatus);
-    }
-  });
-  conn.on("error", err => {
-    if (online.conn !== conn) return;
-    failOnline("Peer-to-peer connection failed. Try again, and check whether either network blocks direct connections.");
-  });
-}
-function makeOnlineSnapshot() {
-  return {
-    screen, settings: { ...S, mods: Array.isArray(S.mods) ? S.mods.slice() : [] }, mods: [...mods],
-    player, cpu, balls, pickups, pickT, scoreP, scoreC, round, M, ready, countdown, cdN, clock, bt, wy,
-    barrier, cpuY, popP, popC, slowT, flashT, shakeT, sparks, rings, pops, coinPops, vfxList,
-    comboT, comboPop, res: res ? { ...res } : null
-  };
-}
-function broadcastOnlineState() {
-  if (online.role !== "host" || !online.connected) return;
-  sendOnline({ type: "state", state: makeOnlineSnapshot() });
-}
-function applyOnlineState(state) {
-  if (online.role !== "guest") return;
-  if (state.settings) Object.keys(state.settings).forEach(k => { S[k] = state.settings[k]; });
-  mods = new Set(state.mods || []);
-  if (state.player) Object.assign(player, state.player);
-  if (state.cpu) Object.assign(cpu, state.cpu);
-  if (state.barrier) Object.assign(barrier, state.barrier);
-  balls = state.balls || []; pickups = state.pickups || []; M = state.M || newStats();
-  sparks = state.sparks || []; rings = state.rings || []; pops = state.pops || []; coinPops = state.coinPops || []; vfxList = state.vfxList || [];
-  pickT = state.pickT || 0; scoreP = state.scoreP || 0; scoreC = state.scoreC || 0; round = state.round || 1;
-  ready = state.ready || 0; countdown = !!state.countdown; cdN = state.cdN || 0; clock = state.clock || 0; bt = state.bt || 0; wy = state.wy || WALL; cpuY = state.cpuY || H / 2;
-  popP = state.popP || 0; popC = state.popC || 0; slowT = state.slowT || 0; flashT = state.flashT || 0; shakeT = state.shakeT || 0;
-  comboT = state.comboT || 0; comboPop = state.comboPop || 0; res = state.res || null;
-  updatePlayerModeUI();
-  if (state.screen === "over" && res && online.role === "guest") {
-    res = { ...res, sub: res.win ? "PLAYER 1 WINS" : "PLAYER 2 WINS" };
-  }
-  if (state.screen && state.screen !== screen) {
-    if (state.screen === "over") showScreen("over", { fresh: false });
-    else if (["playing", "pause", "title"].includes(state.screen)) showScreen(state.screen);
-  }
-}
-function sendGuestKeys() {
-  if (online.role !== "guest") return;
-  sendOnline({ type: "keys", keys: { up: !!keys.arrowup, down: !!keys.arrowdown, left: !!keys.arrowleft, right: !!keys.arrowright } });
-}
-
 ui.addEventListener("click", e => {
-  const onlineButton = e.target.closest("[data-online]");
-  if (onlineButton) { if (onlineButton.dataset.online === "create") createOnlineRoom(); else if (onlineButton.dataset.online === "join") joinOnlineRoom(); return; }
   const pt = e.target.closest(".ptog"), tab = e.target.closest(".tab"), card = e.target.closest(".card");
   if (pt) { setOverView(+pt.dataset.p); return; }
   if (tab) { shopTabSet(+tab.dataset.tab); return; }
@@ -1450,14 +1272,17 @@ ui.addEventListener("mouseover", e => {
   const t = e.target.closest(".row,.mi");
   if (t) { const i = items().indexOf(t); if (i !== selI) sel(i); }
 });
+ui.addEventListener("input", e => {                      // the room code box only takes letters and numbers
+  if (e.target.id === "codeIn") e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
+});
 
 function menuKey(e, k) {
   if (screen === "shop") { shopKey(e, k); return; }
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "enter", "escape"].includes(k)) e.preventDefault();
   if (k === "escape") {
     if (screen === "pause") act("resume"); else if (screen === "settings") act("back");
-    else if (screen === "multiplayer") act("multipback");
     else if (screen === "howto") act("howback"); else if (screen === "over") act("menu");
+    else if (screen === "lobby") act("netquit"); else if (screen === "host" || screen === "join") act("lobbyback");
     return;
   }
   if (screen === "howto") {
@@ -1476,66 +1301,62 @@ function menuKey(e, k) {
 }
 
 /* ---------- input ---------- */
-pauseBtn.onclick = () => {
-  if (online.role === "guest") sendOnline({ type: "action", action: screen === "playing" ? "pause" : "resume" });
-  else if (screen === "playing") showScreen("pause"); else if (screen === "pause") showScreen("playing");
-};
+// Pausing: solo and local games pause. Online matches can't, so ESC twice leaves instead.
+function pauseGame(fromEsc) {
+  if (!online()) { showScreen("pause"); return; }
+  if (!fromEsc) { showToast("ONLINE MATCHES CAN'T BE PAUSED"); return; }
+  const now = performance.now();
+  if (now - net.esc < 2000) leaveMatch(); else { net.esc = now; showToast("PRESS ESC AGAIN TO LEAVE THE MATCH"); }
+}
+pauseBtn.onclick = () => { if (screen === "playing") pauseGame(false); else if (screen === "pause") showScreen("playing"); };
 pauseBtn.addEventListener("click", () => pauseBtn.blur());
-window.addEventListener("blur", () => {
-  if (screen === "playing") {
-    if (online.role === "guest") {
-      keys.arrowup = keys.arrowdown = keys.arrowleft = keys.arrowright = false;
-      sendGuestKeys(); sendOnline({ type: "action", action: "pause" });
-    } else showScreen("pause");
-  }
-});
+window.addEventListener("blur", () => { if (screen === "playing" && !online()) showScreen("pause"); });
+
+const mine = () => net.role === "guest" ? cpu : player;     // the paddle this computer controls
 
 window.onkeydown = e => {
   const k = e.key.toLowerCase();
-  if (screen === "online" && e.target && e.target.id === "roomInput") {
-    if (k === "enter") { e.preventDefault(); joinOnlineRoom(); }
-    else if (k === "escape") { e.preventDefault(); e.target.blur(); act("onlineback"); }
+  if (e.target.id === "codeIn") {                            // typing a room code
+    if (k === "enter") { e.preventDefault(); act("connect"); }
+    else if (k === "escape") { e.preventDefault(); e.target.blur(); act("lobbyback"); }
     return;
   }
-  if (screen === "online" && e.target && e.target.dataset && e.target.dataset.online && (k === "enter" || k === " ")) {
-    e.preventDefault(); if (e.target.dataset.online === "create") createOnlineRoom(); else joinOnlineRoom(); return;
-  }
-  if (e.target.tagName === "BUTTON") e.target.blur();
-  if (e.target.tagName === "INPUT" && screen !== "online") e.target.blur();
-  if (screen === "online" && k === "escape") { e.preventDefault(); act("onlineback"); return; }
+  if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") e.target.blur();
   if (mpop.classList.contains("open")) { popKey(e, k); return; }
   if (screen !== "playing") { menuKey(e, k); return; }
-  if (k === "escape" || k === "p") { e.preventDefault(); if (online.role === "guest") sendOnline({ type: "action", action: "pause" }); else showScreen("pause"); return; }
+  if (k === "escape" || k === "p") { e.preventDefault(); pauseGame(k === "escape"); return; }
   keys[k] = true;
-  if (online.role === "guest") sendGuestKeys();
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
-  if (k === " " && !e.repeat) { if (online.role === "guest") sendOnline({ type: "rotate" }); else rotate(player); }
-  // Local P2 and online P2 use Enter to rotate/smash.
+  if (k === " " && !e.repeat) rotate(mine());
+  // Local P2 gets a dedicated rotate/smash control. Use both Enter variants so
+  // the control works reliably on full-size and numpad keyboards.
   const p2RotateKey = e.code === "Enter" || e.code === "NumpadEnter";
-  if (p2RotateKey && !e.repeat && localMode()) {
-    e.preventDefault();
-    if (online.role === "guest") sendOnline({ type: "rotate" });
-    else if (online.role !== "host") rotate(cpu);
+  if (p2RotateKey && !e.repeat) {
+    if (online()) { e.preventDefault(); rotate(mine()); }
+    else if (localMode()) { e.preventDefault(); rotate(cpu); }
   }
-  if (k === "r") { if (online.role === "guest") sendOnline({ type: "action", action: "rematch" }); else startMatch(); }
+  if (k === "r" && !online()) startMatch();
   if (k === "h") debug = !debug;
 };
-window.onkeyup = e => { keys[e.key.toLowerCase()] = false; if (online.role === "guest") sendGuestKeys(); };
+window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
 /* ---------- paddles ---------- */
 function rotate(p) {
-  if (has("spinner") || !S.rotate) return;
-  const dir = p === cpu && localMode() ? -1 : 1;     // player 2 spins the opposite way (counter-clockwise)
+  if (has("spinner") || !cf().rotate) return;
+  const dir = p === cpu && localMode() && !online() ? -1 : 1;     // local player 2 spins the opposite way (counter-clockwise)
   if (p.rot) { p.from = p.angle; p.to += dir * Math.PI / 2; }      // already turning: keep going
   else { p.from = p.angle; p.to = p.angle + dir * Math.PI / 2; p.rot = true; }
   p.t = 0; p.dur = .22;
 }
 
-function spin(p, dt) {
+function tickT(p, dt) {                                 // the little cooldown timers every paddle has
   p.power = Math.max(0, p.power - dt);
   p.cool = Math.max(0, p.cool - dt);
   p.rotCool = Math.max(0, p.rotCool - dt);
   p.sk = Math.max(0, p.sk - dt);
+}
+function spin(p, dt) {
+  tickT(p, dt);
   const old = p.angle;
   if (has("spinner")) p.angle += (p === player ? 1 : -1) * 2.4 * dt;
   else if (p.rot) {
@@ -1578,46 +1399,31 @@ function clampPaddle(p, side) {
   p.y = clamp(p.y, wy + ey, H - wy - ey);
 }
 
-function movePlayer(dt) {
-  // In local 2 player, P1 is WASD-only so the arrow keys belong exclusively to P2.
-  // In solo mode, the player keeps the original WASD / ARROWS controls.
-  const local = localMode();
-  let dx = local
-    ? ((keys.d ? 1 : 0) - (keys.a ? 1 : 0))
-    : ((keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0));
-  let dy = local
-    ? ((keys.s ? 1 : 0) - (keys.w ? 1 : 0))
-    : ((keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0));
-  if (has("mirror")) { dx = -dx; dy = -dy; }
-  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = player.x, oy = player.y;
-  let tx = dx / l * sp, ty = dy / l * sp;
-  if (has("ice")) {
-    const k = Math.min(1, dt * 2.2);
-    player.mvx += (tx - player.mvx) * k; player.mvy += (ty - player.mvy) * k;
-    tx = player.mvx; ty = player.mvy;
-  }
-  player.x += tx * dt; player.y += ty * dt;
-  clampPaddle(player, 0);
-  player.vx = (player.x - ox) / dt; player.vy = (player.y - oy) / dt;
-  if (has("ice")) { player.mvx = player.vx; player.mvy = player.vy; }
+// Keyboard input. In local 2 player, P1 is WASD-only so the arrow keys belong exclusively to P2.
+// Everywhere else (solo, online) you get WASD and the arrows.
+function inputP1() {
+  const local = localMode() && !online();
+  const dx = local ? ((keys.d ? 1 : 0) - (keys.a ? 1 : 0)) : ((keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0));
+  const dy = local ? ((keys.s ? 1 : 0) - (keys.w ? 1 : 0)) : ((keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0));
+  return [dx, dy];
 }
+const inputP2 = () => [(keys.arrowright ? 1 : 0) - (keys.arrowleft ? 1 : 0), (keys.arrowdown ? 1 : 0) - (keys.arrowup ? 1 : 0)];
 
-function moveLocalP2(dt) {
-  const input = online.role === "host" && onlineMode() ? remoteKeys : keys;
-  let dx = (input.arrowright ? 1 : 0) - (input.arrowleft ? 1 : 0);
-  let dy = (input.arrowdown ? 1 : 0) - (input.arrowup ? 1 : 0);
+// Moves a human-controlled paddle (handles mirror controls, ice, walls and the speed the ball picks up from the paddle)
+function moveHuman(p, side, dt, inp) {
+  let dx = inp[0], dy = inp[1];
   if (has("mirror")) { dx = -dx; dy = -dy; }
-  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * S.pspeed, ox = cpu.x, oy = cpu.y;
+  const l = Math.hypot(dx, dy) || 1, sp = 480 * spdMul() * cf().pspeed, ox = p.x, oy = p.y;
   let tx = dx / l * sp, ty = dy / l * sp;
   if (has("ice")) {
     const k = Math.min(1, dt * 2.2);
-    cpu.mvx += (tx - cpu.mvx) * k; cpu.mvy += (ty - cpu.mvy) * k;
-    tx = cpu.mvx; ty = cpu.mvy;
+    p.mvx += (tx - p.mvx) * k; p.mvy += (ty - p.mvy) * k;
+    tx = p.mvx; ty = p.mvy;
   }
-  cpu.x += tx * dt; cpu.y += ty * dt;
-  clampPaddle(cpu, 1);
-  cpu.vx = (cpu.x - ox) / dt; cpu.vy = (cpu.y - oy) / dt;
-  if (has("ice")) { cpu.mvx = cpu.vx; cpu.mvy = cpu.vy; }
+  p.x += tx * dt; p.y += ty * dt;
+  clampPaddle(p, side);
+  p.vx = (p.x - ox) / dt; p.vy = (p.y - oy) / dt;
+  if (has("ice")) { p.mvx = p.vx; p.mvy = p.vy; }
 }
 
 function moveCpu(dt) {
@@ -1638,7 +1444,7 @@ function moveCpu(dt) {
 // The bot. Normal predicts wall bounces; Hard replays the real physics, aims shots away from you,
 // and times its smash to the instant of contact.
 function think() {
-  if (localMode()) return;
+  if (twoP()) return;
   const L = LV();
   let b = balls[0];
   balls.forEach(o => { if (o.vx > 0 && (b.vx <= 0 || o.x > b.x)) b = o; });
@@ -1674,10 +1480,10 @@ function think() {
   } else if (!incoming && sideways) { rotate(cpu); cpu.rotCool = .9; }
 }
 
-/* ---------- smash effects ---------- */
+/* ---------- smash and hit effects ---------- */
 function smashFx(b) {
   sfx("smash");
-  if (S.slowmo) slowT = SLOWD;
+  if (cf().slowmo) slowT = SLOWD;
   flashT = .16; shakeT = .45;
   for (let i = 0; i < 30; i++) {
     const a = Math.random() * 6.283, s = 120 + Math.random() * 420, l = .5 + Math.random() * .4;
@@ -1685,17 +1491,30 @@ function smashFx(b) {
   }
   rings.push({ x: b.x, y: b.y, t: 0 });
   pops.push({ x: clamp(b.x, 90, W - 90), y: b.y - 28, t: 0 });
+  if (net.role === "host" && net.up) net.ev.push(["sm", r1(b.x), r1(b.y)]);
 }
 function coinBurst(x, y) {
   for (let i = 0; i < 10; i++) {
     const a = Math.random() * TAU, s = 70 + Math.random() * 180, l = .35 + Math.random() * .3;
     sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l, m: l, col: i % 2 ? "#ffd23f" : "#f2e8c9" });
   }
+  if (net.role === "host" && net.up) net.ev.push(["cb", r1(x), r1(y)]);
 }
-function spawnVfx(b, h, pow) {
-  if (shop.eq.vfx === "none") return;
-  vfxList.push({ k: shop.eq.vfx, x: b.x, y: b.y, t: 0, seed: Math.random() * 1000, pow, ang: Math.atan2(h.ny, h.nx) });
+// Hit effects: in online matches each paddle uses the effect its own player has equipped
+function vfxIdFor(pi) {
+  if (!online()) return shop.eq.vfx;
+  const mineSide = (pi === 0) === (net.role !== "guest");
+  const id = mineSide ? shop.eq.vfx : net.oppVfx;
+  return own(VFX, id) ? id : "none";
+}
+function pushVfx(id, x, y, ang, pow) {
+  vfxList.push({ k: id, x, y, t: 0, seed: Math.random() * 1000, pow, ang });
   if (vfxList.length > 24) vfxList.shift();
+}
+function spawnVfx(b, h, pow, pi) {
+  const ang = Math.atan2(h.ny, h.nx), id = vfxIdFor(pi);
+  if (id !== "none") pushVfx(id, b.x, b.y, ang, pow);
+  if (net.role === "host" && net.up) net.ev.push(["h", pi, r1(b.x), r1(b.y), r2(ang), pow]);
 }
 function fxUpdate(dt) {
   sparks = sparks.filter(s => (s.l -= dt) > 0);
@@ -1751,25 +1570,25 @@ function bounce(b, p, isPaddle) {
   b.vx += -h.ny * k; b.vy += h.nx * k;
   if (smashOn() && p.charge >= smashNeed() && Math.abs(p.omega) > 6) {
     // SMASH: fully charged, and the paddle was swinging fast when it met the ball
-    const c = Math.hypot(b.vx, b.vy) || 1, sp = 1250 * S.ball;
+    const c = Math.hypot(b.vx, b.vy) || 1, sp = 1250 * cf().ball;
     b.vx *= sp / c; b.vy *= sp / c; b.smash = true;
     p.charge = 0; p.cool = .08; p.sv += 7; p.smearT = .22;       // motion smear is only enabled for the smash itself
     M.p[pi].sm++;
     smashFx(b);
   } else {
     b.smash = false;
-    if (smashOn() && p.charge < smashNeed()) { p.charge++; if (p.charge === smashNeed() && p === player) sfx("ready"); }
+    if (smashOn() && p.charge < smashNeed()) { p.charge++; if (p.charge === smashNeed() && p === mine()) sfx("ready"); }
     if (p.cool <= 0) {
       const turbo = has("speed"), warm = has("warm");
-      let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * (warm ? 1.08 : 1.02), (turbo ? 1000 : warm ? 860 : 740) * S.ball);
-      if (p.rot || p.power > 0) { s = Math.min(s * 1.16, (turbo ? 1150 : 860) * S.ball); b.glow = .5; }
+      let s = Math.min((Math.hypot(b.vx, b.vy) || 360) * (warm ? 1.08 : 1.02), (turbo ? 1000 : warm ? 860 : 740) * cf().ball);
+      if (p.rot || p.power > 0) { s = Math.min(s * 1.16, (turbo ? 1150 : 860) * cf().ball); b.glow = .5; }
       const c = Math.hypot(b.vx, b.vy) || 1;
       b.vx *= s / c; b.vy *= s / c; p.cool = .08;
     }
   }
   const spd = Math.hypot(b.vx, b.vy);
   M.p[pi].top = Math.max(M.p[pi].top, spd);
-  spawnVfx(b, h, b.smash ? 1.7 : 1);
+  spawnVfx(b, h, b.smash ? 1.7 : 1, pi);
   squashBall(b, h.nx, h.ny, b.smash ? 1.5 : .65 + Math.min(.5, spd / 1400));
   p.ik = b.smash ? 1 : Math.min(1, .5 + spd / 1700);        // the paddle flexes (gets thinner) for a moment
   if (Math.abs(b.vx) < 150) b.vx = (b.vx < 0 ? -1 : 1) * 150;
@@ -1784,7 +1603,7 @@ function bump(b, o) {
   const vn = b.vx * nx + b.vy * ny;
   if (vn >= 0) return;
   b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny;
-  const s = Math.hypot(b.vx, b.vy) || 1, t = clamp(s * 1.12, 620 * S.ball, 820 * S.ball);
+  const s = Math.hypot(b.vx, b.vy) || 1, t = clamp(s * 1.12, 620 * cf().ball, 820 * cf().ball);
   b.vx *= t / s; b.vy *= t / s; b.glow = .4; b.smash = false; sfx("bump");
   squashBall(b, nx, ny, 1.1);
 }
@@ -1818,10 +1637,10 @@ function stepBall(b, dt) {
   if (has("slow") && Math.abs(b.x - W / 2) < SLOWW) dt *= .2;
   if (has("gravity")) {
     const dx = W / 2 - b.x, dy = H / 2 - b.y, d = Math.hypot(dx, dy);
-    if (d > .001 && d < S.gravR) {
-      const f = Math.sqrt(1 - d / S.gravR);
+    if (d > .001 && d < cf().gravR) {
+      const f = Math.sqrt(1 - d / cf().gravR);
       const ang = Math.atan2(b.vx * dy - b.vy * dx, b.vx * dx + b.vy * dy);
-      const turn = clamp(ang, -S.gravS * f * dt, S.gravS * f * dt);
+      const turn = clamp(ang, -cf().gravS * f * dt, cf().gravS * f * dt);
       const c = Math.cos(turn), s = Math.sin(turn), x = b.vx;
       b.vx = x * c - b.vy * s; b.vy = x * s + b.vy * c;
     }
@@ -1836,7 +1655,7 @@ function stepBall(b, dt) {
     const a = b.spin * 1.3 * dt, c = Math.cos(a), s = Math.sin(a), x = b.vx;
     b.vx = x * c - b.vy * s; b.vy = x * s + b.vy * c;
   }
-  const cap = (b.smash ? 1500 : has("speed") ? 1100 : 860) * S.ball, s = Math.hypot(b.vx, b.vy);
+  const cap = (b.smash ? 1500 : has("speed") ? 1100 : 860) * cf().ball, s = Math.hypot(b.vx, b.vy);
   if (s > M.top) M.top = s;
   if (s > cap) { b.vx *= cap / s; b.vy *= cap / s; }
   b.x += b.vx * dt; b.y += b.vy * dt;
@@ -1848,7 +1667,7 @@ function stepBall(b, dt) {
     b.pd = Math.max(0, b.pd - dt);
     if (b.pd <= 0) for (const p of PADS) {
       if (Math.abs(b.x - p.x) < p.w / 2 + b.r && Math.abs(b.y - p.y) < p.h / 2 + b.r) {
-        const sp = Math.hypot(b.vx, b.vy) || 1, t = Math.min(sp * 1.35, 860 * S.ball);
+        const sp = Math.hypot(b.vx, b.vy) || 1, t = Math.min(sp * 1.35, 860 * cf().ball);
         b.vx *= t / sp; b.vy *= t / sp; b.pd = .6; b.glow = .4; sfx("bump"); break;
       }
     }
@@ -1872,17 +1691,19 @@ function stepBall(b, dt) {
   b.glow = Math.max(0, b.glow - dt);
 }
 
-/* ---------- main update ---------- */
+/* ---------- main update (solo, local 2P, and the host of an online match) ---------- */
 function update(dt) {
   if (screen !== "playing") return;
-  if (onlineMode() && online.role === "guest") return;
   clock += dt; M.time += dt;
   wy = has("closing") ? WALL + clamp(bt * 12, 0, 160) : WALL;
-  if (!localMode()) think();
+  if (!twoP()) think();
+  const hostOnline = net.role === "host";
   const n = Math.min(30, Math.max(1, Math.ceil(dt / .0015))), sd = dt / n;
   for (let i = 0; i < n; i++) {
-    spin(player, sd); spin(cpu, sd);
-    movePlayer(sd); if (localMode()) moveLocalP2(sd); else moveCpu(sd);
+    spin(player, sd);
+    if (hostOnline) { tickT(cpu, sd); applyPad(); } else spin(cpu, sd);     // online: the guest's paddle comes from the guest's computer
+    moveHuman(player, 0, sd, inputP1());
+    if (localMode() && !online()) moveHuman(cpu, 1, sd, inputP2()); else if (!hostOnline) moveCpu(sd);
     if (ready > 0) continue;
     bt += sd;
     const A = H / 2 - WALL - 60, py = barrier.y;
@@ -1900,12 +1721,252 @@ function update(dt) {
     }
     if (scored) { point(scored); break; }
   }
-  flex(player, dt); flex(cpu, dt);                    // paddle squash & stretch
+  flex(player, dt);                                  // paddle squash & stretch
+  if (hostOnline) cpu.ik = Math.max(0, cpu.ik - dt * 5.5); else flex(cpu, dt);
   if (ready > 0) {
     ready -= dt;
-    if (countdown) { const n = Math.ceil(Math.max(ready, 0) / .8); if (n > 0 && n !== cdN) { cdN = n; sfx("tick"); } }
+    if (countdown) { const n2 = Math.ceil(Math.max(ready, 0) / .8); if (n2 > 0 && n2 !== cdN) { cdN = n2; sfx("tick"); } }
   }
   balls.forEach(b => { b.ht += dt; b.roll += (b.vx * dt) / Math.max(6, b.r) * .8; b.trail.push([b.x, b.y]); if (b.trail.length > (b.smash ? 30 : 20)) b.trail.shift(); });
+}
+
+/* ---------- online play ----------
+   The host runs the real game on the left. The guest controls the right paddle on their own computer
+   (so it feels instant) and sends where it is; the host sends back where everything is, about 40 times a second. */
+const NET_STEP = .025;
+function send(m) { if (net.conn && net.up) { try { net.conn.send(m); } catch (e) {} } }
+const numIn = (v, d, a, b) => Number.isFinite(v) ? clamp(v, a, b) : d;
+const cfgPacket = () => ({ win: S.win, ball: S.ball, pspeed: S.pspeed, rotate: S.rotate, bumpers: S.bumpers, gravR: S.gravR, gravS: S.gravS, slowmo: S.slowmo });
+function sanitizeCfg(c) {
+  c = c || {};
+  return { win: numIn(c.win, 7, 1, 50), ball: numIn(c.ball, 1, .5, 3), pspeed: numIn(c.pspeed, 1, .5, 2), rotate: c.rotate !== false,
+    bumpers: numIn(c.bumpers, 4, 1, 8), gravR: numIn(c.gravR, 260, 80, 400), gravS: numIn(c.gravS, 5, 1, 12), slowmo: c.slowmo !== false };
+}
+function leaveNet() {                                // closes the connection and goes back to offline play
+  clearTimeout(net.timer);
+  try { if (net.conn) net.conn.close(); } catch (e) {}
+  try { if (net.peer) net.peer.destroy(); } catch (e) {}
+  net.peer = net.conn = null; net.role = null; net.up = false; net.cfg = null; net.pad = null; net.ev = [];
+  net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0;
+  updatePlayerModeUI();
+}
+function netLost(msg) {
+  if (!net.role) return;
+  leaveNet(); showToast(msg);
+  if (screen !== "title") { slideDir = -1; showScreen("title"); }
+}
+function leaveMatch() {
+  send({ t: "bye" }); leaveNet();
+  slideDir = -1; showScreen("title"); showToast("YOU LEFT THE MATCH");
+}
+
+function wire(conn) {
+  conn.on("open", () => {
+    if (conn !== net.conn) return;
+    clearTimeout(net.timer);
+    net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
+    send({ t: "hi", pd: shop.eq.paddle, vx: shop.eq.vfx });
+    net.status = net.role === "host" ? "FRIEND CONNECTED! STARTING..." : "CONNECTED! WAITING FOR THE HOST...";
+    refreshNetUI();
+  });
+  conn.on("data", onData);
+  conn.on("close", () => { if (conn === net.conn) netLost("YOUR OPPONENT LEFT"); });
+  conn.on("error", () => { if (conn === net.conn) netLost("CONNECTION ERROR"); });
+}
+
+function startHost(tries) {
+  leaveNet(); net.code = "";
+  if (!window.Peer) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; return; }
+  const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = ""; for (let i = 0; i < 5; i++) code += alpha[Math.random() * alpha.length | 0];
+  net.role = "host"; net.code = code; net.status = "OPENING ROOM...";
+  let peer;
+  try { peer = new Peer("pongarc-" + code); } catch (e) { leaveNet(); net.status = "COULD NOT START ONLINE PLAY."; return; }
+  net.peer = peer;
+  peer.on("open", () => { if (peer === net.peer) { net.status = "WAITING FOR YOUR FRIEND..."; refreshNetUI(); } });
+  peer.on("connection", conn => {
+    if (peer !== net.peer) return;
+    if (net.conn) { try { conn.close(); } catch (e) {} return; }       // only one guest per room
+    net.conn = conn; wire(conn);
+  });
+  peer.on("error", err => {
+    if (peer !== net.peer) return;
+    if (err.type === "unavailable-id" && tries < 4) { startHost(tries + 1); refreshNetUI(); return; }
+    leaveNet(); net.status = "CONNECTION PROBLEM (" + err.type + "). TRY AGAIN."; refreshNetUI();
+  });
+}
+
+function startJoin(raw) {
+  const code = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  leaveNet();
+  if (!window.Peer) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; refreshNetUI(); return; }
+  if (code.length !== 5) { net.status = "ENTER THE 5 CHARACTER ROOM CODE."; refreshNetUI(); sfx("deny"); return; }
+  net.role = "guest"; net.status = "CONNECTING..."; refreshNetUI();
+  let peer;
+  try { peer = new Peer(); } catch (e) { leaveNet(); net.status = "COULD NOT START ONLINE PLAY."; refreshNetUI(); return; }
+  net.peer = peer;
+  peer.on("open", () => {
+    if (peer !== net.peer) return;
+    const conn = peer.connect("pongarc-" + code, { reliable: true, serialization: "json" });
+    net.conn = conn; wire(conn);
+  });
+  peer.on("error", err => {
+    if (peer !== net.peer) return;
+    leaveNet(); net.status = err.type === "peer-unavailable" ? "ROOM NOT FOUND. CHECK THE CODE." : "CONNECTION PROBLEM (" + err.type + ").";
+    refreshNetUI();
+  });
+  net.timer = setTimeout(() => {
+    if (net.role === "guest" && !net.up) { leaveNet(); net.status = "TIMED OUT. IS THE HOST STILL WAITING?"; refreshNetUI(); }
+  }, 15000);
+}
+
+function netRematch() {
+  const me = net.role === "host" ? 0 : 1;
+  net.rem[me] = true; send({ t: "rem" }); refreshRematch();
+  if (net.role === "host" && net.rem[0] && net.rem[1]) startMatch();
+}
+function refreshRematch() {
+  const el = ui.querySelector('.mi[data-act="rematch"]'); if (!el) return;
+  const me = net.role === "host" ? 0 : 1;
+  el.textContent = net.rem[me] ? "WAITING..." : net.rem[1 - me] ? "REMATCH? (READY)" : "REMATCH";
+}
+
+function onData(m) {
+  if (!net.role || !m || typeof m !== "object") return;
+  net.lastRx = performance.now();
+  try {
+    if (m.t === "p") { if (net.role === "host") { net.pad = m; net.padAge = 0; } }
+    else if (m.t === "s") { if (net.role === "guest") applySnap(m); }
+    else if (m.t === "hi") {
+      net.oppPaddle = own(PADDLES, m.pd) ? m.pd : "classic"; net.oppVfx = own(VFX, m.vx) ? m.vx : "none";
+      if (net.role === "host") setTimeout(() => { if (net.role === "host" && net.up && screen !== "playing") startMatch(); }, 600);
+    }
+    else if (m.t === "start") { if (net.role === "guest") guestStart(m); }
+    else if (m.t === "end") { if (net.role === "guest") guestEnd(m); }
+    else if (m.t === "rem") {
+      net.rem[net.role === "host" ? 1 : 0] = true; refreshRematch();
+      if (net.role === "host" && net.rem[0] && net.rem[1]) startMatch();
+    }
+    else if (m.t === "bye") netLost("YOUR OPPONENT LEFT");
+  } catch (e) {}
+}
+
+// Host: tell the guest where everything is, plus anything that just happened (hits, smashes, coins, points)
+function sendSnap() {
+  send({ t: "s",
+    b: balls.map(b => [r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), b.smash ? 1 : 0, r2(b.roll), r2(b.sm), r2(b.sa), r2(b.ht), r2(b.glow)]),
+    h: [r1(player.x), r1(player.y), r2(player.angle), r2(player.dx), r2(player.dy), r2(player.ik), player.charge, r1(player.h), r2(player.sk), r1(player.vx), r1(player.vy), r2(player.omega)],
+    g: [r2(cpu.ik), cpu.charge, r1(cpu.h), r2(cpu.sk)],
+    sc: [scoreP, scoreC], rd: round, rdy: r2(ready), cd: countdown ? 1 : 0, wy: r1(wy), by: r1(barrier.y),
+    pk: pickups.map(c => [r1(c.x), r1(c.y), r1(c.life), r1(c.id)]),
+    m: [...mods].join(","), ra: M.rally, ev: net.ev.splice(0) });
+}
+// Guest: tell the host where my paddle is
+function sendPad() {
+  send({ t: "p", x: r1(cpu.x), y: r1(cpu.y), a: r2(cpu.angle), vx: r1(cpu.vx), vy: r1(cpu.vy), om: r2(cpu.omega), dx: r2(cpu.dx), dy: r2(cpu.dy), r: cpu.rot || cpu.power > 0 ? 1 : 0 });
+}
+// Host: put the guest's paddle where the guest says it is (nudged forward a touch to cover the delay)
+function applyPad() {
+  const q = net.pad; if (!q) return;
+  const age = Math.min(net.padAge, .06), f = v => Number.isFinite(v) ? v : 0;
+  cpu.vx = clamp(f(q.vx), -2000, 2000); cpu.vy = clamp(f(q.vy), -2000, 2000);
+  cpu.omega = clamp(f(q.om), -60, 60);
+  cpu.angle = f(q.a) + cpu.omega * age;
+  cpu.dx = clamp(f(q.dx) || 1, .5, 1.5); cpu.dy = clamp(f(q.dy) || 1, .5, 1.5);
+  cpu.x = f(q.x) + cpu.vx * age; cpu.y = f(q.y) + cpu.vy * age;
+  cpu.rot = !!q.r;
+  clampPaddle(cpu, 1);
+}
+
+function guestStart(m) {
+  net.cfg = sanitizeCfg(m.cfg); net.rem = [false, false]; net.mk = null;
+  scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0; comboT = 0; comboPop = 0;
+  sparks = []; rings = []; pops = []; coinPops = []; vfxList = []; pickups = []; balls = []; slowT = 0; flashT = 0;
+  mods = new Set();
+  [player, cpu].forEach(resetPaddle);
+  player.x = player.tx = 62.5; cpu.x = cpu.tx = HOME;
+  ready = 2.4; countdown = true; cdN = 0; wy = WALL;
+  updatePlayerModeUI();
+  showScreen("playing");
+}
+function guestEnd(m) {
+  (m.ev || []).forEach(guestEvent);
+  scoreP = m.sc[0] | 0; scoreC = m.sc[1] | 0;
+  const st = m.st || {};
+  M.longest = st.lg | 0; M.top = +st.top || 0; M.time = +st.time || 0;
+  M.hist = Array.isArray(st.hist) ? st.hist.slice(0, 60).map(h => ({ m: String(h.m).toUpperCase().replace(/[^A-Z0-9 +]/g, "").slice(0, 120), w: h.w === "c" ? "p" : "c" })) : [];   // green = the guest scored
+  if (Array.isArray(st.p) && st.p.length === 2) M.p = st.p.map(q => ({ hits: q.hits | 0, sm: q.sm | 0, top: +q.top || 0, pts: q.pts | 0 }));
+  finishMatch(scoreC, scoreP, false);
+}
+
+function guestEvent(e) {
+  if (!Array.isArray(e)) return;
+  if (e[0] === "s") { if (NETSFX.has(e[1])) SFX[e[1]](); }
+  else if (e[0] === "h") { const id = vfxIdFor(e[1] | 0); if (id !== "none") pushVfx(id, +e[2], +e[3], +e[4], +e[5] || 1); }
+  else if (e[0] === "sm") smashFx({ x: +e[1], y: +e[2] });
+  else if (e[0] === "c") addCoins(e[1] | 0, +e[2], +e[3], !!e[4]);
+  else if (e[0] === "cb") { coinBurst(+e[1], +e[2]); sfx("coin"); }
+  else if (e[0] === "pt") {
+    if (e[1] === "p") popP = .45; else popC = .45;
+    shakeT = .3; sfx(e[1] === "c" ? "score" : "lose"); M.rally = 0; comboT = 0;
+  }
+}
+
+// Guest: take the host's picture of the game
+function applySnap(s) {
+  if (screen !== "playing" || !Array.isArray(s.b) || !Array.isArray(s.h) || !Array.isArray(s.g) || !Array.isArray(s.sc)) return;
+  while (balls.length < s.b.length) balls.push({ x: W / 2, y: H / 2, r: 10, vx: 0, vy: 0, glow: 0, trail: [], spin: 1, pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, roll: 0 });
+  balls.length = s.b.length;
+  s.b.forEach((q, i) => {
+    const b = balls[i], d = Math.hypot(q[0] - b.x, q[1] - b.y);
+    if (d > 120) b.trail = [];
+    if (d > 40 || ready > 0) { b.x = q[0]; b.y = q[1]; } else { b.x += (q[0] - b.x) * .65; b.y += (q[1] - b.y) * .65; }
+    b.vx = q[2]; b.vy = q[3]; b.r = q[4]; b.smash = !!q[5]; b.roll = q[6]; b.sm = q[7]; b.sa = q[8]; b.ht = q[9]; b.glow = q[10];
+  });
+  const h = s.h;
+  player.tx = h[0]; player.ty = h[1]; player.angle = h[2]; player.dx = h[3]; player.dy = h[4];
+  player.ik = Math.max(player.ik, h[5]); player.charge = h[6]; player.h = h[7]; player.sk = h[8];
+  player.vx = h[9]; player.vy = h[10]; player.omega = h[11];
+  cpu.ik = Math.max(cpu.ik, s.g[0]); cpu.charge = s.g[1]; cpu.h = s.g[2]; cpu.sk = s.g[3];
+  scoreP = s.sc[0]; scoreC = s.sc[1]; round = s.rd; ready = s.rdy; countdown = !!s.cd; wy = s.wy; barrier.y = s.by;
+  pickups = (s.pk || []).map(q => ({ x: q[0], y: q[1], life: q[2], id: q[3] }));
+  if (typeof s.m === "string" && s.m !== net.mk) { net.mk = s.m; mods = new Set(s.m ? s.m.split(",").filter(k => own(MODES, k) && k !== "normal") : []); }
+  if (s.ra > M.rally) { comboT = 1.15; comboPop = .42; }
+  if (s.ra === 0) comboT = 0;
+  M.rally = s.ra | 0;
+  (s.ev || []).forEach(guestEvent);
+}
+
+// Guest: move my own paddle right away; the ball and the host's paddle come from the latest snapshot
+function updateGuest(dt) {
+  clock += dt; M.time += dt;
+  spin(cpu, dt);
+  moveHuman(cpu, 1, dt, inputP1());
+  flex(cpu, dt);
+  const k = Math.min(1, dt * 30);
+  player.x += (player.tx - player.x) * k; player.y += (player.ty - player.y) * k;
+  player.ik = Math.max(0, player.ik - dt * 5.5); player.gh = [];
+  if (ready > 0) {
+    ready -= dt;
+    if (countdown) { const n2 = Math.ceil(Math.max(ready, 0) / .8); if (n2 > 0 && n2 !== cdN) { cdN = n2; sfx("tick"); } }
+  }
+  balls.forEach(b => {
+    if (ready <= 0) { b.x += b.vx * dt; b.y += b.vy * dt; }       // keep the ball moving between snapshots
+    b.ht += dt; b.roll += (b.vx * dt) / Math.max(6, b.r) * .8;
+    b.trail.push([b.x, b.y]); if (b.trail.length > (b.smash ? 30 : 20)) b.trail.shift();
+  });
+}
+
+// Runs every frame: heartbeat, and the 40-per-second updates while a match is on
+function netTick(real) {
+  if (!net.role || !net.up) return;
+  if (performance.now() - net.lastRx > 7000) { netLost("CONNECTION LOST"); return; }
+  net.pingT = (net.pingT || 0) + real;
+  if (net.pingT >= 1) { net.pingT = 0; send({ t: "ping" }); }
+  if (screen !== "playing") return;
+  if (net.role === "host") net.padAge += real;
+  net.snapT += real;
+  if (net.snapT >= NET_STEP) { net.snapT = 0; net.role === "host" ? sendSnap() : sendPad(); }
 }
 
 /* ---------- confetti ---------- */
@@ -1968,8 +2029,16 @@ function paddleBody(x, y, a, w, h, dx, dy, thin, alpha, fn) {
   ctx.restore();
 }
 
+// Which skin a paddle wears: yours is your equipped one; in online matches your opponent's shows their own
+function skinOf(p) {
+  if (!online()) return p === player ? shop.eq.paddle : "classic";
+  const isMine = (p === player) === (net.role !== "guest");
+  const id = isMine ? shop.eq.paddle : net.oppPaddle;
+  return own(PADDLES, id) ? id : "classic";
+}
+
 function drawPaddle(p) {
-  const fn = (p === player ? PADDLES[shop.eq.paddle] : PADDLES.classic).draw;   // your equipped skin goes on P1
+  const fn = PADDLES[skinOf(p)].draw;
   p.gh.forEach(g => paddleBody(g.x, g.y, g.a, p.w, p.h, g.dx, g.dy, 0, g.l * .28, fn));   // motion smear while spinning
   const f = p.ik * p.ik * (3 - 2 * p.ik);               // smoothstep for the impact flex
   paddleBody(p.x, p.y, p.angle, p.w, p.h, p.dx, p.dy, f, 1, fn);
@@ -2077,6 +2146,13 @@ function fitText(txt, maxW, px, fam) {
   return s;
 }
 
+// Labels above each paddle: P1 / P2 / CPU, or YOU / OPP in online matches
+function sideNames() {
+  if (net.role === "host") return ["YOU", "OPP"];
+  if (net.role === "guest") return ["OPP", "YOU"];
+  return ["P1", localMode() ? "P2" : "CPU"];
+}
+
 function drawGame() {
   ctx.save();
   if (S.shake && shakeT > 0) { const a = shakeT * 28; ctx.translate((Math.random() - .5) * a, (Math.random() - .5) * a); }
@@ -2102,7 +2178,7 @@ function drawGame() {
     });
   }
   if (has("gravity")) {
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, S.gravR, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, cf().gravR, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(76,125,104,.10)"; ctx.fill();
     ctx.strokeStyle = "rgba(198,218,177,.48)"; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(W / 2, H / 2, 13 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
@@ -2174,15 +2250,16 @@ function drawGame() {
 
   drawPaddle(player); drawPaddle(cpu);
 
+  const nmz = sideNames();
   ctx.textAlign = "center";
   ctx.fillStyle = "#e9dfbd"; ctx.font = '42px "Press Start 2P"';
   drawScore(scoreP, W * .43, popP); drawScore(scoreC, W * .57, popC);
   ctx.font = "17px VT323"; ctx.fillStyle = "#cfc6a7";
-  ctx.fillText("P1", W * .25, 35); ctx.fillText(localMode() ? "P2" : "CPU", W * .75, 35);
+  ctx.fillText(nmz[0], W * .25, 35); ctx.fillText(nmz[1], W * .75, 35);
   drawCombo();
 
-  if (smashOn()) {                  // smash meters: yours left-aligned, the CPU's right-aligned
-    const pw = ctx.measureText("P1").width / 2, cw = ctx.measureText(localMode() ? "P2" : "CPU").width / 2;
+  if (smashOn()) {                  // smash meters: the left player's left-aligned, the right player's right-aligned
+    const pw = ctx.measureText(nmz[0]).width / 2, cw = ctx.measureText(nmz[1]).width / 2;
     drawMeter(player, W * .25 - pw, false);
     drawMeter(cpu, W * .75 + cw, true);
     ctx.textAlign = "center";
@@ -2286,8 +2363,8 @@ function loop(t) {
   slowT = Math.max(0, slowT - real); flashT = Math.max(0, flashT - real);
   popP = Math.max(0, popP - real); popC = Math.max(0, popC - real);
   comboT = Math.max(0, comboT - real); comboPop = Math.max(0, comboPop - real);
-  if (screen === "playing") { update(dt); if (!(onlineMode() && online.role === "guest")) fxUpdate(dt); }
-  if (online.role === "host" && online.connected) { online.sendClock += real; if (online.sendClock >= 1 / 30) { online.sendClock = 0; broadcastOnlineState(); } }
+  netTick(real);
+  if (screen === "playing") { net.role === "guest" ? updateGuest(dt) : update(dt); fxUpdate(dt); }
   shakeT = Math.max(0, shakeT - real);
   fxStep(real);
   if (screen === "shop") paintShop(t / 1000);        // shop previews animate
