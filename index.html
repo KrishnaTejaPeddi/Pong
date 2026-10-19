@@ -1046,7 +1046,7 @@ function endMatch() {
 }
 
 /* ---------- screens ---------- */
-const retroOn = () => ["title", "howto", "over", "shop", "lobby", "host", "join"].includes(screen) || (screen === "settings" && settingsFrom !== "pause");
+const retroOn = () => ["title", "howto", "over", "shop", "multi", "lobby", "host", "join"].includes(screen) || (screen === "settings" && settingsFrom !== "pause");
 const items = () => [...ui.querySelectorAll(".row,.mi")].filter(e => getComputedStyle(e).display !== "none");
 function sel(i, quiet) {
   if (screen === "shop") return;                       // the shop has its own selection
@@ -1075,7 +1075,7 @@ function showScreen(name, opt) {
   ui.classList.toggle("retro", retroOn());
   ui.classList.toggle("noanim", !S.anim);
   ({ title: renderTitle, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver, shop: renderShop,
-     lobby: renderLobby, host: renderHost, join: renderJoin })[name](opt);
+     multi: renderMulti, lobby: renderLobby, host: renderHost, join: renderJoin })[name](opt);
   const sc = ui.firstElementChild;                  // number the sections so they bounce in one after another
   sc.style.setProperty("--d", slideDir); sc.style.setProperty("--st", name === "over" ? "36ms" : "70ms");
   sc.querySelectorAll(".sec").forEach((e, i) => e.style.setProperty("--i", i));
@@ -1090,9 +1090,13 @@ function renderTitle() {
     <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
     <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
     <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; PLAY ONLINE</span></div>
-    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="online">ONLINE 2P</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="multi">MULTIPLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
     <div class="bx wallet sec"><i class="coin"></i>${shop.coins}</div>
     <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.0</div></div>`;
+  function renderMulti() {
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">MULTIPLAYER</h3>
+    <div class="psub">PLAY WITH A FRIEND.<br><span class="lo">LOCAL: SAME KEYBOARD. ONLINE: OVER THE INTERNET.</span></div>
+    <div class="menu"><div class="mi" data-act="local">LOCAL 2 PLAYER</div><div class="mi" data-act="online">ONLINE 2P</div><div class="mi" data-act="multiback">BACK</div></div></div></div>`;
 }
 
 function renderLobby() {
@@ -1230,7 +1234,7 @@ function change(row, d) {
 
 function act(a) {
   sfx("select");
-  slideDir = ["back", "howback", "menu", "quit", "shopback", "lobbyback", "netquit"].includes(a) ? -1 : 1;   // going back flies the other way
+  slideDir = ["back", "howback", "menu", "quit", "shopback", "lobbyback", "netquit", "multiback"].includes(a) ? -1 : 1;   // going back flies the other way
   if (a === "local") { setS("players", "local"); save(); startMatch(); }
   else if (a === "play") { setS("players", "cpu"); save(); startMatch(); }
   else if (a === "rematch") { if (online()) netRematch(); else startMatch(); }
@@ -1244,7 +1248,9 @@ function act(a) {
   else if (a === "joingame") { leaveNet(); net.status = ""; net.code = ""; showScreen("join"); }
   else if (a === "connect") startJoin(($("codeIn") || {}).value);
   else if (a === "lobbyback") { leaveNet(); showScreen("lobby"); }
-  else if (a === "netquit") showScreen("title");
+  else if (a === "netquit") showScreen("multi"); 
+  else if (a === "multi") showScreen("multi"); 
+  else if (a === "multiback") showScreen("title");
   else if (a === "howback" || a === "menu" || a === "quit") {
     if (online()) { send({ t: "bye" }); leaveNet(); }
     showScreen("title");
@@ -1280,9 +1286,13 @@ function menuKey(e, k) {
   if (screen === "shop") { shopKey(e, k); return; }
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "enter", "escape"].includes(k)) e.preventDefault();
   if (k === "escape") {
-    if (screen === "pause") act("resume"); else if (screen === "settings") act("back");
-    else if (screen === "howto") act("howback"); else if (screen === "over") act("menu");
-    else if (screen === "lobby") act("netquit"); else if (screen === "host" || screen === "join") act("lobbyback");
+    if (screen === "pause") act("resume"); 
+    else if (screen === "settings") act("back");
+    else if (screen === "howto") act("howback"); 
+    else if (screen === "over") act("menu");
+    else if (screen === "multi") act("multiback");
+    else if (screen === "lobby") act("netquit"); 
+    else if (screen === "host" || screen === "join") act("lobbyback");
     return;
   }
   if (screen === "howto") {
