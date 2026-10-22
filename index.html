@@ -283,7 +283,8 @@ const store = {
 const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], oppPaddle: "classic", oppVfx: "none", pad: null, padAge: 0,
   cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0,
   pingId: 0, pingAt: 0, rtt: 0, snapshots: [], lastSnapArrival: 0, jitter: 0, interpDelay: 65,
-  cl: [], tok: 0, gid: "" };
+  cl: [], tok: 0, gid: "", sigClient: null, sigOut: "", sigIn: "", rtc: null,
+  rtcFast: null, rtcCtrl: null, rtcQueuedCandidates: [], rtcRemoteSet: false, rtcReadyOnce: false };
 const online = () => net.role !== null;
 
 const MODES = {
@@ -1741,19 +1742,16 @@ function update(dt) {
   balls.forEach(b => { b.ht += dt; b.roll += (b.vx * dt) / Math.max(6, b.r) * .8; b.trail.push([b.x, b.y]); if (b.trail.length > (b.smash ? 30 : 20)) b.trail.shift(); });
 }
 
-/* ---------- online play ----------
-   Both players connect OUT to a free public message server (MQTT over secure WebSocket) and pass messages through it,
-   so home routers and firewalls don't get in the way. The host shares a 5 character room code.
-   The host runs the real game on the left. The guest controls the right paddle on their own computer
-   (so it feels instant) and sends where it is; the host sends back where everything is, about 30 times a second. */
-// Faster, more regular snapshots reduce remote-paddle and ball correction jitter.
-const NET_STEP = .025;
+/* ---------- online play: MQTT signaling + WebRTC gameplay ----------
+   MQTT is used only to find the room and exchange WebRTC offer/answer/ICE details.
+   Once connected, fast game state travels over a low-latency WebRTC data channel. */
+const NET_STEP = 1 / 60;
 const BROKERS = window.PONG_BROKERS || [
   { url: "wss://broker.emqx.io:8084/mqtt" },
   { url: "wss://test.mosquitto.org:8081" },
   { url: "wss://broker.hivemq.com:8884/mqtt" },
   { url: "wss://public.cloud.shiftr.io", user: "public", pass: "public" }];
-const CTRL = new Set(["hi", "start", "end", "rem", "bye"]);   // important messages are sent with delivery confirmation
+const CTRL = new Set(["hi", "start", "end", "rem", "bye", "ev"]);
 function send(m) { if (net.conn && net.up) { try { net.conn.send(m); } catch (e) {} } }
 const numIn = (v, d, a, b) => Number.isFinite(v) ? clamp(v, a, b) : d;
 const cfgPacket = () => ({ win: S.win, ball: S.ball, pspeed: S.pspeed, rotate: S.rotate, bumpers: S.bumpers, gravR: S.gravR, gravS: S.gravS, slowmo: S.slowmo });
@@ -1763,13 +1761,10 @@ function sanitizeCfg(c) {
     bumpers: numIn(c.bumpers, 4, 1, 8), gravR: numIn(c.gravR, 260, 80, 400), gravS: numIn(c.gravS, 5, 1, 12), slowmo: c.slowmo !== false };
 }
 
-// Wraps a connected server client so the rest of the game can just call send()
-function relayLink(c, out) {
-  return { client: c,
-    send(m) { try { c.publish(out, JSON.stringify(m), { qos: CTRL.has(m.t) ? 1 : 0 }); } catch (e) {} },
-    close() { try { c.end(); } catch (e) {} } };
+function publishSignal(c, topic, message) {
+  if (!c || !topic) return;
+  try { c.publish(topic, JSON.stringify(message), { qos: 1, retain: false }); } catch (e) {}
 }
-// Connects to one server. Gives back the connected client, or null if it can't be reached in time.
 function openBroker(b, ms) {
   return new Promise(res => {
     let done = false, c = null;
@@ -1784,16 +1779,153 @@ function openBroker(b, ms) {
     c.on("close", () => fin(false));
   });
 }
+function signalTargetMatches(m) { return !!m && typeof m === "object" && m.id === net.gid; }
+function createRtcPeer(c, outTopic, id, tok) {
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  });
+  net.rtc = pc; net.peer = pc; net.sigClient = c; net.sigOut = outTopic;
+  net.rtcQueuedCandidates = []; net.rtcRemoteSet = false; net.rtcReadyOnce = false;
+  pc.onicecandidate = event => {
+    if (event.candidate && tok === net.tok) {
+      publishSignal(c, outTopic, { t: "rtc-candidate", id, candidate: event.candidate.toJSON ? event.candidate.toJSON() : event.candidate });
+    }
+  };
+  pc.onconnectionstatechange = () => {
+    if (tok !== net.tok || !net.role) return;
+    if (pc.connectionState === "failed") {
+      netLost("DIRECT CONNECTION FAILED. THIS NETWORK MAY NEED A TURN RELAY.");
+    } else if (pc.connectionState === "disconnected" && net.up) {
+      net.status = "CONNECTION PAUSED — TRYING TO RECOVER..."; refreshNetUI();
+    }
+  };
+  pc.oniceconnectionstatechange = () => {
+    if (tok !== net.tok || !net.role) return;
+    if (pc.iceConnectionState === "failed") netLost("DIRECT CONNECTION FAILED. TRY AGAIN ON ANOTHER NETWORK.");
+  };
+  return pc;
+}
+function attachRtcChannel(channel, tok) {
+  if (channel.label === "pong-fast") net.rtcFast = channel;
+  else if (channel.label === "pong-control") net.rtcCtrl = channel;
+  else return;
+  channel.onmessage = event => {
+    if (tok !== net.tok || !net.role || typeof event.data !== "string") return;
+    let packet; try { packet = JSON.parse(event.data); } catch (e) { return; }
+    onData(packet);
+  };
+  channel.onopen = () => rtcMaybeReady(tok);
+  channel.onclose = () => {
+    if (tok === net.tok && net.role && net.up) netLost("WEBRTC CONNECTION CLOSED.");
+  };
+  channel.onerror = () => {
+    if (tok === net.tok && net.role && !net.up) {
+      net.status = "CONNECTING DIRECTLY..."; refreshNetUI();
+    }
+  };
+}
+function rtcMaybeReady(tok) {
+  if (tok !== net.tok || !net.role || net.rtcReadyOnce) return;
+  const pc = net.rtc, fast = net.rtcFast, ctrl = net.rtcCtrl;
+  if (!pc || !fast || !ctrl || fast.readyState !== "open" || ctrl.readyState !== "open") return;
+  net.rtcReadyOnce = true;
+  net.conn = {
+    send(message) {
+      const channel = (message && (message.t === "s" || message.t === "p")) ? net.rtcFast : net.rtcCtrl;
+      if (!channel || channel.readyState !== "open") return;
+      // Never build a long queue of stale gameplay packets. A newer snapshot replaces an old one.
+      if (channel === net.rtcFast && channel.bufferedAmount > 96 * 1024) return;
+      try { channel.send(JSON.stringify(message)); } catch (e) {}
+    },
+    close() { try { pc.close(); } catch (e) {} }
+  };
+  net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
+  clearTimeout(net.timer);
+  net.status = net.role === "host" ? "DIRECT CONNECTION READY! STARTING..." : "DIRECT CONNECTION READY! WAITING FOR HOST...";
+  refreshNetUI();
+  send({ t: "hi", pd: shop.eq.paddle, vx: shop.eq.vfx });
+}
+function queueOrAddCandidate(pc, candidate) {
+  if (!candidate) return;
+  if (!net.rtcRemoteSet || !pc.remoteDescription) { net.rtcQueuedCandidates.push(candidate); return; }
+  pc.addIceCandidate(candidate).catch(() => {});
+}
+async function applyQueuedCandidates(pc) {
+  net.rtcRemoteSet = true;
+  const queued = net.rtcQueuedCandidates.splice(0);
+  for (const candidate of queued) {
+    try { await pc.addIceCandidate(candidate); } catch (e) {}
+  }
+}
+async function handleRtcSignal(c, message, tok) {
+  if (tok !== net.tok || !signalTargetMatches(message)) return;
+  const pc = net.rtc;
+  if (!pc) return;
+  try {
+    if (message.t === "rtc-offer" && net.role === "guest") {
+      if (pc.remoteDescription) return;
+      await pc.setRemoteDescription(message.sdp);
+      await applyQueuedCandidates(pc);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      publishSignal(c, net.sigOut, { t: "rtc-answer", id: net.gid, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+    } else if (message.t === "rtc-answer" && net.role === "host") {
+      if (pc.remoteDescription) return;
+      await pc.setRemoteDescription(message.sdp);
+      await applyQueuedCandidates(pc);
+    } else if (message.t === "rtc-candidate" && message.candidate) {
+      queueOrAddCandidate(pc, message.candidate);
+    }
+  } catch (e) {
+    if (tok === net.tok && net.role && !net.up) {
+      net.status = "WEBRTC HANDSHAKE FAILED. TRY AGAIN."; refreshNetUI();
+    }
+  }
+}
+async function startHostRtc(c, outTopic, id, tok) {
+  try {
+    const pc = createRtcPeer(c, outTopic, id, tok);
+    pc.ondatachannel = event => attachRtcChannel(event.channel, tok);
+    attachRtcChannel(pc.createDataChannel("pong-fast", { ordered: false, maxRetransmits: 0 }), tok);
+    attachRtcChannel(pc.createDataChannel("pong-control", { ordered: true }), tok);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    if (tok !== net.tok) return;
+    publishSignal(c, outTopic, { t: "rtc-offer", id, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+  } catch (e) {
+    if (tok === net.tok && net.role) { net.status = "COULD NOT START WEBRTC. TRY AGAIN."; refreshNetUI(); }
+  }
+}
+function startGuestRtc(c, outTopic, id, tok) {
+  if (net.rtc) return net.rtc;
+  const pc = createRtcPeer(c, outTopic, id, tok);
+  pc.ondatachannel = event => attachRtcChannel(event.channel, tok);
+  return pc;
+}
+function armRtcTimeout(tok) {
+  clearTimeout(net.timer);
+  net.timer = setTimeout(() => {
+    if (tok === net.tok && net.role && !net.up) {
+      netLost("DIRECT CONNECTION TIMED OUT. SOME NETWORKS REQUIRE A TURN RELAY.");
+    }
+  }, 25000);
+}
 
-function leaveNet() {                                // closes the connection and goes back to offline play
+function leaveNet() {
   clearTimeout(net.timer); net.tok++;
-  const c = net.conn, list = net.cl;
+  const c = net.conn, list = net.cl, pc = net.rtc;
   net.conn = null; net.up = false; net.cl = [];
   try { if (c) c.close(); } catch (e) {}
-  list.forEach(o => { if (!c || o !== c.client) { try { o.end(true); } catch (e) {} } });
-  net.peer = null; net.role = null; net.cfg = null; net.pad = null; net.ev = []; net.gid = "";
+  try { if (pc && pc.signalingState !== "closed") pc.close(); } catch (e) {}
+  list.forEach(o => { try { o.end(true); } catch (e) {} });
+  net.peer = null; net.rtc = null; net.rtcFast = null; net.rtcCtrl = null;
+  net.sigClient = null; net.sigOut = ""; net.sigIn = ""; net.rtcQueuedCandidates = []; net.rtcRemoteSet = false; net.rtcReadyOnce = false;
+  net.role = null; net.cfg = null; net.pad = null; net.ev = []; net.gid = "";
   net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0; net.pingId = 0; net.pingAt = 0; net.rtt = 0;
-  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 65;
+  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 45;
   updatePlayerModeUI();
 }
 function netLost(msg) {
@@ -1806,14 +1938,15 @@ function leaveMatch() {
   slideDir = -1; showScreen("title"); showToast("YOU LEFT THE MATCH");
 }
 
-// HOST: opens a room on every server it can reach and waits for a friend to join on any of them
+// HOST: subscribe to a few free public brokers for room discovery. Only WebRTC carries gameplay.
 function startHost() {
   leaveNet(); net.code = "";
   if (!window.mqtt) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; return; }
+  if (!window.RTCPeerConnection) { net.status = "THIS BROWSER DOES NOT SUPPORT WEBRTC."; refreshNetUI(); return; }
   const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = ""; for (let i = 0; i < 5; i++) code += alpha[Math.random() * alpha.length | 0];
-  net.role = "host"; net.status = "CONNECTING TO ONLINE SERVERS...";
-  const tok = ++net.tok, tIn = "pongarc1/" + code + "/g", tOut = "pongarc1/" + code + "/h";
+  net.role = "host"; net.status = "CONNECTING TO ROOM SIGNALING...";
+  const tok = ++net.tok, tIn = "pongarc2/" + code + "/g", tOut = "pongarc2/" + code + "/h";
   let open = 0, tried = 0;
   BROKERS.forEach(b => openBroker(b, 7000).then(c => {
     tried++;
@@ -1821,9 +1954,9 @@ function startHost() {
     if (c) {
       open++; net.cl.push(c);
       c.on("message", (topic, payload) => hostMsg(c, topic, payload, tok, tIn, tOut));
-      c.on("close", () => { if (tok === net.tok && net.up && net.conn && net.conn.client === c) netLost("CONNECTION LOST"); });
+      c.on("close", () => { if (tok === net.tok && net.role === "host" && !net.up && net.sigClient === c) netLost("ROOM SIGNALING CONNECTION LOST."); });
       c.subscribe(tIn, { qos: 1 }, err => {
-        if (err || tok !== net.tok) return;
+        if (err || tok !== net.tok || net.gid) return;
         net.code = code;
         net.status = "WAITING FOR YOUR FRIEND... (" + open + " SERVER" + (open > 1 ? "S" : "") + " READY)"; refreshNetUI();
       });
@@ -1836,24 +1969,29 @@ function hostMsg(c, topic, payload, tok, tIn, tOut) {
   let m; try { m = JSON.parse(payload.toString()); } catch (e) { return; }
   if (!m || typeof m !== "object") return;
   if (m.t === "join") {
-    const id = String(m.id || "").slice(0, 16), say = o => { try { c.publish(tOut, JSON.stringify(o), { qos: 1 }); } catch (e) {} };
-    if (net.conn) { say({ t: net.conn.client === c && id === net.gid ? "welcome" : "full", id }); return; }
-    net.gid = id;                                    // first friend in: use this server for the match and drop the others
+    const id = String(m.id || "").slice(0, 16);
+    if (!id) return;
+    const say = o => publishSignal(c, tOut, o);
+    if (net.gid) { say({ t: net.gid === id ? "welcome" : "full", id }); return; }
+    net.gid = id; net.sigClient = c; net.sigOut = tOut; net.sigIn = tIn;
     net.cl.forEach(o => { if (o !== c) { try { o.end(true); } catch (e) {} } }); net.cl = [c];
-    net.conn = relayLink(c, tOut); net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
     say({ t: "welcome", id });
-    send({ t: "hi", pd: shop.eq.paddle, vx: shop.eq.vfx });
-    net.status = "FRIEND CONNECTED! STARTING..."; refreshNetUI();
+    net.status = "FRIEND FOUND. CONNECTING DIRECTLY..."; refreshNetUI();
+    armRtcTimeout(tok);
+    startHostRtc(c, tOut, id, tok);
     return;
   }
-  if (net.conn && net.conn.client === c) onData(m);
+  if (net.sigClient === c && m.id === net.gid && String(m.t || "").startsWith("rtc-")) {
+    handleRtcSignal(c, m, tok); return;
+  }
 }
 
-// GUEST: tries each server in turn until the host answers
+// GUEST: find the host through MQTT, then use that same broker only for WebRTC signaling.
 async function startJoin(raw) {
   const code = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   leaveNet();
   if (!window.mqtt) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; refreshNetUI(); return; }
+  if (!window.RTCPeerConnection) { net.status = "THIS BROWSER DOES NOT SUPPORT WEBRTC."; refreshNetUI(); return; }
   if (code.length !== 5) { net.status = "ENTER THE 5 CHARACTER ROOM CODE."; refreshNetUI(); sfx("deny"); return; }
   net.role = "guest"; net.gid = Math.random().toString(36).slice(2, 10);
   const tok = ++net.tok; let reached = 0;
@@ -1865,7 +2003,7 @@ async function startJoin(raw) {
     reached++;
     const r = await tryJoin(c, code, tok);
     if (tok !== net.tok) { if (c) c.end(true); return; }
-    if (r === true) return;                          // connected
+    if (r === true) return;
     c.end(true);
     if (r === "full") { leaveNet(); net.status = "THAT ROOM ALREADY HAS TWO PLAYERS."; refreshNetUI(); return; }
   }
@@ -1875,28 +2013,33 @@ async function startJoin(raw) {
 }
 function tryJoin(c, code, tok) {
   return new Promise(res => {
-    const tIn = "pongarc1/" + code + "/h", tOut = "pongarc1/" + code + "/g";
+    const tIn = "pongarc2/" + code + "/h", tOut = "pongarc2/" + code + "/g";
     let done = false, iv = 0, to = 0;
     const fin = v => { if (done) return; done = true; clearInterval(iv); clearTimeout(to); res(v); };
     c.on("message", (topic, payload) => {
       if (tok !== net.tok || topic !== tIn) return;
       let m; try { m = JSON.parse(payload.toString()); } catch (e) { return; }
       if (!m || typeof m !== "object") return;
-      if (!done) {                                   // still waiting for the host to answer
+      if (!done) {
         if (m.t === "welcome" && m.id === net.gid) {
-          net.conn = relayLink(c, tOut); net.cl = [c]; net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
-          send({ t: "hi", pd: shop.eq.paddle, vx: shop.eq.vfx });
-          net.status = "CONNECTED! WAITING FOR THE HOST..."; refreshNetUI();
-          fin(true);
+          net.sigClient = c; net.sigOut = tOut; net.sigIn = tIn; net.cl = [c];
+          net.lastRx = performance.now(); net.status = "HOST FOUND. CONNECTING DIRECTLY..."; refreshNetUI();
+          startGuestRtc(c, tOut, net.gid, tok); armRtcTimeout(tok); fin(true);
         } else if (m.t === "full" && m.id === net.gid) fin("full");
         return;
       }
-      if (net.conn && net.conn.client === c) onData(m);
+      if (net.sigClient === c && m.id === net.gid && String(m.t || "").startsWith("rtc-")) {
+        if (!net.rtc) startGuestRtc(c, tOut, net.gid, tok);
+        handleRtcSignal(c, m, tok);
+      }
     });
-    c.on("close", () => { if (done && tok === net.tok && net.up && net.role === "guest") netLost("CONNECTION LOST"); else fin(false); });
+    c.on("close", () => {
+      if (done && tok === net.tok && net.role === "guest" && net.sigClient === c && !net.up) netLost("ROOM SIGNALING CONNECTION LOST.");
+      else fin(false);
+    });
     c.subscribe(tIn, { qos: 1 }, err => {
       if (err) { fin(false); return; }
-      const hello = () => { try { c.publish(tOut, JSON.stringify({ t: "join", id: net.gid }), { qos: 0 }); } catch (e) {} };
+      const hello = () => publishSignal(c, tOut, { t: "join", id: net.gid });
       hello(); iv = setInterval(hello, 800);
     });
     to = setTimeout(() => fin(false), 5000);
@@ -1926,6 +2069,7 @@ function onData(m) {
   try {
     if (m.t === "p") { if (net.role === "host") { net.pad = m; net.padAge = 0; } }
     else if (m.t === "s") { if (net.role === "guest") applySnap(m); }
+    else if (m.t === "ev") { if (net.role === "guest" && Array.isArray(m.ev)) m.ev.forEach(guestEvent); }
     else if (m.t === "hi") {
       net.oppPaddle = own(PADDLES, m.pd) ? m.pd : "classic"; net.oppVfx = own(VFX, m.vx) ? m.vx : "none";
       if (net.role === "host") setTimeout(() => { if (net.role === "host" && net.up && screen !== "playing") startMatch(); }, 600);
@@ -1948,13 +2092,15 @@ function onData(m) {
 
 // Host: tell the guest where everything is, plus anything that just happened (hits, smashes, coins, points)
 function sendSnap() {
+  const events = net.ev.splice(0);
   send({ t: "s",
     b: balls.map(b => [r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), b.smash ? 1 : 0, r2(b.roll), r2(b.sm), r2(b.sa), r2(b.ht), r2(b.glow)]),
     h: [r1(player.x), r1(player.y), r2(player.angle), r2(player.dx), r2(player.dy), r2(player.ik), player.charge, r1(player.h), r2(player.sk), r1(player.vx), r1(player.vy), r2(player.omega)],
     g: [r2(cpu.ik), cpu.charge, r1(cpu.h), r2(cpu.sk)],
     sc: [scoreP, scoreC], rd: round, rdy: r2(ready), cd: countdown ? 1 : 0, wy: r1(wy), by: r1(barrier.y),
     pk: pickups.map(c => [r1(c.x), r1(c.y), r1(c.life), r1(c.id)]),
-    m: [...mods].join(","), ra: M.rally, ev: net.ev.splice(0) });
+    m: [...mods].join(","), ra: M.rally, ev: [] });
+  if (events.length) send({ t: "ev", ev: events });
 }
 // Guest: tell the host where my paddle is
 function sendPad() {
@@ -2057,7 +2203,7 @@ function sampleRemoteSnapshot(now) {
   const buffer = net.snapshots;
   if (!buffer.length) return;
 
-  const desiredDelay = clamp(42 + net.jitter * 2 + (net.rtt || 80) * 0.18, 48, 135);
+  const desiredDelay = clamp(24 + net.jitter * 1.5 + (net.rtt || 40) * 0.12, 28, 90);
   net.interpDelay += (desiredDelay - net.interpDelay) * 0.08;
   const target = now - net.interpDelay;
 
@@ -2149,7 +2295,7 @@ function updateGuest(dt) {
   });
 }
 
-// Runs every frame: heartbeat, and the 40-per-second updates while a match is on
+// Runs every frame: heartbeat and up to 60-per-second updates while a match is on
 function netTick(real) {
   if (!net.role || !net.up) return;
   if (performance.now() - net.lastRx > 7000) { netLost("CONNECTION LOST"); return; }
