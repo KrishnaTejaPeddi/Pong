@@ -15,7 +15,7 @@ body{position:relative;display:flex;align-items:center;justify-content:center;fo
 /* outer arcade surround: dense, dark moving CRT lines */
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
   background:repeating-linear-gradient(180deg,#020202 0px,#020202 7px,#252525 8px,#252525 10px);
-  background-size:100% 10px;animation:outerLines 2.2s linear infinite}
+  background-size:100% 10px;}
 @keyframes outerLines{from{background-position:0 0}to{background-position:0 10px}}
 .machine{position:relative;z-index:1;width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
 .marquee{text-align:center;padding:5px 0 15px;border-bottom:4px solid #0c0c0b}
@@ -180,6 +180,14 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .sdesc{height:2.6cqw;font-size:2.1cqw;color:var(--gold);text-align:center;margin-top:.9cqw}
 .psub{font-size:2.2cqw;color:#c8bfa5;margin-bottom:1.4cqw;line-height:1.1}
 .panel.narrow .mi{min-width:32cqw}
+/* Keep the compact multiplayer dialogs inside their panel. In horizontal menus,
+   the old 26cqw button width + 32cqw minimum width made the pair wider than the panel. */
+.panel.narrow .menu:not(.h){width:100%;gap:.5cqw}
+.panel.narrow .menu:not(.h) .mi{width:100%;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.25;padding:.9cqw 1.2cqw}
+.panel.narrow .menu.h{width:100%;gap:1cqw;flex-wrap:wrap;justify-content:center}
+.panel.narrow .menu.h .mi{flex:1 1 0;width:auto;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.25;font-size:clamp(7px,1.05cqw,13px);padding:1cqw .8cqw}
+.panel.narrow .psub{max-width:100%;overflow-wrap:anywhere}
+.panel.narrow .ph{overflow-wrap:anywhere}
 .kv{display:flex;justify-content:space-between;font-size:2cqw;border-bottom:.15cqw dotted #1f4d33;padding:.25cqw 0}
 .kv b{font-weight:normal;color:var(--cream)}
 .tip{font-size:1.8cqw;color:#bdb59e;margin:.4cqw 0;line-height:1.05}
@@ -273,7 +281,8 @@ const store = {
 
 // Online play state. role is "host" (left paddle, runs the real game), "guest" (right paddle, sends its paddle and draws what the host sends) or null.
 const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], oppPaddle: "classic", oppVfx: "none", pad: null, padAge: 0,
-  cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0, cl: [], tok: 0, gid: "" };
+  cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0,
+  pingId: 0, pingAt: 0, rtt: 0, cl: [], tok: 0, gid: "" };
 const online = () => net.role !== null;
 
 const MODES = {
@@ -1727,7 +1736,8 @@ function update(dt) {
    so home routers and firewalls don't get in the way. The host shares a 5 character room code.
    The host runs the real game on the left. The guest controls the right paddle on their own computer
    (so it feels instant) and sends where it is; the host sends back where everything is, about 30 times a second. */
-const NET_STEP = .033;
+// Faster, more regular snapshots reduce remote-paddle and ball correction jitter.
+const NET_STEP = .025;
 const BROKERS = window.PONG_BROKERS || [
   { url: "wss://broker.emqx.io:8084/mqtt" },
   { url: "wss://test.mosquitto.org:8081" },
@@ -1772,7 +1782,7 @@ function leaveNet() {                                // closes the connection an
   try { if (c) c.close(); } catch (e) {}
   list.forEach(o => { if (!c || o !== c.client) { try { o.end(true); } catch (e) {} } });
   net.peer = null; net.role = null; net.cfg = null; net.pad = null; net.ev = []; net.gid = "";
-  net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0;
+  net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0; net.pingId = 0; net.pingAt = 0; net.rtt = 0;
   updatePlayerModeUI();
 }
 function netLost(msg) {
@@ -1915,6 +1925,12 @@ function onData(m) {
       net.rem[net.role === "host" ? 1 : 0] = true; refreshRematch();
       if (net.role === "host" && net.rem[0] && net.rem[1]) startMatch();
     }
+    else if (m.t === "ping") send({ t: "pong", id: m.id });
+    else if (m.t === "pong" && m.id === net.pingId && net.pingAt) {
+      const sample = performance.now() - net.pingAt;
+      if (Number.isFinite(sample) && sample >= 0 && sample < 5000) net.rtt = net.rtt ? net.rtt * .75 + sample * .25 : sample;
+      net.pingAt = 0;
+    }
     else if (m.t === "bye") netLost("YOUR OPPONENT LEFT");
   } catch (e) {}
 }
@@ -1952,6 +1968,7 @@ function guestStart(m) {
   sparks = []; rings = []; pops = []; coinPops = []; vfxList = []; pickups = []; balls = []; slowT = 0; flashT = 0;
   mods = new Set();
   [player, cpu].forEach(resetPaddle);
+  player.netAngle = player.angle;
   player.x = player.tx = 62.5; cpu.x = cpu.tx = HOME;
   ready = 2.4; countdown = true; cdN = 0; wy = WALL;
   updatePlayerModeUI();
@@ -1985,14 +2002,26 @@ function applySnap(s) {
   if (screen !== "playing" || !Array.isArray(s.b) || !Array.isArray(s.h) || !Array.isArray(s.g) || !Array.isArray(s.sc)) return;
   while (balls.length < s.b.length) balls.push({ x: W / 2, y: H / 2, r: 10, vx: 0, vy: 0, glow: 0, trail: [], spin: 1, pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, roll: 0 });
   balls.length = s.b.length;
+  // Snapshot coordinates are a little old by the time they cross a public relay. Predict
+  // forward by half the measured RTT, then softly correct normal drift instead of snapping
+  // the ball every time its predicted position is more than 40px away.
+  const lead = clamp((net.rtt || 80) * .0005, 0, .075);
   s.b.forEach((q, i) => {
-    const b = balls[i], d = Math.hypot(q[0] - b.x, q[1] - b.y);
-    if (d > 120) b.trail = [];
-    if (d > 40 || ready > 0) { b.x = q[0]; b.y = q[1]; } else { b.x += (q[0] - b.x) * .65; b.y += (q[1] - b.y) * .65; }
+    const b = balls[i];
+    const tx = q[0] + q[2] * lead, ty = q[1] + q[3] * lead;
+    const d = Math.hypot(tx - b.x, ty - b.y);
+    const reversed = (b.vx * q[2] < 0) || (b.vy * q[3] < 0);
+    if (d > 90 || reversed) b.trail = [];
+    if (ready > 0 || d > 200) { b.x = tx; b.y = ty; }
+    else {
+      const blend = reversed ? .82 : .34;
+      b.x += (tx - b.x) * blend;
+      b.y += (ty - b.y) * blend;
+    }
     b.vx = q[2]; b.vy = q[3]; b.r = q[4]; b.smash = !!q[5]; b.roll = q[6]; b.sm = q[7]; b.sa = q[8]; b.ht = q[9]; b.glow = q[10];
   });
   const h = s.h;
-  player.tx = h[0]; player.ty = h[1]; player.angle = h[2]; player.dx = h[3]; player.dy = h[4];
+  player.tx = h[0]; player.ty = h[1]; player.netAngle = h[2]; player.dx = h[3]; player.dy = h[4];
   player.ik = Math.max(player.ik, h[5]); player.charge = h[6]; player.h = h[7]; player.sk = h[8];
   player.vx = h[9]; player.vy = h[10]; player.omega = h[11];
   cpu.ik = Math.max(cpu.ik, s.g[0]); cpu.charge = s.g[1]; cpu.h = s.g[2]; cpu.sk = s.g[3];
@@ -2013,6 +2042,11 @@ function updateGuest(dt) {
   flex(cpu, dt);
   const k = Math.min(1, dt * 30);
   player.x += (player.tx - player.x) * k; player.y += (player.ty - player.y) * k;
+  // Smooth the remote paddle's rotation too; position and angle should not update in visibly different jumps.
+  if (Number.isFinite(player.netAngle)) {
+    const da = Math.atan2(Math.sin(player.netAngle - player.angle), Math.cos(player.netAngle - player.angle));
+    player.angle += da * Math.min(1, dt * 24);
+  }
   player.ik = Math.max(0, player.ik - dt * 5.5); player.gh = [];
   if (ready > 0) {
     ready -= dt;
@@ -2030,11 +2064,14 @@ function netTick(real) {
   if (!net.role || !net.up) return;
   if (performance.now() - net.lastRx > 7000) { netLost("CONNECTION LOST"); return; }
   net.pingT = (net.pingT || 0) + real;
-  if (net.pingT >= 1) { net.pingT = 0; send({ t: "ping" }); }
+  if (net.pingT >= 1) {
+    net.pingT -= 1; net.pingId = (net.pingId + 1) % 1000000; net.pingAt = performance.now();
+    send({ t: "ping", id: net.pingId });
+  }
   if (screen !== "playing") return;
   if (net.role === "host") net.padAge += real;
   net.snapT += real;
-  if (net.snapT >= NET_STEP) { net.snapT = 0; net.role === "host" ? sendSnap() : sendPad(); }
+  if (net.snapT >= NET_STEP) { net.snapT %= NET_STEP; net.role === "host" ? sendSnap() : sendPad(); }
 }
 
 /* ---------- confetti ---------- */
@@ -2422,7 +2459,8 @@ function drawGame() {
 }
 
 function loop(t) {
-  const real = Math.min((t - last) / 1000, .03);
+  // Allow brief slow frames to catch up instead of silently throwing away all time beyond 30ms.
+  const real = Math.min(Math.max(0, (t - last) / 1000), .05);
   last = t;
   const k = slowT / SLOWD, dt = real * (slowT > 0 ? .1 + .9 * (1 - k) * (1 - k) : 1);   // slow-mo scales game time only
   slowT = Math.max(0, slowT - real); flashT = Math.max(0, flashT - real);
