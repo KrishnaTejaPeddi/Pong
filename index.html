@@ -1098,9 +1098,11 @@ function renderMulti() {
     <div class="menu"><div class="mi" data-act="local">LOCAL 2 PLAYER</div><div class="mi" data-act="online">ONLINE 2P</div><div class="mi" data-act="multiback">BACK</div></div></div></div>`;
 }
 function renderLobby() {
+  const turnReady = turnConfigured();
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
     <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES A ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
-    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
+    <div class="psub">TURN RELAY: <span class="lo">${turnReady ? "CONFIGURED" : "NOT CONFIGURED — SOME NETWORKS MAY FAIL"}</span></div>
+    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="turnsetup">SET UP TURN RELAY</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
 }
 function renderHost() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">HOSTING</h3>
@@ -1244,6 +1246,7 @@ function act(a) {
   else if (a === "multi") showScreen("multi");
   else if (a === "multiback") showScreen("title");
   else if (a === "online") showScreen("lobby");
+  else if (a === "turnsetup") { configureTurnRelay(); showScreen("lobby"); }
   else if (a === "hostgame") { startHost(); showScreen("host"); }
   else if (a === "joingame") { leaveNet(); net.status = ""; net.code = ""; showScreen("join"); }
   else if (a === "connect") startJoin(($("codeIn") || {}).value);
@@ -1780,13 +1783,57 @@ function openBroker(b, ms) {
   });
 }
 function signalTargetMatches(m) { return !!m && typeof m === "object" && m.id === net.gid; }
+const TURN_PREF_KEY = "pongRtcTurnV1";
+function getTurnCredentials() {
+  const value = store.get(TURN_PREF_KEY);
+  if (!value || typeof value.username !== "string" || typeof value.credential !== "string") return null;
+  const username = value.username.trim(), credential = value.credential.trim();
+  return username && credential ? { username, credential } : null;
+}
+function turnConfigured() { return !!getTurnCredentials(); }
+function configureTurnRelay() {
+  const previous = getTurnCredentials() || { username: "", credential: "" };
+  const username = window.prompt(
+    "Optional but recommended for cross-network play. Paste your TURN username from your TURN provider. Leave blank to clear TURN settings.",
+    previous.username
+  );
+  if (username === null) return;
+  if (!username.trim()) {
+    store.set(TURN_PREF_KEY, { username: "", credential: "" });
+    showToast("TURN SETTINGS CLEARED; DIRECT CONNECTION ONLY");
+    return;
+  }
+  const credential = window.prompt("Paste the TURN credential/password from the same provider. It is saved only in this browser.", previous.credential);
+  if (credential === null) return;
+  if (!credential.trim()) { showToast("TURN CREDENTIAL WAS EMPTY"); return; }
+  store.set(TURN_PREF_KEY, { username: username.trim(), credential: credential.trim() });
+  showToast("TURN RELAY SAVED IN THIS BROWSER");
+}
+function rtcIceServers() {
+  const servers = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" }
+  ];
+  const credentials = getTurnCredentials();
+  if (credentials) {
+    servers.push({
+      urls: [
+        "turn:standard.relay.metered.ca:80",
+        "turn:standard.relay.metered.ca:80?transport=tcp",
+        "turn:standard.relay.metered.ca:443",
+        "turns:standard.relay.metered.ca:443?transport=tcp"
+      ],
+      username: credentials.username,
+      credential: credentials.credential
+    });
+  }
+  return servers;
+}
+function rtcStatus(message) {
+  if (!net.up && net.role) { net.status = message; refreshNetUI(); }
+}
 function createRtcPeer(c, outTopic, id, tok) {
-  const pc = new RTCPeerConnection({
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" }
-    ]
-  });
+  const pc = new RTCPeerConnection({ iceServers: rtcIceServers() });
   net.rtc = pc; net.peer = pc; net.sigClient = c; net.sigOut = outTopic;
   net.rtcQueuedCandidates = []; net.rtcRemoteSet = false; net.rtcReadyOnce = false;
   pc.onicecandidate = event => {
@@ -1796,15 +1843,34 @@ function createRtcPeer(c, outTopic, id, tok) {
   };
   pc.onconnectionstatechange = () => {
     if (tok !== net.tok || !net.role) return;
-    if (pc.connectionState === "failed") {
-      netLost("DIRECT CONNECTION FAILED. THIS NETWORK MAY NEED A TURN RELAY.");
+    if (pc.connectionState === "connecting") rtcStatus("WEBRTC NEGOTIATED; OPENING GAME CONNECTION...");
+    else if (pc.connectionState === "connected") rtcStatus("NETWORK CONNECTED; OPENING GAME CHANNELS...");
+    else if (pc.connectionState === "failed") {
+      clearTimeout(net.timer); net.timer = 0;
+      rtcStatus(turnConfigured()
+        ? "CONNECTION FAILED. CHECK THE TURN CREDENTIALS OR TRY ANOTHER NETWORK."
+        : "CONNECTION FAILED. SET UP TURN RELAY ON BOTH COMPUTERS, THEN RETRY.");
     } else if (pc.connectionState === "disconnected" && net.up) {
       net.status = "CONNECTION PAUSED — TRYING TO RECOVER..."; refreshNetUI();
     }
   };
   pc.oniceconnectionstatechange = () => {
     if (tok !== net.tok || !net.role) return;
-    if (pc.iceConnectionState === "failed") netLost("DIRECT CONNECTION FAILED. TRY AGAIN ON ANOTHER NETWORK.");
+    const state = pc.iceConnectionState;
+    if (state === "checking") rtcStatus("CHECKING DIRECT AND RELAY NETWORK ROUTES...");
+    else if (state === "connected" || state === "completed") rtcStatus("NETWORK ROUTE FOUND; OPENING GAME CHANNELS...");
+    else if (state === "failed") {
+      clearTimeout(net.timer); net.timer = 0;
+      rtcStatus(turnConfigured()
+        ? "ICE FAILED. CHECK TURN CREDENTIALS OR NETWORK FIREWALL."
+        : "ICE FAILED: THIS BUILD NEEDS TURN RELAY FOR THIS NETWORK. SET IT UP, THEN RETRY.");
+    }
+  };
+  pc.onicecandidateerror = event => {
+    if (tok !== net.tok || !net.role || net.up) return;
+    const code = event && event.errorCode ? " " + event.errorCode : "";
+    const isTurn = !!getTurnCredentials();
+    rtcStatus("ICE SERVER ERROR" + code + ". " + (isTurn ? "CHECK TURN CREDENTIALS." : "SET UP A TURN RELAY."));
   };
   return pc;
 }
@@ -1881,7 +1947,10 @@ async function handleRtcSignal(c, message, tok) {
     }
   } catch (e) {
     if (tok === net.tok && net.role && !net.up) {
-      net.status = "WEBRTC HANDSHAKE FAILED. TRY AGAIN."; refreshNetUI();
+      clearTimeout(net.timer); net.timer = 0;
+      const detail = e && e.name ? e.name : "ERROR";
+      net.status = "WEBRTC HANDSHAKE FAILED (" + detail + "). CANCEL AND RETRY.";
+      refreshNetUI();
     }
   }
 }
@@ -1896,7 +1965,10 @@ async function startHostRtc(c, outTopic, id, tok) {
     if (tok !== net.tok) return;
     publishSignal(c, outTopic, { t: "rtc-offer", id, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
   } catch (e) {
-    if (tok === net.tok && net.role) { net.status = "COULD NOT START WEBRTC. TRY AGAIN."; refreshNetUI(); }
+    if (tok === net.tok && net.role) {
+      net.status = "COULD NOT START WEBRTC (" + (e && e.name ? e.name : "ERROR") + "). CANCEL AND RETRY.";
+      refreshNetUI();
+    }
   }
 }
 function startGuestRtc(c, outTopic, id, tok) {
@@ -1909,7 +1981,11 @@ function armRtcTimeout(tok) {
   clearTimeout(net.timer);
   net.timer = setTimeout(() => {
     if (tok === net.tok && net.role && !net.up) {
-      netLost("DIRECT CONNECTION TIMED OUT. SOME NETWORKS REQUIRE A TURN RELAY.");
+      net.timer = 0;
+      net.status = turnConfigured()
+        ? "CONNECTION TIMED OUT. CHECK TURN CREDENTIALS OR TRY ANOTHER NETWORK."
+        : "CONNECTION TIMED OUT. SET UP TURN RELAY ON BOTH COMPUTERS, THEN RETRY.";
+      refreshNetUI();
     }
   }, 25000);
 }
