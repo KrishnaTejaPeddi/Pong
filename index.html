@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PONG // ARCADE</title>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>window.mqtt||document.write('<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"><\/script>')</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 :root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54;--phos:#3f8a5c}
@@ -130,9 +132,10 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .hint .blk{display:inline-block;animation:blink 2.2s infinite}
 .ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
 
-/* online code boxes */
-.codebox{display:block;width:100%;height:6.5cqw;margin:.6cqw 0 1cqw;background:#000;color:var(--gold);border:.3cqw solid var(--phos);padding:.7cqw 1cqw;font:1.8cqw/1.25 VT323,monospace;resize:none;outline:none;word-break:break-all;scrollbar-width:thin}
-.codebox:focus{border-color:var(--cream)}
+/* online room code */
+.codebig{display:inline-block;font-family:"Press Start 2P",monospace;font-size:4.2cqw;letter-spacing:.8cqw;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:1cqw 1.6cqw 1cqw 2.4cqw;margin:.4cqw 0 1.2cqw}
+.codein{font-family:"Press Start 2P",monospace;font-size:3.6cqw;letter-spacing:.8cqw;text-align:center;text-transform:uppercase;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:1cqw;width:30cqw;margin:.4cqw 0 1.2cqw;outline:none}
+.codein:focus{border-color:var(--cream)}
 
 /* coins and the shop */
 .coin{display:inline-block;width:1.5cqw;height:1.5cqw;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2a8,#d5ad54 60%,#8a6417);border:.2cqw solid #7a5a1c;vertical-align:-.25cqw;margin-right:.6cqw}
@@ -270,7 +273,7 @@ const store = {
 
 // Online play state. role is "host" (left paddle, runs the real game), "guest" (right paddle, sends its paddle and draws what the host sends) or null.
 const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], oppPaddle: "classic", oppVfx: "none", pad: null, padAge: 0,
-  cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0 };
+  cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0, cl: [], tok: 0, gid: "" };
 const online = () => net.role !== null;
 
 const MODES = {
@@ -1075,7 +1078,7 @@ function renderTitle() {
     <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; PLAY ONLINE</span></div>
     <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="multi">MULTIPLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
     <div class="bx wallet sec"><i class="coin"></i>${shop.coins}</div>
-    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.1</div></div>`;
+    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.2</div></div>`;
 }
 
 function renderMulti() {
@@ -1085,31 +1088,27 @@ function renderMulti() {
 }
 function renderLobby() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
-    <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS. YOU SWAP TWO SHORT CODES<br>OVER CHAT TO CONNECT.</div>
+    <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES A ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
     <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
 }
 function renderHost() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec" style="width:62cqw"><h3 class="ph">HOSTING</h3>
-    <div class="psub">1. SEND THIS CODE TO YOUR FRIEND</div>
-    <textarea id="codeOut" class="codebox" readonly spellcheck="false">${net.code || ""}</textarea>
-    <div class="psub">2. PASTE THEIR REPLY CODE HERE</div>
-    <textarea id="codeIn" class="codebox" spellcheck="false" placeholder="PASTE THE REPLY CODE"></textarea>
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">HOSTING</h3>
+    <div class="psub">GIVE THIS ROOM CODE TO YOUR FRIEND</div>
+    <div class="codebig" id="roomCode">${net.code || "-----"}</div>
     <div class="psub" id="netStatus">${net.status}</div>
-    <div class="menu h"><div class="mi" data-act="copycode">COPY CODE</div><div class="mi" data-act="hostconnect">CONNECT</div><div class="mi" data-act="lobbyback">CANCEL</div></div></div></div>`;
+    <div class="menu h"><div class="mi" data-act="copycode">COPY CODE</div><div class="mi" data-act="lobbyback">CANCEL</div></div></div></div>`;
 }
 function renderJoin() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec" style="width:62cqw"><h3 class="ph">JOIN A GAME</h3>
-    <div class="psub">1. PASTE THE HOST'S CODE, THEN PRESS MAKE REPLY</div>
-    <textarea id="codeIn" class="codebox" spellcheck="false" placeholder="PASTE THE HOST'S CODE"></textarea>
-    <div class="psub">2. SEND THIS REPLY BACK TO THE HOST</div>
-    <textarea id="codeOut" class="codebox" readonly spellcheck="false">${net.code || ""}</textarea>
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">JOIN A GAME</h3>
+    <div class="psub">TYPE THE 5 CHARACTER ROOM CODE</div>
+    <input id="codeIn" class="codein" maxlength="5" autocomplete="off" spellcheck="false" placeholder="-----">
     <div class="psub" id="netStatus">${net.status}</div>
-    <div class="menu h"><div class="mi" data-act="makereply">MAKE REPLY</div><div class="mi" data-act="copycode">COPY REPLY</div><div class="mi" data-act="lobbyback">BACK</div></div></div></div>`;
+    <div class="menu h"><div class="mi" data-act="connect">CONNECT</div><div class="mi" data-act="lobbyback">BACK</div></div></div></div>`;
 }
 function refreshNetUI() {
-  const s = $("netStatus"), c = $("codeOut");
+  const s = $("netStatus"), c = $("roomCode");
   if (s) s.textContent = net.status;
-  if (c && c.value !== (net.code || "")) c.value = net.code || "";
+  if (c) c.textContent = net.code || "-----";
 }
 
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
@@ -1236,8 +1235,7 @@ function act(a) {
   else if (a === "online") showScreen("lobby");
   else if (a === "hostgame") { startHost(); showScreen("host"); }
   else if (a === "joingame") { leaveNet(); net.status = ""; net.code = ""; showScreen("join"); }
-  else if (a === "hostconnect") hostAccept(($("codeIn") || {}).value);
-  else if (a === "makereply") startJoin(($("codeIn") || {}).value);
+  else if (a === "connect") startJoin(($("codeIn") || {}).value);
   else if (a === "copycode") copyCode();
   else if (a === "lobbyback") { leaveNet(); showScreen("lobby"); }
   else if (a === "netquit") showScreen("multi");
@@ -1267,6 +1265,10 @@ ui.addEventListener("mouseover", e => {
   if (cd) { if (+cd.dataset.i !== shopI) { shopI = +cd.dataset.i; updateShopSel(); } return; }
   const t = e.target.closest(".row,.mi");
   if (t) { const i = items().indexOf(t); if (i !== selI) sel(i); }
+});
+
+ui.addEventListener("input", e => {                      // the room code box only takes letters and numbers
+  if (e.target.id === "codeIn") e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
 });
 
 function menuKey(e, k) {
@@ -1310,8 +1312,9 @@ const mine = () => net.role === "guest" ? cpu : player;     // the paddle this c
 
 window.onkeydown = e => {
   const k = e.key.toLowerCase();
-  if (e.target.tagName === "TEXTAREA") {                     // typing or pasting a code
-    if (k === "escape") { e.preventDefault(); e.target.blur(); }
+  if (e.target.id === "codeIn") {                            // typing a room code
+    if (k === "enter") { e.preventDefault(); act("connect"); }
+    else if (k === "escape") { e.preventDefault(); e.target.blur(); act("lobbyback"); }
     return;
   }
   if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") e.target.blur();
@@ -1720,10 +1723,17 @@ function update(dt) {
 }
 
 /* ---------- online play ----------
-   No server needed: the two players swap two short codes (host code, then guest reply) and the browsers link up directly.
+   Both players connect OUT to a free public message server (MQTT over secure WebSocket) and pass messages through it,
+   so home routers and firewalls don't get in the way. The host shares a 5 character room code.
    The host runs the real game on the left. The guest controls the right paddle on their own computer
-   (so it feels instant) and sends where it is; the host sends back where everything is, about 40 times a second. */
-const NET_STEP = .025;
+   (so it feels instant) and sends where it is; the host sends back where everything is, about 30 times a second. */
+const NET_STEP = .033;
+const BROKERS = window.PONG_BROKERS || [
+  { url: "wss://broker.emqx.io:8084/mqtt" },
+  { url: "wss://test.mosquitto.org:8081" },
+  { url: "wss://broker.hivemq.com:8884/mqtt" },
+  { url: "wss://public.cloud.shiftr.io", user: "public", pass: "public" }];
+const CTRL = new Set(["hi", "start", "end", "rem", "bye"]);   // important messages are sent with delivery confirmation
 function send(m) { if (net.conn && net.up) { try { net.conn.send(m); } catch (e) {} } }
 const numIn = (v, d, a, b) => Number.isFinite(v) ? clamp(v, a, b) : d;
 const cfgPacket = () => ({ win: S.win, ball: S.ball, pspeed: S.pspeed, rotate: S.rotate, bumpers: S.bumpers, gravR: S.gravR, gravS: S.gravS, slowmo: S.slowmo });
@@ -1733,71 +1743,35 @@ function sanitizeCfg(c) {
     bumpers: numIn(c.bumpers, 4, 1, 8), gravR: numIn(c.gravR, 260, 80, 400), gravS: numIn(c.gravS, 5, 1, 12), slowmo: c.slowmo !== false };
 }
 
-const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" }, { urls: "stun:global.stun.twilio.com:3478" }] };
-const NO_LINK = "YOUR NETWORKS BLOCK A DIRECT LINK. TRY A PHONE HOTSPOT.";
-
-// Turns a connection description into a short code you can paste in a chat (and back)
-async function packCode(desc) {
-  const raw = new TextEncoder().encode(JSON.stringify({ t: desc.type, s: desc.sdp }));
-  let bytes = raw, tag = "PA0";
-  if (window.CompressionStream) {
-    try {
-      const cs = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"));
-      bytes = new Uint8Array(await new Response(cs).arrayBuffer()); tag = "PA1";
-    } catch (e) { bytes = raw; tag = "PA0"; }
-  }
-  let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b));
-  return tag + "-" + btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+// Wraps a connected server client so the rest of the game can just call send()
+function relayLink(c, out) {
+  return { client: c,
+    send(m) { try { c.publish(out, JSON.stringify(m), { qos: CTRL.has(m.t) ? 1 : 0 }); } catch (e) {} },
+    close() { try { c.end(); } catch (e) {} } };
 }
-async function unpackCode(text) {
-  const code = String(text || "").replace(/\s+/g, "");
-  const m = code.length < 8000 && /^(PA[01])-([A-Za-z0-9_-]+)$/.exec(code);
-  if (!m) throw new Error("bad");
-  let b64 = m[2].replace(/-/g, "+").replace(/_/g, "/"); while (b64.length % 4) b64 += "=";
-  let bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-  if (m[1] === "PA1") {
-    if (!window.DecompressionStream) throw new Error("nodecomp");
-    const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-    bytes = new Uint8Array(await new Response(ds).arrayBuffer());
-  }
-  const o = JSON.parse(new TextDecoder().decode(bytes));
-  if ((o.t !== "offer" && o.t !== "answer") || typeof o.s !== "string") throw new Error("bad");
-  return { type: o.t, sdp: o.s };
-}
-// Waits until the browser has found all its possible routes (so the code contains them all)
-function gathered(pc) {
+// Connects to one server. Gives back the connected client, or null if it can't be reached in time.
+function openBroker(b, ms) {
   return new Promise(res => {
-    if (pc.iceGatheringState === "complete") { res(); return; }
-    const chk = () => { if (pc.iceGatheringState === "complete") { pc.removeEventListener("icegatheringstatechange", chk); res(); } };
-    pc.addEventListener("icegatheringstatechange", chk);
-    setTimeout(res, 5000);
+    let done = false, c = null;
+    const t = setTimeout(() => fin(false), ms);
+    const fin = ok => { if (done) return; done = true; clearTimeout(t); if (!ok && c) { try { c.end(true); } catch (e) {} } res(ok ? c : null); };
+    try {
+      c = mqtt.connect(b.url, { clientId: "pongarc_" + Math.random().toString(36).slice(2, 12), clean: true, reconnectPeriod: 0,
+        connectTimeout: ms, keepalive: 30, timerVariant: "native", username: b.user, password: b.pass });
+    } catch (e) { fin(false); return; }
+    c.on("connect", () => fin(true));
+    c.on("error", () => fin(false));
+    c.on("close", () => fin(false));
   });
-}
-// A small wrapper around the browser's data channel so the rest of the game can just call send() and listen for events
-function makeLink(pc) {
-  const h = { open: [], data: [], close: [], error: [] };
-  const link = { peerConnection: pc, dc: null,
-    on(ev, fn) { h[ev].push(fn); },
-    emit(ev, a) { h[ev].forEach(fn => fn(a)); },
-    send(m) { if (link.dc && link.dc.readyState === "open") link.dc.send(JSON.stringify(m)); },
-    close() { try { if (link.dc) link.dc.close(); } catch (e) {} try { pc.close(); } catch (e) {} },
-    attach(dc) {
-      link.dc = dc;
-      dc.onopen = () => link.emit("open");
-      dc.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } link.emit("data", m); };
-      dc.onclose = () => link.emit("close");
-      dc.onerror = () => link.emit("error");
-      if (dc.readyState === "open") link.emit("open");
-    } };
-  return link;
 }
 
 function leaveNet() {                                // closes the connection and goes back to offline play
-  clearTimeout(net.timer);
-  const c = net.conn; net.conn = null;               // cleared first so its close events are ignored
+  clearTimeout(net.timer); net.tok++;
+  const c = net.conn, list = net.cl;
+  net.conn = null; net.up = false; net.cl = [];
   try { if (c) c.close(); } catch (e) {}
-  net.peer = null; net.role = null; net.up = false; net.cfg = null; net.pad = null; net.ev = [];
+  list.forEach(o => { if (!c || o !== c.client) { try { o.end(true); } catch (e) {} } });
+  net.peer = null; net.role = null; net.cfg = null; net.pad = null; net.ev = []; net.gid = "";
   net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0;
   updatePlayerModeUI();
 }
@@ -1811,94 +1785,107 @@ function leaveMatch() {
   slideDir = -1; showScreen("title"); showToast("YOU LEFT THE MATCH");
 }
 
-function wire(conn) {
-  const pc = conn.peerConnection;
-  pc.addEventListener("iceconnectionstatechange", () => {
-    if (conn !== net.conn || pc.iceConnectionState !== "failed") return;
-    if (net.up) netLost("CONNECTION LOST");
-    else { clearTimeout(net.timer); net.status = NO_LINK; refreshNetUI(); }
-  });
-  conn.on("open", () => {
-    if (conn !== net.conn) return;
-    clearTimeout(net.timer);
-    net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
+// HOST: opens a room on every server it can reach and waits for a friend to join on any of them
+function startHost() {
+  leaveNet(); net.code = "";
+  if (!window.mqtt) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; return; }
+  const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = ""; for (let i = 0; i < 5; i++) code += alpha[Math.random() * alpha.length | 0];
+  net.role = "host"; net.status = "CONNECTING TO ONLINE SERVERS...";
+  const tok = ++net.tok, tIn = "pongarc1/" + code + "/g", tOut = "pongarc1/" + code + "/h";
+  let open = 0, tried = 0;
+  BROKERS.forEach(b => openBroker(b, 7000).then(c => {
+    tried++;
+    if (tok !== net.tok) { if (c) c.end(true); return; }
+    if (c) {
+      open++; net.cl.push(c);
+      c.on("message", (topic, payload) => hostMsg(c, topic, payload, tok, tIn, tOut));
+      c.on("close", () => { if (tok === net.tok && net.up && net.conn && net.conn.client === c) netLost("CONNECTION LOST"); });
+      c.subscribe(tIn, { qos: 1 }, err => {
+        if (err || tok !== net.tok) return;
+        net.code = code;
+        net.status = "WAITING FOR YOUR FRIEND... (" + open + " SERVER" + (open > 1 ? "S" : "") + " READY)"; refreshNetUI();
+      });
+    }
+    if (tried === BROKERS.length && !open) { leaveNet(); net.code = ""; net.status = "CAN'T REACH ANY ONLINE SERVER. YOUR NETWORK MAY BLOCK THEM."; refreshNetUI(); }
+  }));
+}
+function hostMsg(c, topic, payload, tok, tIn, tOut) {
+  if (tok !== net.tok || topic !== tIn) return;
+  let m; try { m = JSON.parse(payload.toString()); } catch (e) { return; }
+  if (!m || typeof m !== "object") return;
+  if (m.t === "join") {
+    const id = String(m.id || "").slice(0, 16), say = o => { try { c.publish(tOut, JSON.stringify(o), { qos: 1 }); } catch (e) {} };
+    if (net.conn) { say({ t: net.conn.client === c && id === net.gid ? "welcome" : "full", id }); return; }
+    net.gid = id;                                    // first friend in: use this server for the match and drop the others
+    net.cl.forEach(o => { if (o !== c) { try { o.end(true); } catch (e) {} } }); net.cl = [c];
+    net.conn = relayLink(c, tOut); net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
+    say({ t: "welcome", id });
     send({ t: "hi", pd: shop.eq.paddle, vx: shop.eq.vfx });
-    net.status = net.role === "host" ? "FRIEND CONNECTED! STARTING..." : "CONNECTED! WAITING FOR THE HOST...";
-    refreshNetUI();
-  });
-  conn.on("data", onData);
-  conn.on("close", () => { if (conn === net.conn && net.up) netLost("YOUR OPPONENT LEFT"); });
-  conn.on("error", () => { if (conn === net.conn && net.up) netLost("CONNECTION ERROR"); });
+    net.status = "FRIEND CONNECTED! STARTING..."; refreshNetUI();
+    return;
+  }
+  if (net.conn && net.conn.client === c) onData(m);
 }
 
-// HOST step 1: make the code to send to your friend
-async function startHost() {
-  leaveNet(); net.code = "";
-  if (!window.RTCPeerConnection) { net.status = "THIS BROWSER CAN'T DO ONLINE PLAY."; return; }
-  net.role = "host"; net.status = "MAKING YOUR CODE...";
-  const pc = new RTCPeerConnection(ICE_SERVERS), link = makeLink(pc);
-  net.conn = link; wire(link);
-  link.attach(pc.createDataChannel("pong"));
-  try {
-    await pc.setLocalDescription(await pc.createOffer());
-    await gathered(pc);
-    if (net.conn !== link) return;                   // you backed out meanwhile
-    net.code = await packCode(pc.localDescription);
-    net.status = "SEND THE CODE, THEN PASTE THEIR REPLY BELOW.";
-  } catch (e) {
-    if (net.conn !== link) return;
-    leaveNet(); net.code = ""; net.status = "COULD NOT MAKE A CODE. GO BACK AND TRY AGAIN.";
+// GUEST: tries each server in turn until the host answers
+async function startJoin(raw) {
+  const code = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  leaveNet();
+  if (!window.mqtt) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; refreshNetUI(); return; }
+  if (code.length !== 5) { net.status = "ENTER THE 5 CHARACTER ROOM CODE."; refreshNetUI(); sfx("deny"); return; }
+  net.role = "guest"; net.gid = Math.random().toString(36).slice(2, 10);
+  const tok = ++net.tok; let reached = 0;
+  for (let i = 0; i < BROKERS.length; i++) {
+    net.status = "LOOKING FOR ROOM " + code + " (SERVER " + (i + 1) + " OF " + BROKERS.length + ")..."; refreshNetUI();
+    const c = await openBroker(BROKERS[i], 6000);
+    if (tok !== net.tok) { if (c) c.end(true); return; }
+    if (!c) continue;
+    reached++;
+    const r = await tryJoin(c, code, tok);
+    if (tok !== net.tok) { if (c) c.end(true); return; }
+    if (r === true) return;                          // connected
+    c.end(true);
+    if (r === "full") { leaveNet(); net.status = "THAT ROOM ALREADY HAS TWO PLAYERS."; refreshNetUI(); return; }
   }
-  refreshNetUI();
+  leaveNet();
+  net.status = reached ? "NO ROOM " + code + " FOUND. CHECK THE CODE AND MAKE SURE THE HOST IS STILL WAITING." : "CAN'T REACH ANY ONLINE SERVER. YOUR NETWORK MAY BLOCK THEM.";
+  refreshNetUI(); sfx("deny");
 }
-// HOST step 2: use the reply code from your friend
-async function hostAccept(text) {
-  const link = net.conn;
-  if (net.role !== "host" || !link || net.up) return;
-  if (!net.code) { net.status = "WAIT FOR YOUR CODE TO APPEAR FIRST."; refreshNetUI(); return; }
-  if (link.peerConnection.signalingState !== "have-local-offer") return;
-  try {
-    const d = await unpackCode(text);
-    if (d.type !== "answer") throw new Error("bad");
-    await link.peerConnection.setRemoteDescription(d);
-    net.status = "CONNECTING...";
-    clearTimeout(net.timer);
-    net.timer = setTimeout(() => { if (net.role === "host" && !net.up) { net.status = NO_LINK; refreshNetUI(); } }, 20000);
-  } catch (e) { net.status = "THAT REPLY CODE DOESN'T LOOK RIGHT. COPY IT AGAIN."; sfx("deny"); }
-  refreshNetUI();
-}
-// GUEST: use the host's code and make a reply code to send back
-async function startJoin(text) {
-  leaveNet(); net.code = "";
-  if (!window.RTCPeerConnection) { net.status = "THIS BROWSER CAN'T DO ONLINE PLAY."; refreshNetUI(); return; }
-  let d;
-  try { d = await unpackCode(text); if (d.type !== "offer") throw new Error("bad"); }
-  catch (e) { net.status = "THAT CODE DOESN'T LOOK RIGHT. COPY IT AGAIN FROM THE HOST."; sfx("deny"); refreshNetUI(); return; }
-  net.role = "guest"; net.status = "MAKING YOUR REPLY..."; refreshNetUI();
-  const pc = new RTCPeerConnection(ICE_SERVERS), link = makeLink(pc);
-  net.conn = link; wire(link);
-  pc.ondatachannel = e => link.attach(e.channel);
-  try {
-    await pc.setRemoteDescription(d);
-    await pc.setLocalDescription(await pc.createAnswer());
-    await gathered(pc);
-    if (net.conn !== link) return;
-    net.code = await packCode(pc.localDescription);
-    net.status = "SEND THIS REPLY TO THE HOST, THEN WAIT FOR THE MATCH.";
-    clearTimeout(net.timer);
-    net.timer = setTimeout(() => { if (net.role === "guest" && !net.up) { net.status = NO_LINK; refreshNetUI(); } }, 90000);
-  } catch (e) {
-    if (net.conn !== link) return;
-    leaveNet(); net.code = ""; net.status = "COULD NOT USE THAT CODE. TRY AGAIN.";
-  }
-  refreshNetUI();
+function tryJoin(c, code, tok) {
+  return new Promise(res => {
+    const tIn = "pongarc1/" + code + "/h", tOut = "pongarc1/" + code + "/g";
+    let done = false, iv = 0, to = 0;
+    const fin = v => { if (done) return; done = true; clearInterval(iv); clearTimeout(to); res(v); };
+    c.on("message", (topic, payload) => {
+      if (tok !== net.tok || topic !== tIn) return;
+      let m; try { m = JSON.parse(payload.toString()); } catch (e) { return; }
+      if (!m || typeof m !== "object") return;
+      if (!done) {                                   // still waiting for the host to answer
+        if (m.t === "welcome" && m.id === net.gid) {
+          net.conn = relayLink(c, tOut); net.cl = [c]; net.up = true; net.lastRx = performance.now(); net.snapT = 0; net.padAge = 0;
+          send({ t: "hi", pd: shop.eq.paddle, vx: shop.eq.vfx });
+          net.status = "CONNECTED! WAITING FOR THE HOST..."; refreshNetUI();
+          fin(true);
+        } else if (m.t === "full" && m.id === net.gid) fin("full");
+        return;
+      }
+      if (net.conn && net.conn.client === c) onData(m);
+    });
+    c.on("close", () => { if (done && tok === net.tok && net.up && net.role === "guest") netLost("CONNECTION LOST"); else fin(false); });
+    c.subscribe(tIn, { qos: 1 }, err => {
+      if (err) { fin(false); return; }
+      const hello = () => { try { c.publish(tOut, JSON.stringify({ t: "join", id: net.gid }), { qos: 0 }); } catch (e) {} };
+      hello(); iv = setInterval(hello, 800);
+    });
+    to = setTimeout(() => fin(false), 5000);
+  });
 }
 function copyCode() {
-  const el = $("codeOut");
-  if (!el || !el.value) { showToast("NO CODE YET"); return; }
-  const manual = () => { el.select(); showToast("PRESS CTRL+C TO COPY"); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.value).then(() => showToast("CODE COPIED!"), manual);
-  else manual();
+  if (!net.code) { showToast("NO CODE YET"); return; }
+  const shown = () => showToast("ROOM CODE: " + net.code);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(net.code).then(() => showToast("CODE COPIED!"), shown);
+  else shown();
 }
 
 function netRematch() {
