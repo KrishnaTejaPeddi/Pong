@@ -1102,7 +1102,8 @@ function renderLobby() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
     <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES A ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
     <div class="psub">TURN RELAY: <span class="lo">${turnReady ? "CONFIGURED" : "NOT CONFIGURED — SOME NETWORKS MAY FAIL"}</span></div>
-    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="turnsetup">SET UP TURN RELAY</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
+    <div class="psub"><span class="lo">SETUP: METERED → CREDENTIALS → GET CREDENTIAL → SHOW ICE SERVERS ARRAY.</span></div>
+    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="turnsetup">PASTE TURN SERVER LIST</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
 }
 function renderHost() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">HOSTING</h3>
@@ -1783,51 +1784,75 @@ function openBroker(b, ms) {
   });
 }
 function signalTargetMatches(m) { return !!m && typeof m === "object" && m.id === net.gid; }
-const TURN_PREF_KEY = "pongRtcTurnV1";
-function getTurnCredentials() {
-  const value = store.get(TURN_PREF_KEY);
-  if (!value || typeof value.username !== "string" || typeof value.credential !== "string") return null;
-  const username = value.username.trim(), credential = value.credential.trim();
-  return username && credential ? { username, credential } : null;
+// Store Metered's complete ICE-server list exactly as provided by its dashboard.
+// The hostname can vary by plan/region; don't hardcode one provider hostname.
+const TURN_PREF_KEY = "pongRtcIceServersV2";
+function parseIceServersText(raw) {
+  let source = String(raw || "").trim();
+  const first = source.indexOf("["), last = source.lastIndexOf("]");
+  if (first >= 0 && last > first) source = source.slice(first, last + 1);
+  try { return JSON.parse(source); } catch (_) {}
+  // Metered may display a JavaScript array instead of strict JSON. Convert only
+  // the three known property names and simple single-quoted strings; never eval.
+  try {
+    source = source
+      .replace(/([{,]\s*)(urls|username|credential)\s*:/g, '$1"$2":')
+      .replace(/'/g, '"')
+      .replace(/,\s*([}\]])/g, '$1');
+    return JSON.parse(source);
+  } catch (_) { return null; }
 }
-function turnConfigured() { return !!getTurnCredentials(); }
+function validateIceServers(value) {
+  if (!Array.isArray(value) || !value.length) return null;
+  const cleaned = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") return null;
+    const urls = typeof item.urls === "string" ? [item.urls] : item.urls;
+    if (!Array.isArray(urls) || !urls.length || !urls.every(u => typeof u === "string" && /^(stun|stuns|turn|turns):/i.test(u.trim()))) return null;
+    const entry = { urls: Array.isArray(item.urls) ? item.urls.map(u => u.trim()) : item.urls.trim() };
+    if (item.username != null) entry.username = String(item.username);
+    if (item.credential != null) entry.credential = String(item.credential);
+    if (item.credentialType) entry.credentialType = String(item.credentialType);
+    cleaned.push(entry);
+  }
+  const hasUsableTurn = cleaned.some(item => {
+    const urls = Array.isArray(item.urls) ? item.urls : [item.urls];
+    return urls.some(url => /^turns?:/i.test(url)) && !!item.username && !!item.credential;
+  });
+  return hasUsableTurn ? cleaned : null;
+}
+function getTurnIceServers() {
+  return validateIceServers(store.get(TURN_PREF_KEY));
+}
+function turnConfigured() { return !!getTurnIceServers(); }
 function configureTurnRelay() {
-  const previous = getTurnCredentials() || { username: "", credential: "" };
-  const username = window.prompt(
-    "Optional but recommended for cross-network play. Paste your TURN username from your TURN provider. Leave blank to clear TURN settings.",
-    previous.username
+  const previous = getTurnIceServers();
+  const raw = window.prompt(
+    "Paste the COMPLETE ICE Servers Array copied from Metered: Credentials → Get credential → Show ICE Servers Array. Include the URLs, username, and credential/password. Do NOT paste an API key. This is saved only in this browser. Leave blank to clear TURN settings.",
+    previous ? JSON.stringify(previous, null, 2) : ""
   );
-  if (username === null) return;
-  if (!username.trim()) {
-    store.set(TURN_PREF_KEY, { username: "", credential: "" });
+  if (raw === null) return;
+  if (!raw.trim()) {
+    store.set(TURN_PREF_KEY, []);
     showToast("TURN SETTINGS CLEARED; DIRECT CONNECTION ONLY");
     return;
   }
-  const credential = window.prompt("Paste the TURN credential/password from the same provider. It is saved only in this browser.", previous.credential);
-  if (credential === null) return;
-  if (!credential.trim()) { showToast("TURN CREDENTIAL WAS EMPTY"); return; }
-  store.set(TURN_PREF_KEY, { username: username.trim(), credential: credential.trim() });
-  showToast("TURN RELAY SAVED IN THIS BROWSER");
+  const parsed = parseIceServersText(raw);
+  const validated = validateIceServers(parsed);
+  if (!validated) {
+    showToast("ICE SERVER LIST NOT RECOGNIZED. COPY THE FULL ARRAY FROM METERED.");
+    return;
+  }
+  store.set(TURN_PREF_KEY, validated);
+  showToast("ICE SERVER LIST SAVED. USE THE SAME LIST ON BOTH COMPUTERS.");
 }
 function rtcIceServers() {
-  const servers = [
+  const custom = getTurnIceServers();
+  if (custom) return custom;
+  return [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" }
   ];
-  const credentials = getTurnCredentials();
-  if (credentials) {
-    servers.push({
-      urls: [
-        "turn:standard.relay.metered.ca:80",
-        "turn:standard.relay.metered.ca:80?transport=tcp",
-        "turn:standard.relay.metered.ca:443",
-        "turns:standard.relay.metered.ca:443?transport=tcp"
-      ],
-      username: credentials.username,
-      credential: credentials.credential
-    });
-  }
-  return servers;
 }
 function rtcStatus(message) {
   if (!net.up && net.role) { net.status = message; refreshNetUI(); }
@@ -1835,7 +1860,7 @@ function rtcStatus(message) {
 function createRtcPeer(c, outTopic, id, tok) {
   const pc = new RTCPeerConnection({ iceServers: rtcIceServers() });
   net.rtc = pc; net.peer = pc; net.sigClient = c; net.sigOut = outTopic;
-  net.rtcQueuedCandidates = []; net.rtcRemoteSet = false; net.rtcReadyOnce = false;
+  net.rtcQueuedCandidates = []; net.rtcRemoteSet = false; net.rtcReadyOnce = false; net.iceWarned701 = false;
   pc.onicecandidate = event => {
     if (event.candidate && tok === net.tok) {
       publishSignal(c, outTopic, { t: "rtc-candidate", id, candidate: event.candidate.toJSON ? event.candidate.toJSON() : event.candidate });
@@ -1848,8 +1873,8 @@ function createRtcPeer(c, outTopic, id, tok) {
     else if (pc.connectionState === "failed") {
       clearTimeout(net.timer); net.timer = 0;
       rtcStatus(turnConfigured()
-        ? "CONNECTION FAILED. CHECK THE TURN CREDENTIALS OR TRY ANOTHER NETWORK."
-        : "CONNECTION FAILED. SET UP TURN RELAY ON BOTH COMPUTERS, THEN RETRY.");
+        ? "CONNECTION FAILED. COPY METERED'S ICE SERVER ARRAY AGAIN AND CHECK ITS TEST TOOL."
+        : "CONNECTION FAILED. CONFIGURE A TURN RELAY ON BOTH COMPUTERS, THEN RETRY.");
     } else if (pc.connectionState === "disconnected" && net.up) {
       net.status = "CONNECTION PAUSED — TRYING TO RECOVER..."; refreshNetUI();
     }
@@ -1862,15 +1887,27 @@ function createRtcPeer(c, outTopic, id, tok) {
     else if (state === "failed") {
       clearTimeout(net.timer); net.timer = 0;
       rtcStatus(turnConfigured()
-        ? "ICE FAILED. CHECK TURN CREDENTIALS OR NETWORK FIREWALL."
-        : "ICE FAILED: THIS BUILD NEEDS TURN RELAY FOR THIS NETWORK. SET IT UP, THEN RETRY.");
+        ? "ICE FAILED. VERIFY METERED'S ICE SERVER ARRAY AND TEST THE RELAY."
+        : "ICE FAILED: THIS NETWORK MAY NEED A TURN RELAY. SET IT UP, THEN RETRY.");
     }
   };
   pc.onicecandidateerror = event => {
     if (tok !== net.tok || !net.role || net.up) return;
-    const code = event && event.errorCode ? " " + event.errorCode : "";
-    const isTurn = !!getTurnCredentials();
-    rtcStatus("ICE SERVER ERROR" + code + ". " + (isTurn ? "CHECK TURN CREDENTIALS." : "SET UP A TURN RELAY."));
+    const code = event && event.errorCode ? event.errorCode : "UNKNOWN";
+    const url = String(event && event.url || "unknown ICE server");
+    const detail = String(event && event.errorText || "").trim();
+    // 701 means this particular ICE server could not be contacted. WebRTC may
+    // still succeed using another URL from the configured server list.
+    if (code === 701) {
+      console.warn("WebRTC ICE server unreachable:", url, detail);
+      if (!net.iceWarned701) {
+        net.iceWarned701 = true;
+        rtcStatus("ONE ICE SERVER IS UNREACHABLE; TRYING OTHER ROUTES: " + url);
+      }
+      return;
+    }
+    console.warn("WebRTC ICE server error:", code, url, detail);
+    rtcStatus("ICE ERROR " + code + " AT " + url + (detail ? " — " + detail : "") + ". CHECK METERED'S COPIED ICE SERVER LIST.");
   };
   return pc;
 }
@@ -1983,8 +2020,8 @@ function armRtcTimeout(tok) {
     if (tok === net.tok && net.role && !net.up) {
       net.timer = 0;
       net.status = turnConfigured()
-        ? "CONNECTION TIMED OUT. CHECK TURN CREDENTIALS OR TRY ANOTHER NETWORK."
-        : "CONNECTION TIMED OUT. SET UP TURN RELAY ON BOTH COMPUTERS, THEN RETRY.";
+        ? "CONNECTION TIMED OUT. VERIFY THE ICE SERVER LIST AND TEST THE RELAY."
+        : "CONNECTION TIMED OUT. CONFIGURE A TURN RELAY ON BOTH COMPUTERS, THEN RETRY.";
       refreshNetUI();
     }
   }, 25000);
