@@ -282,7 +282,8 @@ const store = {
 // Online play state. role is "host" (left paddle, runs the real game), "guest" (right paddle, sends its paddle and draws what the host sends) or null.
 const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], oppPaddle: "classic", oppVfx: "none", pad: null, padAge: 0,
   cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0,
-  pingId: 0, pingAt: 0, rtt: 0, cl: [], tok: 0, gid: "" };
+  pingId: 0, pingAt: 0, rtt: 0, snapshots: [], lastSnapArrival: 0, jitter: 0, interpDelay: 65,
+  cl: [], tok: 0, gid: "" };
 const online = () => net.role !== null;
 
 const MODES = {
@@ -1315,7 +1316,16 @@ function pauseGame(fromEsc) {
 }
 pauseBtn.onclick = () => { if (screen === "playing") pauseGame(false); else if (screen === "pause") showScreen("playing"); };
 pauseBtn.addEventListener("click", () => pauseBtn.blur());
-window.addEventListener("blur", () => { if (screen === "playing" && !online()) showScreen("pause"); });
+window.addEventListener("blur", () => {
+  keys = {};
+  if (screen === "playing" && !online()) showScreen("pause");
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    keys = {};
+    last = performance.now();
+  }
+});
 
 const mine = () => net.role === "guest" ? cpu : player;     // the paddle this computer controls
 
@@ -1783,6 +1793,7 @@ function leaveNet() {                                // closes the connection an
   list.forEach(o => { if (!c || o !== c.client) { try { o.end(true); } catch (e) {} } });
   net.peer = null; net.role = null; net.cfg = null; net.pad = null; net.ev = []; net.gid = "";
   net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0; net.pingId = 0; net.pingAt = 0; net.rtt = 0;
+  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 65;
   updatePlayerModeUI();
 }
 function netLost(msg) {
@@ -1964,6 +1975,7 @@ function applyPad() {
 
 function guestStart(m) {
   net.cfg = sanitizeCfg(m.cfg); net.rem = [false, false]; net.mk = null;
+  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 65;
   scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0; comboT = 0; comboPop = 0;
   sparks = []; rings = []; pops = []; coinPops = []; vfxList = []; pickups = []; balls = []; slowT = 0; flashT = 0;
   mods = new Set();
@@ -2000,31 +2012,26 @@ function guestEvent(e) {
 // Guest: take the host's picture of the game
 function applySnap(s) {
   if (screen !== "playing" || !Array.isArray(s.b) || !Array.isArray(s.h) || !Array.isArray(s.g) || !Array.isArray(s.sc)) return;
-  while (balls.length < s.b.length) balls.push({ x: W / 2, y: H / 2, r: 10, vx: 0, vy: 0, glow: 0, trail: [], spin: 1, pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, roll: 0 });
-  balls.length = s.b.length;
-  // Snapshot coordinates are a little old by the time they cross a public relay. Predict
-  // forward by half the measured RTT, then softly correct normal drift instead of snapping
-  // the ball every time its predicted position is more than 40px away.
-  const lead = clamp((net.rtt || 80) * .0005, 0, .075);
-  s.b.forEach((q, i) => {
-    const b = balls[i];
-    const tx = q[0] + q[2] * lead, ty = q[1] + q[3] * lead;
-    const d = Math.hypot(tx - b.x, ty - b.y);
-    const reversed = (b.vx * q[2] < 0) || (b.vy * q[3] < 0);
-    if (d > 90 || reversed) b.trail = [];
-    if (ready > 0 || d > 200) { b.x = tx; b.y = ty; }
-    else {
-      const blend = reversed ? .82 : .34;
-      b.x += (tx - b.x) * blend;
-      b.y += (ty - b.y) * blend;
-    }
-    b.vx = q[2]; b.vy = q[3]; b.r = q[4]; b.smash = !!q[5]; b.roll = q[6]; b.sm = q[7]; b.sa = q[8]; b.ht = q[9]; b.glow = q[10];
-  });
+
+  // Keep a short history of received snapshots. Rendering a slightly delayed snapshot
+  // between two server updates is much smoother than snapping to each packet as it arrives.
+  const receivedAt = performance.now();
+  if (net.lastSnapArrival) {
+    const interval = receivedAt - net.lastSnapArrival;
+    const deviation = Math.abs(interval - NET_STEP * 1000);
+    net.jitter = net.jitter * 0.85 + deviation * 0.15;
+  }
+  net.lastSnapArrival = receivedAt;
+  net.snapshots.push({ at: receivedAt, state: s });
+  if (net.snapshots.length > 16) net.snapshots.shift();
+
+  // Apply discrete/gameplay metadata as soon as it arrives. Only remote positions are
+  // interpolated; controls and status shouldn't wait for the rendering buffer.
   const h = s.h;
-  player.tx = h[0]; player.ty = h[1]; player.netAngle = h[2]; player.dx = h[3]; player.dy = h[4];
-  player.ik = Math.max(player.ik, h[5]); player.charge = h[6]; player.h = h[7]; player.sk = h[8];
+  player.ik = Math.max(player.ik, h[5] || 0);
+  player.charge = h[6]; player.h = h[7]; player.sk = h[8];
   player.vx = h[9]; player.vy = h[10]; player.omega = h[11];
-  cpu.ik = Math.max(cpu.ik, s.g[0]); cpu.charge = s.g[1]; cpu.h = s.g[2]; cpu.sk = s.g[3];
+  cpu.ik = Math.max(cpu.ik, s.g[0] || 0); cpu.charge = s.g[1]; cpu.h = s.g[2]; cpu.sk = s.g[3];
   scoreP = s.sc[0]; scoreC = s.sc[1]; round = s.rd; ready = s.rdy; countdown = !!s.cd; wy = s.wy; barrier.y = s.by;
   pickups = (s.pk || []).map(q => ({ x: q[0], y: q[1], life: q[2], id: q[3] }));
   if (typeof s.m === "string" && s.m !== net.mk) { net.mk = s.m; mods = new Set(s.m ? s.m.split(",").filter(k => own(MODES, k) && k !== "normal") : []); }
@@ -2034,28 +2041,111 @@ function applySnap(s) {
   (s.ev || []).forEach(guestEvent);
 }
 
+function mixNum(a, b, t) { return a + (b - a) * t; }
+function mixAngle(a, b, t) {
+  const d = Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  return a + d * t;
+}
+function makeRemoteBall() {
+  return { x: W / 2, y: H / 2, r: 10, vx: 0, vy: 0, glow: 0, trail: [], spin: 1,
+    pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, roll: 0 };
+}
+
+// Render on a short adaptive delay so packets arriving with uneven timing still move evenly.
+// If a packet is briefly late, extrapolate only a little; don't let prediction run away.
+function sampleRemoteSnapshot(now) {
+  const buffer = net.snapshots;
+  if (!buffer.length) return;
+
+  const desiredDelay = clamp(42 + net.jitter * 2 + (net.rtt || 80) * 0.18, 48, 135);
+  net.interpDelay += (desiredDelay - net.interpDelay) * 0.08;
+  const target = now - net.interpDelay;
+
+  let before = buffer[0], after = buffer[buffer.length - 1];
+  let bracketed = false;
+  if (target <= buffer[0].at) {
+    before = after = buffer[0];
+  } else {
+    for (let i = 1; i < buffer.length; i++) {
+      if (buffer[i].at >= target) {
+        before = buffer[i - 1]; after = buffer[i]; bracketed = true; break;
+      }
+    }
+    if (!bracketed && target <= buffer[buffer.length - 1].at) {
+      before = after = buffer[buffer.length - 1];
+    } else if (!bracketed) {
+      before = after = buffer[buffer.length - 1];
+    }
+  }
+
+  const span = after.at - before.at;
+  const alpha = before === after || span <= 0 ? 0 : clamp((target - before.at) / span, 0, 1);
+  const extrapolate = before === after && target > after.at
+    ? clamp((target - after.at) / 1000, 0, 0.07) : 0;
+  const a = before.state, b = after.state;
+  const useB = alpha >= 0.5;
+  const nearest = useB ? b : a;
+  const hA = a.h, hB = b.h;
+
+  // The host paddle is an interpolated remote object; there's no extra smoothing lag after this.
+  player.x = player.tx = mixNum(hA[0], hB[0], alpha) + (before === after ? (hA[9] || 0) * extrapolate : 0);
+  player.y = player.ty = mixNum(hA[1], hB[1], alpha) + (before === after ? (hA[10] || 0) * extrapolate : 0);
+  player.angle = mixAngle(hA[2], hB[2], alpha) + (before === after ? (hA[11] || 0) * extrapolate : 0);
+  player.dx = mixNum(hA[3], hB[3], alpha);
+  player.dy = mixNum(hA[4], hB[4], alpha);
+  player.vx = mixNum(hA[9], hB[9], alpha);
+  player.vy = mixNum(hA[10], hB[10], alpha);
+  player.omega = mixNum(hA[11], hB[11], alpha);
+
+  // When a ball is added/removed, use the nearest snapshot for that one transition.
+  const ballA = a.b, ballB = b.b;
+  const chosen = ballA.length === ballB.length ? ballA : nearest.b;
+  while (balls.length < chosen.length) balls.push(makeRemoteBall());
+  balls.length = chosen.length;
+  for (let i = 0; i < chosen.length; i++) {
+    const qa = ballA[i] || chosen[i], qb = ballB[i] || qa, q = chosen[i], ball = balls[i];
+    const samePair = !!ballA[i] && !!ballB[i] && ballA.length === ballB.length;
+    const t = samePair ? alpha : 0;
+    const velX = samePair ? mixNum(qa[2], qb[2], t) : q[2];
+    const velY = samePair ? mixNum(qa[3], qb[3], t) : q[3];
+    ball.x = (samePair ? mixNum(qa[0], qb[0], t) : q[0]) + (before === after ? velX * extrapolate : 0);
+    ball.y = (samePair ? mixNum(qa[1], qb[1], t) : q[1]) + (before === after ? velY * extrapolate : 0);
+    ball.vx = velX; ball.vy = velY;
+    ball.r = samePair ? mixNum(qa[4], qb[4], t) : q[4];
+    ball.smash = !!q[5];
+    ball.roll = samePair ? mixNum(qa[6], qb[6], t) : q[6];
+    ball.sm = samePair ? mixNum(qa[7], qb[7], t) : q[7];
+    ball.sa = samePair ? mixAngle(qa[8], qb[8], t) : q[8];
+    ball.ht = samePair ? mixNum(qa[9], qb[9], t) : q[9];
+    ball.glow = samePair ? mixNum(qa[10], qb[10], t) : q[10];
+    const prev = ball.trail.length ? ball.trail[ball.trail.length - 1] : null;
+    if (!prev || Math.hypot(ball.x - prev[0], ball.y - prev[1]) > 1.5) {
+      ball.trail.push([ball.x, ball.y]);
+      if (ball.trail.length > (ball.smash ? 30 : 20)) ball.trail.shift();
+    }
+  }
+
+  // Keep one older frame before the target for the next interpolation, discard the rest.
+  while (buffer.length > 2 && buffer[1].at < target) buffer.shift();
+}
+
 // Guest: move my own paddle right away; the ball and the host's paddle come from the latest snapshot
 function updateGuest(dt) {
+  sampleRemoteSnapshot(performance.now());
   clock += dt; M.time += dt;
   spin(cpu, dt);
   moveHuman(cpu, 1, dt, inputP1());
   flex(cpu, dt);
-  const k = Math.min(1, dt * 30);
-  player.x += (player.tx - player.x) * k; player.y += (player.ty - player.y) * k;
-  // Smooth the remote paddle's rotation too; position and angle should not update in visibly different jumps.
-  if (Number.isFinite(player.netAngle)) {
-    const da = Math.atan2(Math.sin(player.netAngle - player.angle), Math.cos(player.netAngle - player.angle));
-    player.angle += da * Math.min(1, dt * 24);
-  }
+  // Remote paddle position/rotation are already sampled from the buffered host snapshots.
   player.ik = Math.max(0, player.ik - dt * 5.5); player.gh = [];
   if (ready > 0) {
     ready -= dt;
     if (countdown) { const n2 = Math.ceil(Math.max(ready, 0) / .8); if (n2 > 0 && n2 !== cdN) { cdN = n2; sfx("tick"); } }
   }
   balls.forEach(b => {
-    if (ready <= 0) { b.x += b.vx * dt; b.y += b.vy * dt; }       // keep the ball moving between snapshots
-    b.ht += dt; b.roll += (b.vx * dt) / Math.max(6, b.r) * .8;
-    b.trail.push([b.x, b.y]); if (b.trail.length > (b.smash ? 30 : 20)) b.trail.shift();
+    // Positions come from snapshot interpolation; only advance cosmetic animation between packets.
+    b.ht += dt;
+    b.roll += (b.vx * dt) / Math.max(6, b.r) * .8;
   });
 }
 
