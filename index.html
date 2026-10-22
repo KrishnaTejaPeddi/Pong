@@ -4,28 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PONG // ARCADE</title>
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 :root{--cream:#f2e8c9;--red:#d94a3a;--gold:#d5ad54;--phos:#3f8a5c}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#11110f;color:var(--cream)}
-body{position:relative;display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:radial-gradient(ellipse at center,#28271f 0,#12120f 68%,#090908 100%);overflow-x:hidden}
-/* ---------- outer arcade surround: dense, dark moving CRT lines ---------- */
-body{background:#020202;overflow-x:hidden}
+body{position:relative;display:flex;align-items:center;justify-content:center;font-family:VT323,monospace;background:#020202;overflow-x:hidden}
+/* outer arcade surround: dense, dark moving CRT lines */
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-  background:repeating-linear-gradient(180deg,
-    #020202 0px,
-    #020202 7px,
-    #252525 8px,
-    #252525 10px);
-  background-size:100% 10px;
-  animation:outerLines 2.2s linear infinite;
-}
+  background:repeating-linear-gradient(180deg,#020202 0px,#020202 7px,#252525 8px,#252525 10px);
+  background-size:100% 10px;animation:outerLines 2.2s linear infinite}
 @keyframes outerLines{from{background-position:0 0}to{background-position:0 10px}}
-.outer-art{display:none}
 .machine{position:relative;z-index:1;width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
-.machine{width:min(1120px,95vw);background:#25241e;border:8px solid #0b0b09;box-shadow:0 22px 70px #000,inset 0 0 0 3px #464338;padding:26px 30px 24px}
 .marquee{text-align:center;padding:5px 0 15px;border-bottom:4px solid #0c0c0b}
 .marquee h1{margin:0;font-family:"Press Start 2P",monospace;font-size:clamp(20px,3.3vw,38px);color:var(--red);text-shadow:3px 3px 0 #501e19}
 .marquee p{margin:10px 0 0;font-size:21px;letter-spacing:4px;color:#c8bfa5}
@@ -40,7 +30,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .toast{position:absolute;left:50%;top:3cqw;transform:translateX(-50%) translateY(-1cqw);z-index:9;pointer-events:none;opacity:0;transition:all .25s;font-family:"Press Start 2P",monospace;font-size:1.2cqw;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:.8cqw 1.6cqw;white-space:nowrap}
 .toast.on{opacity:1;transform:translateX(-50%)}
 
-/* ---------- control deck under the screen ---------- */
+/* control deck under the screen */
 .deck{max-width:1000px;margin:18px auto 0;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 24px;border:3px solid #0b0b09;border-radius:8px;
   background:radial-gradient(circle at 11px 11px,#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at calc(100% - 11px) 11px,#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at 11px calc(100% - 11px),#7c7867 0 3px,#2a2923 4px,transparent 5px),radial-gradient(circle at calc(100% - 11px) calc(100% - 11px),#7c7867 0 3px,#2a2923 4px,transparent 5px),linear-gradient(#1c1b15,#12110d);
   box-shadow:inset 0 0 0 2px #3b392f,inset 0 10px 20px rgba(0,0,0,.45),0 4px 0 #0a0a08}
@@ -81,10 +71,10 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .tweaks input[type=range]::-moz-range-thumb{width:16px;height:22px;border-radius:3px;border:1px solid #0b0b09;background:linear-gradient(#f4dc95,#b88a34);box-shadow:0 2px 0 #7a5a1c;cursor:pointer}
 .footer{margin-top:16px;text-align:center;color:#777365;font-size:17px;letter-spacing:2px}
 
-/* ---------- menus & screens (sizes use cqw so everything scales with the screen) ---------- */
+/* menus and screens (sizes use cqw so everything scales with the screen) */
 .ui{position:absolute;inset:0;z-index:4;display:none;font-family:VT323,monospace}
 .ui.on{display:block}
-.ui2{position:absolute;inset:0;z-index:5;pointer-events:none;font-family:VT323,monospace}   /* holds the screen that is flying away */
+.ui2{position:absolute;inset:0;z-index:5;pointer-events:none;font-family:VT323,monospace}
 .sc{--d:1;--st:70ms;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .sc>*{position:relative;z-index:1}
 .sc>.shade{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(8,14,11,.45) 0,rgba(5,9,7,.9) 100%);animation:shIn .6s both}
@@ -96,9 +86,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 @keyframes shIn{from{opacity:0}to{opacity:1}}
 @keyframes shOut{to{opacity:0}}
 @keyframes nope{25%{transform:translateX(-.8cqw)}75%{transform:translateX(.8cqw)}}
-
-/* Every section flies in on its own: squashed and fast, overshoots, wobbles, settles.
-   --d is the direction (1 = enters from the left, leaves to the right), --i is its place in the order */
+/* Every section flies in on its own: squashed and fast, overshoots, wobbles, settles. --d is the direction, --i the order */
 @keyframes secIn{
   0%{opacity:0;transform:translateX(calc(var(--d)*-75cqw)) rotate(calc(var(--d)*-5deg)) scale(1.35,.72);animation-timing-function:cubic-bezier(.15,.75,.25,1)}
   50%{opacity:1;transform:translateX(calc(var(--d)*4cqw)) rotate(calc(var(--d)*1.5deg)) scale(.9,1.1);animation-timing-function:ease-in-out}
@@ -106,7 +94,6 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
   88%{transform:translateX(calc(var(--d)*.5cqw)) scale(.99,1.01);animation-timing-function:ease-in-out}
   100%{opacity:1;transform:none}
 }
-/* ...and leaves the same way: winds up backwards first, then shoots off stretched */
 @keyframes secOut{
   0%{transform:none;animation-timing-function:ease-out}
   26%{transform:translateX(calc(var(--d)*-4.5cqw)) rotate(calc(var(--d)*-2deg)) scale(.92,1.08);animation-timing-function:cubic-bezier(.6,0,.9,.4)}
@@ -116,12 +103,11 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .leaving{pointer-events:none}
 .leaving .sec{animation-name:secOut;animation-duration:.7s;animation-fill-mode:both;animation-delay:calc(var(--i,0)*var(--st)*.55)}
 .leaving *:not(.sec):not(.shade){animation:none!important}
-.leaving>.shade{animation:shOut .6s both}                 /* the dark backdrop fades away on its own; it never moves */
+.leaving>.shade{animation:shOut .6s both}
 .noanim .sec,.noanim .pz,.noanim .shade{animation:none!important}
 .pz{animation:fade .3s both}
 
 .bx{background:#000;border:.3cqw solid var(--phos);box-shadow:inset 0 0 0 .25cqw #000,inset 0 0 0 .4cqw #1f4d33,0 0 2.4cqw rgba(60,200,110,.18)}
-
 .kick{padding:.7cqw 2cqw}
 .kicker{font-family:"Press Start 2P",monospace;font-size:1.1cqw;letter-spacing:.7cqw;color:var(--gold)}
 .logobox{padding:1cqw 3cqw 1.4cqw;margin:.9cqw 0}
@@ -144,10 +130,9 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 .hint .blk{display:inline-block;animation:blink 2.2s infinite}
 .ver{right:2.5cqw;bottom:2cqw;color:#6fa585}
 
-/* online lobby */
-.codebig{font-family:"Press Start 2P",monospace;font-size:4.2cqw;letter-spacing:.8cqw;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:1cqw 1.6cqw 1cqw 2.4cqw;margin:1cqw 0}
-.codein{font-family:"Press Start 2P",monospace;font-size:3.6cqw;letter-spacing:.8cqw;text-align:center;text-transform:uppercase;color:var(--gold);background:#000;border:.3cqw solid var(--phos);padding:1cqw;width:30cqw;margin:1cqw 0;outline:none}
-.codein:focus{border-color:var(--cream)}
+/* online code boxes */
+.codebox{display:block;width:100%;height:6.5cqw;margin:.6cqw 0 1cqw;background:#000;color:var(--gold);border:.3cqw solid var(--phos);padding:.7cqw 1cqw;font:1.8cqw/1.25 VT323,monospace;resize:none;outline:none;word-break:break-all;scrollbar-width:thin}
+.codebox:focus{border-color:var(--cream)}
 
 /* coins and the shop */
 .coin{display:inline-block;width:1.5cqw;height:1.5cqw;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2a8,#d5ad54 60%,#8a6417);border:.2cqw solid #7a5a1c;vertical-align:-.25cqw;margin-right:.6cqw}
@@ -243,8 +228,6 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 </style>
 </head>
 <body>
-<div class="outer-art left" aria-hidden="true"></div>
-<div class="outer-art right" aria-hidden="true"></div>
 <main class="machine">
 <header class="marquee"><h1>PONG</h1><p id="marqueeSub">PLAYER VS COMPUTER</p></header>
 <section class="screen-frame"><div class="screen" id="scr">
@@ -256,7 +239,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
 <div class="scan"></div><div class="glass"></div>
 </div></section>
 <section class="deck">
-<div class="instructions" id="instructions">P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES</div>
+<div class="instructions" id="instructions">P1 <b>WASD</b> MOVE &middot; <b>SPACE</b> ROTATE/SMASH &middot; <b>ESC</b> PAUSE &middot; <b>H</b> HITBOXES</div>
 <div class="ctl">
 <div class="pick" id="pick"><span>TWIST</span><button id="mbtn" class="dd" type="button"><b id="mtxt">CYCLE ALL</b><i class="car"></i></button><div class="mpop" id="mpop"></div></div>
 <button id="pause" class="abtn"><span id="pt">PAUSE</span></button>
@@ -286,8 +269,8 @@ const store = {
 };
 
 // Online play state. role is "host" (left paddle, runs the real game), "guest" (right paddle, sends its paddle and draws what the host sends) or null.
-const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], skinG: "classic", pad: null, fresh: false, padAge: 0,
-  snap: null, snapT: 0, lastRx: 0, rem: [false, false], back: null, esc: 0, timer: 0, status: "" };
+const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], oppPaddle: "classic", oppVfx: "none", pad: null, padAge: 0,
+  cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0 };
 const online = () => net.role !== null;
 
 const MODES = {
@@ -544,12 +527,13 @@ const tri = (c, x1, y1, x2, y2, x3, y3) => { c.beginPath(); c.moveTo(x1, y1); c.
 const poly = (c, n, r) => { c.beginPath(); for (let i = 0; i < n; i++) { const a = i * TAU / n - Math.PI / 2; i ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r) : c.moveTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill(); };
 const outline = (c, r, col, lw = 1.4) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.arc(0, 0, r - lw / 2, 0, TAU); c.stroke(); };
 const star4 = (c, r) => { c.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * .35 : r; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); c.fill(); };
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 // Skins are flat, hard-edged designs with their own little animations (no soft glows).
 // Paddle skins draw (c, w, h, time) around (0,0). Ball skins draw (c, r, time, rollAngle, directionAngle).
 const PADDLES = {
   classic: { name: "CLASSIC", price: 0, draw(c, w, h) { rect(c, "#e8dfbd", -w / 2, -h / 2, w, h); rect(c, "rgba(255,255,255,.18)", -w / 2 + 2, -h / 2 + 3, 3, h - 6); } },
-  ember: { name: "EMBER", price: 100, draw(c, w, h, t) {            // coal paddle with lava cracks, licking flames and rising embers
+  ember: { name: "EMBER", price: 100, draw(c, w, h, t) {            // coal paddle with lava cracks, flames and rising embers
     rect(c, "#2a1612", -w / 2, -h / 2, w, h);
     c.fillStyle = "#ff7a1a";
     for (let i = 0; i < 5; i++) c.fillRect(-w / 2 + 2 + (i % 2) * 3, -h / 2 + h * (i + .5) / 5 + Math.sin(t * 2 + i) * 2, w - 6, 2);
@@ -586,7 +570,7 @@ const PADDLES = {
     const d = fract(t * .8); c.globalAlpha = ga * (1 - d); c.fillStyle = "#7fe04a"; c.beginPath(); c.arc(0, h / 2 + 3 + d * 10, 2, 0, TAU); c.fill();
     c.globalAlpha = ga;
   } },
-  static: { name: "STATIC", price: 220, draw(c, w, h, t) {          // lightning crackles from end to end, re-drawn every few frames
+  static: { name: "STATIC", price: 220, draw(c, w, h, t) {          // lightning crackles from end to end
     rect(c, "#141c3d", -w / 2, -h / 2, w, h);
     c.strokeStyle = "#4fd2ff"; c.lineWidth = 1.2; c.strokeRect(-w / 2 + .6, -h / 2 + .6, w - 1.2, h - 1.2);
     const s = Math.floor(t * 14), n = 7;
@@ -719,7 +703,7 @@ const VFX = {
     c.globalAlpha = 1 - p; c.strokeStyle = "#ffd877"; c.lineWidth = 5 * (1 - p) + .8; c.beginPath(); c.arc(0, 0, 8 + ease(p) * 46 * pw, 0, TAU); c.stroke();
     c.strokeStyle = "#f2e8c9"; c.lineWidth = 2 * (1 - p) + .5; c.beginPath(); c.arc(0, 0, 4 + ease(Math.max(0, p - .15)) * 30 * pw, 0, TAU); c.stroke();
     c.strokeStyle = "#ffd877"; c.lineWidth = 2;
-        for (let i = 0; i < 8; i++) { const a = ang + (i - 3.5) * .28, d0 = 14 * pw + p * 20, d1 = d0 + 10 * pw * (1 - p); c.beginPath(); c.moveTo(Math.cos(a) * d0, Math.sin(a) * d0); c.lineTo(Math.cos(a) * d1, Math.sin(a) * d1); c.stroke(); }
+    for (let i = 0; i < 8; i++) { const a = ang + (i - 3.5) * .28, d0 = 14 * pw + p * 20, d1 = d0 + 10 * pw * (1 - p); c.beginPath(); c.moveTo(Math.cos(a) * d0, Math.sin(a) * d0); c.lineTo(Math.cos(a) * d1, Math.sin(a) * d1); c.stroke(); }
     c.globalAlpha = 1;
   } },
   bolt: { name: "LIGHTNING", price: 350, draw(c, p, s, pw) {
@@ -746,7 +730,6 @@ const VFX = {
 const CATS = [{ key: "paddle", label: "PADDLES", set: PADDLES }, { key: "ball", label: "BALLS", set: BALLS }, { key: "court", label: "COURTS", set: COURTS }, { key: "vfx", label: "EFFECTS", set: VFX }];
 const rarity = p => p === 0 ? ["STARTER", 0] : p < 200 ? ["COMMON", 1] : p < 400 ? ["RARE", 2] : p < 650 ? ["EPIC", 3] : ["LEGEND", 4];
 const LEGACY = { paddle: { rainbow: 600 }, ball: { fire: 120, ice: 120, plasma: 250, eclipse: 400, rainbow: 600 } };   // skins that were replaced: coins are refunded
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function loadShop() {
   const d = { coins: 0, owned: { paddle: ["classic"], ball: ["classic"], court: ["classic"], vfx: ["none"] }, eq: { paddle: "classic", ball: "classic", court: "classic", vfx: "none" } };
@@ -877,7 +860,7 @@ const PILLARS = [{ x: W / 2, y: H * .27, w: 20, h: 120, angle: 0, vx: 0, vy: 0, 
 const PADS = [{ x: W * .36, y: H * .28, w: 38, h: 76 }, { x: W * .64, y: H * .72, w: 38, h: 76 }];
 
 // s / sv = the paddle's stretch spring; dx / dy = its current thickness and length scale (the hitbox uses them too);
-// ik = how hard the paddle was just hit (a quick thinning flex); gh = motion-smear afterimages while it spins; sk = shrink flash (Paddle Decay)
+// ik = how hard the paddle was just hit; gh = motion-smear afterimages; sk = shrink flash (Paddle Decay);
 // tx / ty = where a remote paddle is heading (online guests smooth the host's paddle toward it)
 const mk = x => ({ x, y: H / 2, w: 15, h: 105, angle: 0, from: 0, to: 0, t: 0, dur: .38,
   rot: false, power: 0, cool: 0, rotCool: 0, charge: 0, vx: 0, vy: 0, omega: 0, mvx: 0, mvy: 0,
@@ -971,10 +954,10 @@ function updatePlayerModeUI() {
   const win = net.role === "guest" && net.cfg ? net.cfg.win : S.win;
   if (sub) sub.textContent = onl ? "ONLINE 2 PLAYER" : local ? "LOCAL 2 PLAYER" : "PLAYER VS COMPUTER";
   if (ins) ins.innerHTML = onl
-    ? 'MOVE <b>WASD</b>/<b>ARROWS</b> · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> TWICE TO LEAVE THE MATCH'
+    ? 'MOVE <b>WASD</b>/<b>ARROWS</b> &middot; <b>SPACE</b> ROTATE/SMASH &middot; <b>ESC</b> TWICE TO LEAVE THE MATCH'
     : local
-    ? 'P1 <b>WASD</b> MOVE · <b>SPACE</b> ROTATE/SMASH &nbsp;|&nbsp; P2 <b>ARROWS</b> MOVE · <b>ENTER</b> ROTATE/SMASH · <b>ESC</b> PAUSE'
-    : 'P1 <b>WASD</b>/<b>ARROWS</b> MOVE · <b>SPACE</b> ROTATE/SMASH · <b>ESC</b> PAUSE · <b>H</b> HITBOXES';
+    ? 'P1 <b>WASD</b> MOVE &middot; <b>SPACE</b> ROTATE/SMASH &nbsp;|&nbsp; P2 <b>ARROWS</b> MOVE &middot; <b>ENTER</b> ROTATE/SMASH &middot; <b>ESC</b> PAUSE'
+    : 'P1 <b>WASD</b>/<b>ARROWS</b> MOVE &middot; <b>SPACE</b> ROTATE/SMASH &middot; <b>ESC</b> PAUSE &middot; <b>H</b> HITBOXES';
   if (foot) foot.innerHTML = onl ? "FIRST TO " + win + " &bull; ONLINE 2 PLAYER" : local ? "FIRST TO " + win + " &bull; LOCAL 2 PLAYER" : "FIRST TO " + win + " &bull; EVERY ROUND HAS A NEW TWIST";
 }
 
@@ -1046,7 +1029,7 @@ function endMatch() {
 }
 
 /* ---------- screens ---------- */
-const retroOn = () => ["title", "howto", "over", "shop", "lobby", "host", "join"].includes(screen) || (screen === "settings" && settingsFrom !== "pause");
+const retroOn = () => ["title", "howto", "over", "shop", "multi", "lobby", "host", "join"].includes(screen) || (screen === "settings" && settingsFrom !== "pause");
 const items = () => [...ui.querySelectorAll(".row,.mi")].filter(e => getComputedStyle(e).display !== "none");
 function sel(i, quiet) {
   if (screen === "shop") return;                       // the shop has its own selection
@@ -1075,7 +1058,7 @@ function showScreen(name, opt) {
   ui.classList.toggle("retro", retroOn());
   ui.classList.toggle("noanim", !S.anim);
   ({ title: renderTitle, settings: renderSettings, howto: renderHowto, pause: renderPause, over: renderOver, shop: renderShop,
-     lobby: renderLobby, host: renderHost, join: renderJoin })[name](opt);
+     multi: renderMulti, lobby: renderLobby, host: renderHost, join: renderJoin })[name](opt);
   const sc = ui.firstElementChild;                  // number the sections so they bounce in one after another
   sc.style.setProperty("--d", slideDir); sc.style.setProperty("--st", name === "over" ? "36ms" : "70ms");
   sc.querySelectorAll(".sec").forEach((e, i) => e.style.setProperty("--i", i));
@@ -1090,34 +1073,43 @@ function renderTitle() {
     <div class="bx kick sec"><span class="kicker">&#9670; ARCADE EDITION &#9670;</span></div>
     <div class="bx logobox sec"><h2 class="logo">PONG</h2></div>
     <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; PLAY ONLINE</span></div>
-    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="local">LOCAL 2 PLAYER</div><div class="mi sec" data-act="online">ONLINE 2P</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
+    <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="multi">MULTIPLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
     <div class="bx wallet sec"><i class="coin"></i>${shop.coins}</div>
-    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.0</div></div>`;
+    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.1</div></div>`;
 }
 
+function renderMulti() {
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">MULTIPLAYER</h3>
+    <div class="psub">PLAY WITH A FRIEND.<br><span class="lo">LOCAL: SAME KEYBOARD. ONLINE: OVER THE INTERNET.</span></div>
+    <div class="menu"><div class="mi" data-act="local">LOCAL 2 PLAYER</div><div class="mi" data-act="online">ONLINE 2P</div><div class="mi" data-act="multiback">BACK</div></div></div></div>`;
+}
 function renderLobby() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
-    <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES THE ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
+    <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS. YOU SWAP TWO SHORT CODES<br>OVER CHAT TO CONNECT.</div>
     <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
 }
 function renderHost() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">HOSTING</h3>
-    <div class="psub">GIVE THIS ROOM CODE TO YOUR FRIEND</div>
-    <div class="codebig" id="roomCode" style="display:inline-block">${net.code || "-----"}</div>
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec" style="width:62cqw"><h3 class="ph">HOSTING</h3>
+    <div class="psub">1. SEND THIS CODE TO YOUR FRIEND</div>
+    <textarea id="codeOut" class="codebox" readonly spellcheck="false">${net.code || ""}</textarea>
+    <div class="psub">2. PASTE THEIR REPLY CODE HERE</div>
+    <textarea id="codeIn" class="codebox" spellcheck="false" placeholder="PASTE THE REPLY CODE"></textarea>
     <div class="psub" id="netStatus">${net.status}</div>
-    <div class="menu"><div class="mi" data-act="lobbyback">CANCEL</div></div></div></div>`;
+    <div class="menu h"><div class="mi" data-act="copycode">COPY CODE</div><div class="mi" data-act="hostconnect">CONNECT</div><div class="mi" data-act="lobbyback">CANCEL</div></div></div></div>`;
 }
 function renderJoin() {
-  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">JOIN A GAME</h3>
-    <div class="psub">TYPE THE 5 CHARACTER ROOM CODE</div>
-    <input id="codeIn" class="codein" maxlength="5" autocomplete="off" spellcheck="false" placeholder="-----">
+  ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel sec" style="width:62cqw"><h3 class="ph">JOIN A GAME</h3>
+    <div class="psub">1. PASTE THE HOST'S CODE, THEN PRESS MAKE REPLY</div>
+    <textarea id="codeIn" class="codebox" spellcheck="false" placeholder="PASTE THE HOST'S CODE"></textarea>
+    <div class="psub">2. SEND THIS REPLY BACK TO THE HOST</div>
+    <textarea id="codeOut" class="codebox" readonly spellcheck="false">${net.code || ""}</textarea>
     <div class="psub" id="netStatus">${net.status}</div>
-    <div class="menu"><div class="mi" data-act="connect">CONNECT</div><div class="mi" data-act="lobbyback">BACK</div></div></div></div>`;
+    <div class="menu h"><div class="mi" data-act="makereply">MAKE REPLY</div><div class="mi" data-act="copycode">COPY REPLY</div><div class="mi" data-act="lobbyback">BACK</div></div></div></div>`;
 }
 function refreshNetUI() {
-  const s = $("netStatus"), c = $("roomCode");
+  const s = $("netStatus"), c = $("codeOut");
   if (s) s.textContent = net.status;
-  if (c) c.textContent = net.code || "-----";
+  if (c && c.value !== (net.code || "")) c.value = net.code || "";
 }
 
 const rowHtml = (s, extra = "") => `<div class="row ${extra}" data-id="${s.id}" data-tip="${s.tip}"><span>${s.label}</span><span class="val"><i class="ar" data-d="-1">&lt;</i><b>${s.opts[optIndex(s)][0]}</b><i class="ar" data-d="1">&gt;</i></span></div>`;
@@ -1230,7 +1222,7 @@ function change(row, d) {
 
 function act(a) {
   sfx("select");
-  slideDir = ["back", "howback", "menu", "quit", "shopback", "lobbyback", "netquit"].includes(a) ? -1 : 1;   // going back flies the other way
+  slideDir = ["back", "howback", "menu", "quit", "shopback", "lobbyback", "netquit", "multiback"].includes(a) ? -1 : 1;   // going back flies the other way
   if (a === "local") { setS("players", "local"); save(); startMatch(); }
   else if (a === "play") { setS("players", "cpu"); save(); startMatch(); }
   else if (a === "rematch") { if (online()) netRematch(); else startMatch(); }
@@ -1239,12 +1231,16 @@ function act(a) {
   else if (a === "shopback") showScreen(shopFrom);
   else if (a === "settings") { settingsFrom = screen; showScreen("settings"); }
   else if (a === "howto") showScreen("howto");
+  else if (a === "multi") showScreen("multi");
+  else if (a === "multiback") showScreen("title");
   else if (a === "online") showScreen("lobby");
-  else if (a === "hostgame") { startHost(0); showScreen("host"); }
+  else if (a === "hostgame") { startHost(); showScreen("host"); }
   else if (a === "joingame") { leaveNet(); net.status = ""; net.code = ""; showScreen("join"); }
-  else if (a === "connect") startJoin(($("codeIn") || {}).value);
+  else if (a === "hostconnect") hostAccept(($("codeIn") || {}).value);
+  else if (a === "makereply") startJoin(($("codeIn") || {}).value);
+  else if (a === "copycode") copyCode();
   else if (a === "lobbyback") { leaveNet(); showScreen("lobby"); }
-  else if (a === "netquit") showScreen("title");
+  else if (a === "netquit") showScreen("multi");
   else if (a === "howback" || a === "menu" || a === "quit") {
     if (online()) { send({ t: "bye" }); leaveNet(); }
     showScreen("title");
@@ -1272,9 +1268,6 @@ ui.addEventListener("mouseover", e => {
   const t = e.target.closest(".row,.mi");
   if (t) { const i = items().indexOf(t); if (i !== selI) sel(i); }
 });
-ui.addEventListener("input", e => {                      // the room code box only takes letters and numbers
-  if (e.target.id === "codeIn") e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
-});
 
 function menuKey(e, k) {
   if (screen === "shop") { shopKey(e, k); return; }
@@ -1282,7 +1275,8 @@ function menuKey(e, k) {
   if (k === "escape") {
     if (screen === "pause") act("resume"); else if (screen === "settings") act("back");
     else if (screen === "howto") act("howback"); else if (screen === "over") act("menu");
-    else if (screen === "lobby") act("netquit"); else if (screen === "host" || screen === "join") act("lobbyback");
+    else if (screen === "multi") act("multiback"); else if (screen === "lobby") act("netquit");
+    else if (screen === "host" || screen === "join") act("lobbyback");
     return;
   }
   if (screen === "howto") {
@@ -1316,9 +1310,8 @@ const mine = () => net.role === "guest" ? cpu : player;     // the paddle this c
 
 window.onkeydown = e => {
   const k = e.key.toLowerCase();
-  if (e.target.id === "codeIn") {                            // typing a room code
-    if (k === "enter") { e.preventDefault(); act("connect"); }
-    else if (k === "escape") { e.preventDefault(); e.target.blur(); act("lobbyback"); }
+  if (e.target.tagName === "TEXTAREA") {                     // typing or pasting a code
+    if (k === "escape") { e.preventDefault(); e.target.blur(); }
     return;
   }
   if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") e.target.blur();
@@ -1328,8 +1321,7 @@ window.onkeydown = e => {
   keys[k] = true;
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
   if (k === " " && !e.repeat) rotate(mine());
-  // Local P2 gets a dedicated rotate/smash control. Use both Enter variants so
-  // the control works reliably on full-size and numpad keyboards.
+  // Local P2 gets a dedicated rotate/smash control (both Enter keys work). Online players can use it too.
   const p2RotateKey = e.code === "Enter" || e.code === "NumpadEnter";
   if (p2RotateKey && !e.repeat) {
     if (online()) { e.preventDefault(); rotate(mine()); }
@@ -1368,10 +1360,8 @@ function spin(p, dt) {
   p.omega = (p.angle - old) / dt;
 }
 
-/* Paddle squash & stretch.
-   The paddle is a spring. The faster it spins, the more it is pulled longer (and thinner);
-   when the spin slows down it snaps back with a small overshoot (a little squash) and settles.
-   The hitbox uses the same stretched size, so what you see is what the ball hits. */
+/* Paddle squash & stretch: the paddle is a spring. The faster it spins, the longer and thinner it gets;
+   when the spin slows it snaps back with a small overshoot. The hitbox uses the same stretched size. */
 function flex(p, dt) {
   if (!S.anim) { p.s = p.sv = 0; p.dx = p.dy = 1; p.ik = 0; p.gh.length = 0; p.smearT = 0; return; }
   const target = clamp(Math.abs(p.omega) * .012, 0, .26);
@@ -1399,8 +1389,7 @@ function clampPaddle(p, side) {
   p.y = clamp(p.y, wy + ey, H - wy - ey);
 }
 
-// Keyboard input. In local 2 player, P1 is WASD-only so the arrow keys belong exclusively to P2.
-// Everywhere else (solo, online) you get WASD and the arrows.
+// Keyboard input. In local 2 player, P1 is WASD-only so the arrow keys belong to P2. Everywhere else you get WASD and the arrows.
 function inputP1() {
   const local = localMode() && !online();
   const dx = local ? ((keys.d ? 1 : 0) - (keys.a ? 1 : 0)) : ((keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0));
@@ -1731,6 +1720,7 @@ function update(dt) {
 }
 
 /* ---------- online play ----------
+   No server needed: the two players swap two short codes (host code, then guest reply) and the browsers link up directly.
    The host runs the real game on the left. The guest controls the right paddle on their own computer
    (so it feels instant) and sends where it is; the host sends back where everything is, about 40 times a second. */
 const NET_STEP = .025;
@@ -1742,11 +1732,72 @@ function sanitizeCfg(c) {
   return { win: numIn(c.win, 7, 1, 50), ball: numIn(c.ball, 1, .5, 3), pspeed: numIn(c.pspeed, 1, .5, 2), rotate: c.rotate !== false,
     bumpers: numIn(c.bumpers, 4, 1, 8), gravR: numIn(c.gravR, 260, 80, 400), gravS: numIn(c.gravS, 5, 1, 12), slowmo: c.slowmo !== false };
 }
+
+const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" }, { urls: "stun:global.stun.twilio.com:3478" }] };
+const NO_LINK = "YOUR NETWORKS BLOCK A DIRECT LINK. TRY A PHONE HOTSPOT.";
+
+// Turns a connection description into a short code you can paste in a chat (and back)
+async function packCode(desc) {
+  const raw = new TextEncoder().encode(JSON.stringify({ t: desc.type, s: desc.sdp }));
+  let bytes = raw, tag = "PA0";
+  if (window.CompressionStream) {
+    try {
+      const cs = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      bytes = new Uint8Array(await new Response(cs).arrayBuffer()); tag = "PA1";
+    } catch (e) { bytes = raw; tag = "PA0"; }
+  }
+  let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b));
+  return tag + "-" + btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+async function unpackCode(text) {
+  const code = String(text || "").replace(/\s+/g, "");
+  const m = code.length < 8000 && /^(PA[01])-([A-Za-z0-9_-]+)$/.exec(code);
+  if (!m) throw new Error("bad");
+  let b64 = m[2].replace(/-/g, "+").replace(/_/g, "/"); while (b64.length % 4) b64 += "=";
+  let bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  if (m[1] === "PA1") {
+    if (!window.DecompressionStream) throw new Error("nodecomp");
+    const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    bytes = new Uint8Array(await new Response(ds).arrayBuffer());
+  }
+  const o = JSON.parse(new TextDecoder().decode(bytes));
+  if ((o.t !== "offer" && o.t !== "answer") || typeof o.s !== "string") throw new Error("bad");
+  return { type: o.t, sdp: o.s };
+}
+// Waits until the browser has found all its possible routes (so the code contains them all)
+function gathered(pc) {
+  return new Promise(res => {
+    if (pc.iceGatheringState === "complete") { res(); return; }
+    const chk = () => { if (pc.iceGatheringState === "complete") { pc.removeEventListener("icegatheringstatechange", chk); res(); } };
+    pc.addEventListener("icegatheringstatechange", chk);
+    setTimeout(res, 5000);
+  });
+}
+// A small wrapper around the browser's data channel so the rest of the game can just call send() and listen for events
+function makeLink(pc) {
+  const h = { open: [], data: [], close: [], error: [] };
+  const link = { peerConnection: pc, dc: null,
+    on(ev, fn) { h[ev].push(fn); },
+    emit(ev, a) { h[ev].forEach(fn => fn(a)); },
+    send(m) { if (link.dc && link.dc.readyState === "open") link.dc.send(JSON.stringify(m)); },
+    close() { try { if (link.dc) link.dc.close(); } catch (e) {} try { pc.close(); } catch (e) {} },
+    attach(dc) {
+      link.dc = dc;
+      dc.onopen = () => link.emit("open");
+      dc.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } link.emit("data", m); };
+      dc.onclose = () => link.emit("close");
+      dc.onerror = () => link.emit("error");
+      if (dc.readyState === "open") link.emit("open");
+    } };
+  return link;
+}
+
 function leaveNet() {                                // closes the connection and goes back to offline play
   clearTimeout(net.timer);
-  try { if (net.conn) net.conn.close(); } catch (e) {}
-  try { if (net.peer) net.peer.destroy(); } catch (e) {}
-  net.peer = net.conn = null; net.role = null; net.up = false; net.cfg = null; net.pad = null; net.ev = [];
+  const c = net.conn; net.conn = null;               // cleared first so its close events are ignored
+  try { if (c) c.close(); } catch (e) {}
+  net.peer = null; net.role = null; net.up = false; net.cfg = null; net.pad = null; net.ev = [];
   net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0;
   updatePlayerModeUI();
 }
@@ -1761,6 +1812,12 @@ function leaveMatch() {
 }
 
 function wire(conn) {
+  const pc = conn.peerConnection;
+  pc.addEventListener("iceconnectionstatechange", () => {
+    if (conn !== net.conn || pc.iceConnectionState !== "failed") return;
+    if (net.up) netLost("CONNECTION LOST");
+    else { clearTimeout(net.timer); net.status = NO_LINK; refreshNetUI(); }
+  });
   conn.on("open", () => {
     if (conn !== net.conn) return;
     clearTimeout(net.timer);
@@ -1770,54 +1827,78 @@ function wire(conn) {
     refreshNetUI();
   });
   conn.on("data", onData);
-  conn.on("close", () => { if (conn === net.conn) netLost("YOUR OPPONENT LEFT"); });
-  conn.on("error", () => { if (conn === net.conn) netLost("CONNECTION ERROR"); });
+  conn.on("close", () => { if (conn === net.conn && net.up) netLost("YOUR OPPONENT LEFT"); });
+  conn.on("error", () => { if (conn === net.conn && net.up) netLost("CONNECTION ERROR"); });
 }
 
-function startHost(tries) {
+// HOST step 1: make the code to send to your friend
+async function startHost() {
   leaveNet(); net.code = "";
-  if (!window.Peer) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; return; }
-  const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = ""; for (let i = 0; i < 5; i++) code += alpha[Math.random() * alpha.length | 0];
-  net.role = "host"; net.code = code; net.status = "OPENING ROOM...";
-  let peer;
-  try { peer = new Peer("pongarc-" + code); } catch (e) { leaveNet(); net.status = "COULD NOT START ONLINE PLAY."; return; }
-  net.peer = peer;
-  peer.on("open", () => { if (peer === net.peer) { net.status = "WAITING FOR YOUR FRIEND..."; refreshNetUI(); } });
-  peer.on("connection", conn => {
-    if (peer !== net.peer) return;
-    if (net.conn) { try { conn.close(); } catch (e) {} return; }       // only one guest per room
-    net.conn = conn; wire(conn);
-  });
-  peer.on("error", err => {
-    if (peer !== net.peer) return;
-    if (err.type === "unavailable-id" && tries < 4) { startHost(tries + 1); refreshNetUI(); return; }
-    leaveNet(); net.status = "CONNECTION PROBLEM (" + err.type + "). TRY AGAIN."; refreshNetUI();
-  });
+  if (!window.RTCPeerConnection) { net.status = "THIS BROWSER CAN'T DO ONLINE PLAY."; return; }
+  net.role = "host"; net.status = "MAKING YOUR CODE...";
+  const pc = new RTCPeerConnection(ICE_SERVERS), link = makeLink(pc);
+  net.conn = link; wire(link);
+  link.attach(pc.createDataChannel("pong"));
+  try {
+    await pc.setLocalDescription(await pc.createOffer());
+    await gathered(pc);
+    if (net.conn !== link) return;                   // you backed out meanwhile
+    net.code = await packCode(pc.localDescription);
+    net.status = "SEND THE CODE, THEN PASTE THEIR REPLY BELOW.";
+  } catch (e) {
+    if (net.conn !== link) return;
+    leaveNet(); net.code = ""; net.status = "COULD NOT MAKE A CODE. GO BACK AND TRY AGAIN.";
+  }
+  refreshNetUI();
 }
-
-function startJoin(raw) {
-  const code = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  leaveNet();
-  if (!window.Peer) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; refreshNetUI(); return; }
-  if (code.length !== 5) { net.status = "ENTER THE 5 CHARACTER ROOM CODE."; refreshNetUI(); sfx("deny"); return; }
-  net.role = "guest"; net.status = "CONNECTING..."; refreshNetUI();
-  let peer;
-  try { peer = new Peer(); } catch (e) { leaveNet(); net.status = "COULD NOT START ONLINE PLAY."; refreshNetUI(); return; }
-  net.peer = peer;
-  peer.on("open", () => {
-    if (peer !== net.peer) return;
-    const conn = peer.connect("pongarc-" + code, { reliable: true, serialization: "json" });
-    net.conn = conn; wire(conn);
-  });
-  peer.on("error", err => {
-    if (peer !== net.peer) return;
-    leaveNet(); net.status = err.type === "peer-unavailable" ? "ROOM NOT FOUND. CHECK THE CODE." : "CONNECTION PROBLEM (" + err.type + ").";
-    refreshNetUI();
-  });
-  net.timer = setTimeout(() => {
-    if (net.role === "guest" && !net.up) { leaveNet(); net.status = "TIMED OUT. IS THE HOST STILL WAITING?"; refreshNetUI(); }
-  }, 15000);
+// HOST step 2: use the reply code from your friend
+async function hostAccept(text) {
+  const link = net.conn;
+  if (net.role !== "host" || !link || net.up) return;
+  if (!net.code) { net.status = "WAIT FOR YOUR CODE TO APPEAR FIRST."; refreshNetUI(); return; }
+  if (link.peerConnection.signalingState !== "have-local-offer") return;
+  try {
+    const d = await unpackCode(text);
+    if (d.type !== "answer") throw new Error("bad");
+    await link.peerConnection.setRemoteDescription(d);
+    net.status = "CONNECTING...";
+    clearTimeout(net.timer);
+    net.timer = setTimeout(() => { if (net.role === "host" && !net.up) { net.status = NO_LINK; refreshNetUI(); } }, 20000);
+  } catch (e) { net.status = "THAT REPLY CODE DOESN'T LOOK RIGHT. COPY IT AGAIN."; sfx("deny"); }
+  refreshNetUI();
+}
+// GUEST: use the host's code and make a reply code to send back
+async function startJoin(text) {
+  leaveNet(); net.code = "";
+  if (!window.RTCPeerConnection) { net.status = "THIS BROWSER CAN'T DO ONLINE PLAY."; refreshNetUI(); return; }
+  let d;
+  try { d = await unpackCode(text); if (d.type !== "offer") throw new Error("bad"); }
+  catch (e) { net.status = "THAT CODE DOESN'T LOOK RIGHT. COPY IT AGAIN FROM THE HOST."; sfx("deny"); refreshNetUI(); return; }
+  net.role = "guest"; net.status = "MAKING YOUR REPLY..."; refreshNetUI();
+  const pc = new RTCPeerConnection(ICE_SERVERS), link = makeLink(pc);
+  net.conn = link; wire(link);
+  pc.ondatachannel = e => link.attach(e.channel);
+  try {
+    await pc.setRemoteDescription(d);
+    await pc.setLocalDescription(await pc.createAnswer());
+    await gathered(pc);
+    if (net.conn !== link) return;
+    net.code = await packCode(pc.localDescription);
+    net.status = "SEND THIS REPLY TO THE HOST, THEN WAIT FOR THE MATCH.";
+    clearTimeout(net.timer);
+    net.timer = setTimeout(() => { if (net.role === "guest" && !net.up) { net.status = NO_LINK; refreshNetUI(); } }, 90000);
+  } catch (e) {
+    if (net.conn !== link) return;
+    leaveNet(); net.code = ""; net.status = "COULD NOT USE THAT CODE. TRY AGAIN.";
+  }
+  refreshNetUI();
+}
+function copyCode() {
+  const el = $("codeOut");
+  if (!el || !el.value) { showToast("NO CODE YET"); return; }
+  const manual = () => { el.select(); showToast("PRESS CTRL+C TO COPY"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.value).then(() => showToast("CODE COPIED!"), manual);
+  else manual();
 }
 
 function netRematch() {
@@ -2021,8 +2102,7 @@ function drawRetro(t) {          // dark green retro background for the menus
   ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
 }
 
-// One paddle body. dx / dy are the stretch, thin is the quick impact flex (visual only, always inside the hitbox).
-// fn is the skin's draw function.
+// One paddle body. dx / dy are the stretch, thin is the quick impact flex. fn is the skin's draw function.
 function paddleBody(x, y, a, w, h, dx, dy, thin, alpha, fn) {
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(a); ctx.scale(dx * (1 - .3 * thin), dy);
   fn(ctx, w, h, performance.now() / 1000);
@@ -2075,11 +2155,9 @@ function drawMeter(p, x, right) {
   ctx.restore();
 }
 
-// Live rally / combo counter. It counts every paddle-to-ball hit in the current rally
-// and resets the instant a point is scored. The punchy pop mirrors the score and smash UI.
+// Live rally counter: every hit gets its own arcade burst (fade in, overshoot, settle, fade away).
 function drawCombo() {
   if (M.rally <= 0 || comboT <= 0) return;
-  // Every hit gets its own arcade burst: fade in, overshoot big, settle smaller, then fade away.
   const hitAge = clamp((.42 - comboPop) / .42, 0, 1);
   const zoom = S.anim
     ? (hitAge < .48
@@ -2118,8 +2196,8 @@ function drawScore(n, x, t) {
   ctx.save(); ctx.translate(x, 52); ctx.scale(s, s); ctx.fillText(n, 0, 15); ctx.restore();
 }
 
-// The ball keeps its skin the whole time (even after a smash). It is slightly stretched along its path,
-// and squashes against whatever it hits, then springs back fast.
+// The ball keeps its skin the whole time (even after a smash). It stretches along its path,
+// squashes against whatever it hits, then springs back fast.
 function drawBall(b) {
   const va = Math.atan2(b.vy, b.vx);
   ctx.save(); ctx.translate(b.x, b.y);
@@ -2128,7 +2206,7 @@ function drawBall(b) {
     const sp = Math.hypot(b.vx, b.vy), st = 1 + clamp(sp / 3600, 0, .25);
     ctx.rotate(va); ctx.scale(st, 1 / Math.sqrt(st)); fr = va;
     if (b.sm) {
-      const s = b.sm * Math.exp(-b.ht * 20) * Math.cos(b.ht * 26);   // +1 = squashed flat; the stretch phase is tiny and gone in ~0.15s
+      const s = b.sm * Math.exp(-b.ht * 20) * Math.cos(b.ht * 26);
       ctx.rotate(b.sa - va); fr = b.sa;
       ctx.scale(Math.max(.32, 1 - .65 * s), Math.min(1.7, 1 + .42 * s));
     }
