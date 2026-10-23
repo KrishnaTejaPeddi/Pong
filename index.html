@@ -293,7 +293,7 @@ const MODES = {
   bumpers: "BUMPER MAYHEM", slow: "SLOW ZONE",
   spinner: "SPINNING PADDLES", speed: "TURBO COURT",
   mirror: "MIRROR CONTROLS", closing: "CLOSING WALLS", portal: "PORTALS",
-  ice: "ICE PADDLES", barrier: "MOVING WALL", giant: "GIANT PADDLES",
+  : " PADDLES", barrier: "MOVING WALL", giant: "GIANT PADDLES",
   ghost: "GHOST BALL", heavy: "HEAVY BALL", tiny: "TINY PADDLES",
   curve: "CURVEBALL", dark: "LIGHTS OUT",
   snow: "SNOWBALL", decay: "PADDLE DECAY", pads: "BOOST PADS",
@@ -303,7 +303,7 @@ const MODES = {
 };
 const INFO = {
   normal: "NO GIMMICKS. JUST PONG.", gravity: "A CENTRAL WELL BENDS THE BALL'S PATH.",
-  fast: "BOTH PADDLES MOVE TWICE AS FAST.", bumpers: "BOUNCY BUMPERS SUPERCHARGE THE BALL.",
+  fast: "BOTH PADDLES MOVE TW AS FAST.", bumpers: "BOUNCY BUMPERS SUPERCHARGE THE BALL.",
   slow: "THE BALL CRAWLS THROUGH THE MIDDLE.",
   spinner: "PADDLES SPIN NONSTOP. TIME YOUR HITS.",
   speed: "THE BALL KEEPS GETTING FASTER.", mirror: "YOUR CONTROLS ARE REVERSED.",
@@ -1825,7 +1825,7 @@ function getTurnIceServers() {
 // SAFE RELAY SETUP: this file never contains a relay (TURN) key. If you set up the small helper in worker.js,
 // put its https address here and the game fetches short-lived relay credentials from it when someone plays online.
 // Leave it empty to play without a relay (direct connections and public STUN only).
-const ICE_ENDPOINT = "";
+const ICE_ENDPOINT = "https://red-frog-e102.atxmixgd.workers.dev/";
 let autoIceServers = null;
 let autoIcePromise = null;
 let autoIceError = "";
