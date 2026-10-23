@@ -1825,7 +1825,7 @@ function getTurnIceServers() {
 // SAFE RELAY SETUP: this file never contains a relay (TURN) key. If you set up the small helper in worker.js,
 // put its https address here and the game fetches short-lived relay credentials from it when someone plays online.
 // Leave it empty to play without a relay (direct connections and public STUN only).
-const ICE_ENDPOINT = "https://red-frog-e102.atxmixgd.workers.dev/";
+const ICE_ENDPOINT = "";
 let autoIceServers = null;
 let autoIcePromise = null;
 let autoIceError = "";
