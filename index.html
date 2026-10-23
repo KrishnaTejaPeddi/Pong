@@ -1360,8 +1360,8 @@ window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 /* ---------- paddles ---------- */
 function rotate(p) {
   if (has("spinner") || !cf().rotate) return;
-  const isPlayer2 = p === cpu && (localMode() || (online() && net.role === "guest"));
-  const dir = isPlayer2 ? -1 : 1;
+    const isPlayer2 = p === cpu && (localMode() || (online() && net.role === "guest"));
+    const dir = isPlayer2 ? -1 : 1;
     // local player 2 spins the opposite way (counter-clockwise)
   if (p.rot) { p.from = p.angle; p.to += dir * Math.PI / 2; }      // already turning: keep going
   else { p.from = p.angle; p.to = p.angle + dir * Math.PI / 2; p.rot = true; }
