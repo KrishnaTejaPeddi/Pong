@@ -1098,12 +1098,11 @@ function renderMulti() {
     <div class="menu"><div class="mi" data-act="local">LOCAL 2 PLAYER</div><div class="mi" data-act="online">ONLINE 2P</div><div class="mi" data-act="multiback">BACK</div></div></div></div>`;
 }
 function renderLobby() {
-  const turnReady = turnConfigured();
+  const relayReady = meteredConfigured() || !!getTurnIceServers();
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
     <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES A ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
-    <div class="psub">TURN RELAY: <span class="lo">${turnReady ? "CONFIGURED" : "NOT CONFIGURED — SOME NETWORKS MAY FAIL"}</span></div>
-    <div class="psub"><span class="lo">SETUP: METERED → CREDENTIALS → GET CREDENTIAL → SHOW ICE SERVERS ARRAY.</span></div>
-    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="turnsetup">PASTE TURN SERVER LIST</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
+    <div class="psub"><span class="lo">NETWORK ROUTING: ${relayReady ? "AUTOMATIC" : "DIRECT CONNECTION; SOME NETWORKS MAY NEED RELAY SUPPORT"}</span></div>
+    <div class="menu"><div class="mi" data-act="hostgame">HOST A GAME</div><div class="mi" data-act="joingame">JOIN A GAME</div><div class="mi" data-act="netquit">BACK</div></div></div></div>`;
 }
 function renderHost() {
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">HOSTING</h3>
@@ -1247,7 +1246,6 @@ function act(a) {
   else if (a === "multi") showScreen("multi");
   else if (a === "multiback") showScreen("title");
   else if (a === "online") showScreen("lobby");
-  else if (a === "turnsetup") { configureTurnRelay(); showScreen("lobby"); }
   else if (a === "hostgame") { startHost(); showScreen("host"); }
   else if (a === "joingame") { leaveNet(); net.status = ""; net.code = ""; showScreen("join"); }
   else if (a === "connect") startJoin(($("codeIn") || {}).value);
@@ -1824,32 +1822,66 @@ function validateIceServers(value) {
 function getTurnIceServers() {
   return validateIceServers(store.get(TURN_PREF_KEY));
 }
-function turnConfigured() { return !!getTurnIceServers(); }
-function configureTurnRelay() {
-  const previous = getTurnIceServers();
-  const raw = window.prompt(
-    "Paste the COMPLETE ICE Servers Array copied from Metered: Credentials → Get credential → Show ICE Servers Array. Include the URLs, username, and credential/password. Do NOT paste an API key. This is saved only in this browser. Leave blank to clear TURN settings.",
-    previous ? JSON.stringify(previous, null, 2) : ""
-  );
-  if (raw === null) return;
-  if (!raw.trim()) {
-    store.set(TURN_PREF_KEY, []);
-    showToast("TURN SETTINGS CLEARED; DIRECT CONNECTION ONLY");
-    return;
-  }
-  const parsed = parseIceServersText(raw);
-  const validated = validateIceServers(parsed);
-  if (!validated) {
-    showToast("ICE SERVER LIST NOT RECOGNIZED. COPY THE FULL ARRAY FROM METERED.");
-    return;
-  }
-  store.set(TURN_PREF_KEY, validated);
-  showToast("ICE SERVER LIST SAVED. USE THE SAME LIST ON BOTH COMPUTERS.");
+// One-time developer configuration. A builder page fills these two values in for you.
+// Use Metered's credential-scoped API key (Get Credential -> Show API Key), NOT the account Secret Key.
+const METERED_APP_DOMAIN = "pongmultiplayer";
+const METERED_TURN_API_KEY = "// API Key for the credential: b4951af9737e914c0dcb0e5a73d37f1422ef  // Calling the REST API to fetch the TURN Server Credentials const response =   await fetch(\"https://YOUR_APP.metered.live/api/v1/turn/credentials?apiKey=b4951af9737e914c0dcb0e5a73d37f1422ef\");  // Saving the response in the iceServers array const iceServers = await response.json();  // Using the iceServers array in the RTCPeerConnection method var myPeerConnection = new RTCPeerConnection({   iceServers: iceServers, });";
+const AUTO_ICE_CACHE_KEY = "pongRtcIceAutoCacheV1";
+let autoIceServers = null;
+let autoIcePromise = null;
+let autoIceError = "";
+function meteredConfigured() {
+  return !!(METERED_APP_DOMAIN && METERED_TURN_API_KEY &&
+    !METERED_APP_DOMAIN.startsWith("__METERED_") &&
+    !METERED_TURN_API_KEY.startsWith("__METERED_"));
+}
+function meteredBaseDomain() {
+  let d = String(METERED_APP_DOMAIN || "").trim().replace(/^https?:\/\//i, "").split("/")[0];
+  if (d && !d.includes(".")) d += ".metered.live";
+  return d;
+}
+function turnConfigured() { return meteredConfigured() || !!getTurnIceServers(); }
+async function loadRtcIceServers() {
+  if (autoIceServers) return autoIceServers;
+  if (autoIcePromise) return autoIcePromise;
+  autoIcePromise = (async () => {
+    if (meteredConfigured()) {
+      const domain = meteredBaseDomain();
+      if (!domain || !/^[a-z0-9.-]+$/i.test(domain)) {
+        autoIceError = "Metered app domain is invalid";
+      } else {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        try {
+          const url = "https://" + domain + "/api/v1/turn/credentials?apiKey=" + encodeURIComponent(METERED_TURN_API_KEY.trim());
+          const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          const data = await response.json();
+          const valid = validateIceServers(data);
+          if (!valid) throw new Error("invalid ICE server response");
+          autoIceServers = valid;
+          store.set(AUTO_ICE_CACHE_KEY, valid);
+          autoIceError = "";
+          clearTimeout(timer);
+          return autoIceServers;
+        } catch (e) {
+          autoIceError = e && e.message ? e.message : "request failed";
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+    }
+    // Compatibility: reuse TURN data saved in earlier versions of the game, then cached Metered data.
+    autoIceServers = getTurnIceServers() || validateIceServers(store.get(AUTO_ICE_CACHE_KEY)) || [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ];
+    return autoIceServers;
+  })();
+  return autoIcePromise;
 }
 function rtcIceServers() {
-  const custom = getTurnIceServers();
-  if (custom) return custom;
-  return [
+  return autoIceServers || getTurnIceServers() || validateIceServers(store.get(AUTO_ICE_CACHE_KEY)) || [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" }
   ];
@@ -1874,7 +1906,7 @@ function createRtcPeer(c, outTopic, id, tok) {
       clearTimeout(net.timer); net.timer = 0;
       rtcStatus(turnConfigured()
         ? "CONNECTION FAILED. COPY METERED'S ICE SERVER ARRAY AGAIN AND CHECK ITS TEST TOOL."
-        : "CONNECTION FAILED. CONFIGURE A TURN RELAY ON BOTH COMPUTERS, THEN RETRY.");
+        : "CONNECTION FAILED. CHECK YOUR NETWORK OR METERED CONFIGURATION, THEN RETRY.");
     } else if (pc.connectionState === "disconnected" && net.up) {
       net.status = "CONNECTION PAUSED — TRYING TO RECOVER..."; refreshNetUI();
     }
@@ -1888,7 +1920,7 @@ function createRtcPeer(c, outTopic, id, tok) {
       clearTimeout(net.timer); net.timer = 0;
       rtcStatus(turnConfigured()
         ? "ICE FAILED. VERIFY METERED'S ICE SERVER ARRAY AND TEST THE RELAY."
-        : "ICE FAILED: THIS NETWORK MAY NEED A TURN RELAY. SET IT UP, THEN RETRY.");
+        : "ICE FAILED. THIS NETWORK MAY NEED A WORKING TURN RELAY; CHECK YOUR METERED CONFIGURATION.");
     }
   };
   pc.onicecandidateerror = event => {
@@ -2021,7 +2053,7 @@ function armRtcTimeout(tok) {
       net.timer = 0;
       net.status = turnConfigured()
         ? "CONNECTION TIMED OUT. VERIFY THE ICE SERVER LIST AND TEST THE RELAY."
-        : "CONNECTION TIMED OUT. CONFIGURE A TURN RELAY ON BOTH COMPUTERS, THEN RETRY.";
+        : "CONNECTION TIMED OUT. CHECK THE INTERNET CONNECTION AND METERED CONFIGURATION.";
       refreshNetUI();
     }
   }, 25000);
@@ -2052,14 +2084,19 @@ function leaveMatch() {
 }
 
 // HOST: subscribe to a few free public brokers for room discovery. Only WebRTC carries gameplay.
-function startHost() {
+async function startHost() {
   leaveNet(); net.code = "";
   if (!window.mqtt) { net.status = "COULD NOT LOAD ONLINE PLAY. CHECK YOUR INTERNET."; return; }
   if (!window.RTCPeerConnection) { net.status = "THIS BROWSER DOES NOT SUPPORT WEBRTC."; refreshNetUI(); return; }
   const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = ""; for (let i = 0; i < 5; i++) code += alpha[Math.random() * alpha.length | 0];
-  net.role = "host"; net.status = "CONNECTING TO ROOM SIGNALING...";
+  net.role = "host"; net.status = "PREPARING CONNECTION...";
   const tok = ++net.tok, tIn = "pongarc2/" + code + "/g", tOut = "pongarc2/" + code + "/h";
+  refreshNetUI();
+  await loadRtcIceServers();
+  if (tok !== net.tok || !net.role) return;
+  if (autoIceError && meteredConfigured() && !getTurnIceServers()) showToast("TURN RELAY COULD NOT LOAD; TRYING DIRECT CONNECTION");
+  net.status = "CONNECTING TO ROOM SIGNALING..."; refreshNetUI();
   let open = 0, tried = 0;
   BROKERS.forEach(b => openBroker(b, 7000).then(c => {
     tried++;
@@ -2108,6 +2145,10 @@ async function startJoin(raw) {
   if (code.length !== 5) { net.status = "ENTER THE 5 CHARACTER ROOM CODE."; refreshNetUI(); sfx("deny"); return; }
   net.role = "guest"; net.gid = Math.random().toString(36).slice(2, 10);
   const tok = ++net.tok; let reached = 0;
+  net.status = "PREPARING CONNECTION..."; refreshNetUI();
+  await loadRtcIceServers();
+  if (tok !== net.tok || !net.role) return;
+  if (autoIceError && meteredConfigured() && !getTurnIceServers()) showToast("TURN RELAY COULD NOT LOAD; TRYING DIRECT CONNECTION");
   for (let i = 0; i < BROKERS.length; i++) {
     net.status = "LOOKING FOR ROOM " + code + " (SERVER " + (i + 1) + " OF " + BROKERS.length + ")..."; refreshNetUI();
     const c = await openBroker(BROKERS[i], 6000);
