@@ -283,6 +283,7 @@ const store = {
 const net = { role: null, peer: null, conn: null, up: false, code: "", ev: [], oppPaddle: "classic", oppVfx: "none", pad: null, padAge: 0,
   cfg: null, snapT: 0, lastRx: 0, rem: [false, false], esc: 0, timer: 0, status: "", mk: null, pingT: 0,
   pingId: 0, pingAt: 0, rtt: 0, snapshots: [], lastSnapArrival: 0, jitter: 0, interpDelay: 65,
+  seq: 0, padSeq: 0, lastN: -1, padN: -1, off: null, late: 0, evq: [],
   cl: [], tok: 0, gid: "", sigClient: null, sigOut: "", sigIn: "", rtc: null,
   rtcFast: null, rtcCtrl: null, rtcQueuedCandidates: [], rtcRemoteSet: false, rtcReadyOnce: false };
 const online = () => net.role !== null;
@@ -1089,7 +1090,7 @@ function renderTitle() {
     <div class="bx tagbox sec"><span class="tag">${TWISTS.length} TWISTS &middot; MIX THEM &middot; PLAY ONLINE</span></div>
     <div class="menu"><div class="mi sec" data-act="play">PLAY</div><div class="mi sec" data-act="multi">MULTIPLAYER</div><div class="mi sec" data-act="shop">SHOP</div><div class="mi sec" data-act="settings">SETTINGS</div><div class="mi sec" data-act="howto">HOW TO PLAY</div></div>
     <div class="bx wallet sec"><i class="coin"></i>${shop.coins}</div>
-    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.2</div></div>`;
+    <div class="bx rec sec">${line}</div><div class="bx hint title-hint sec"><span class="blk">ARROWS / WASD SELECT &middot; ENTER CONFIRM</span></div><div class="bx ver sec">V5.4</div></div>`;
 }
 
 function renderMulti() {
@@ -1098,7 +1099,7 @@ function renderMulti() {
     <div class="menu"><div class="mi" data-act="local">LOCAL 2 PLAYER</div><div class="mi" data-act="online">ONLINE 2P</div><div class="mi" data-act="multiback">BACK</div></div></div></div>`;
 }
 function renderLobby() {
-  const relayReady = turnEndpointConfigured();
+  const relayReady = turnConfigured();
   ui.innerHTML = `<div class="sc"><div class="shade"></div><div class="panel narrow sec"><h3 class="ph">ONLINE PLAY</h3>
     <div class="psub">PLAY A FRIEND OVER THE INTERNET.<br>ONE OF YOU HOSTS AND SHARES A ROOM CODE.<br><span class="lo">THE HOST'S SETTINGS AND TWISTS ARE USED.</span></div>
     <div class="psub"><span class="lo">NETWORK ROUTING: ${relayReady ? "AUTOMATIC" : "DIRECT CONNECTION; SOME NETWORKS MAY NEED RELAY SUPPORT"}</span></div>
@@ -1360,9 +1361,7 @@ window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 /* ---------- paddles ---------- */
 function rotate(p) {
   if (has("spinner") || !cf().rotate) return;
-    const isPlayer2 = p === cpu && (localMode() || (online() && net.role === "guest"));
-    const dir = isPlayer2 ? -1 : 1;
-    // local player 2 spins the opposite way (counter-clockwise)
+  const dir = p === cpu && localMode() && !online() ? -1 : 1;     // local player 2 spins the opposite way (counter-clockwise)
   if (p.rot) { p.from = p.angle; p.to += dir * Math.PI / 2; }      // already turning: keep going
   else { p.from = p.angle; p.to = p.angle + dir * Math.PI / 2; p.rot = true; }
   p.t = 0; p.dur = .22;
@@ -1717,7 +1716,7 @@ function update(dt) {
   const n = Math.min(30, Math.max(1, Math.ceil(dt / .0015))), sd = dt / n;
   for (let i = 0; i < n; i++) {
     spin(player, sd);
-    if (hostOnline) { tickT(cpu, sd); applyPad(); } else spin(cpu, sd);     // online: the guest's paddle comes from the guest's computer
+    if (hostOnline) { tickT(cpu, sd); applyPad(sd); } else spin(cpu, sd);     // online: the guest's paddle comes from the guest's computer
     moveHuman(player, 0, sd, inputP1());
     if (localMode() && !online()) moveHuman(cpu, 1, sd, inputP2()); else if (!hostOnline) moveCpu(sd);
     if (ready > 0) continue;
@@ -1784,25 +1783,24 @@ function openBroker(b, ms) {
   });
 }
 function signalTargetMatches(m) { return !!m && typeof m === "object" && m.id === net.gid; }
-// Public-release networking: the Metered API key and account secret never live in this file.
-// Replace this URL once after deploying the companion Cloudflare Worker.
-const TURN_API_ENDPOINT = "https://pong-turn-api.atxmixgd.workers.dev/api/turn-servers";
-let autoIceServers = null;
-let autoIcePromise = null;
-let autoIceError = "";
-const DIRECT_ICE_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" }
-];
-function turnEndpointConfigured() {
-  const endpoint = String(TURN_API_ENDPOINT || "").trim();
-  if (!endpoint || endpoint.includes("__PONG_TURN_API_ENDPOINT__")) return false;
+// Relay (TURN) server lists are never stored in this file. A list can be supplied by the helper at ICE_ENDPOINT.
+const TURN_PREF_KEY = "pongRtcIceServersV2";
+function parseIceServersText(raw) {
+  let source = String(raw || "").trim();
+  const first = source.indexOf("["), last = source.lastIndexOf("]");
+  if (first >= 0 && last > first) source = source.slice(first, last + 1);
+  try { return JSON.parse(source); } catch (_) {}
+  // Some dashboards display a JavaScript array instead of strict JSON. Convert only
+  // the three known property names and simple single-quoted strings; never eval.
   try {
-    const u = new URL(endpoint);
-    return u.protocol === "https:" && u.pathname.replace(/\/$/, "") === "/api/turn-servers";
-  } catch (_) { return false; }
+    source = source
+      .replace(/([{,]\s*)(urls|username|credential)\s*:/g, '$1"$2":')
+      .replace(/'/g, '"')
+      .replace(/,\s*([}\]])/g, '$1');
+    return JSON.parse(source);
+  } catch (_) { return null; }
 }
-function validateIceServers(value) {
+function validateIceServers(value, allowStunOnly) {
   if (!Array.isArray(value) || !value.length) return null;
   const cleaned = [];
   for (const item of value) {
@@ -1819,53 +1817,54 @@ function validateIceServers(value) {
     const urls = Array.isArray(item.urls) ? item.urls : [item.urls];
     return urls.some(url => /^turns?:/i.test(url)) && !!item.username && !!item.credential;
   });
-  return hasUsableTurn ? cleaned : null;
+  return (hasUsableTurn || allowStunOnly) ? cleaned : null;
 }
-function turnConfigured() { return turnEndpointConfigured(); }
+function getTurnIceServers() {
+  return validateIceServers(store.get(TURN_PREF_KEY));
+}
+// SAFE RELAY SETUP: this file never contains a relay (TURN) key. If you set up the small helper in worker.js,
+// put its https address here and the game fetches short-lived relay credentials from it when someone plays online.
+// Leave it empty to play without a relay (direct connections and public STUN only).
+const ICE_ENDPOINT = "";
+let autoIceServers = null;
+let autoIcePromise = null;
+let autoIceError = "";
+const iceEndpointConfigured = () => /^https:\/\//i.test(ICE_ENDPOINT);
+function turnConfigured() { return iceEndpointConfigured() || !!getTurnIceServers(); }
+try { localStorage.removeItem("pongRtcIceAutoCacheV1"); } catch (e) {}      // clears credentials saved by older versions
 async function loadRtcIceServers() {
   if (autoIceServers) return autoIceServers;
   if (autoIcePromise) return autoIcePromise;
   autoIcePromise = (async () => {
-    if (!turnEndpointConfigured()) {
-      autoIceError = "TURN backend URL has not been configured";
-      autoIceServers = DIRECT_ICE_SERVERS;
-      return autoIceServers;
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
-    try {
-      const response = await fetch(TURN_API_ENDPOINT, {
-        method: "GET",
-        cache: "no-store",
-        credentials: "omit",
-        headers: { Accept: "application/json" },
-        signal: controller.signal
-      });
-      if (!response.ok) {
-        if (response.status === 503) throw new Error("TURN relay is initializing or rotating; try again in a few minutes");
-        if (response.status === 403) throw new Error("This website is not allowed to use the TURN service");
-        throw new Error("TURN service returned HTTP " + response.status);
+    if (iceEndpointConfigured()) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch(ICE_ENDPOINT, { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const valid = validateIceServers(await response.json(), true);
+        if (!valid) throw new Error("invalid ICE server response");
+        autoIceServers = valid; autoIceError = "";
+        return autoIceServers;
+      } catch (e) {
+        autoIceError = e && e.message ? e.message : "request failed";
+      } finally {
+        clearTimeout(timer);
       }
-      const data = await response.json();
-      const valid = validateIceServers(data);
-      if (!valid) throw new Error("TURN service returned an invalid ICE-server list");
-      autoIceServers = valid;
-      autoIceError = "";
-    } catch (e) {
-      autoIceError = e && e.message ? e.message : "TURN service request failed";
-      console.warn("Could not load TURN servers:", autoIceError);
-      // Direct STUN can still work on some networks, but restrictive networks may need TURN.
-      autoIceServers = DIRECT_ICE_SERVERS;
-    } finally {
-      clearTimeout(timer);
     }
+    autoIceServers = getTurnIceServers() || [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ];
     return autoIceServers;
   })();
   return autoIcePromise;
 }
 function rtcIceServers() {
-  // Do not persist TURN passwords/API keys in localStorage. Fetch fresh credentials from the backend.
-  return autoIceServers || DIRECT_ICE_SERVERS;
+  return autoIceServers || getTurnIceServers() || [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" }
+  ];
 }
 function rtcStatus(message) {
   if (!net.up && net.role) { net.status = message; refreshNetUI(); }
@@ -1886,8 +1885,8 @@ function createRtcPeer(c, outTopic, id, tok) {
     else if (pc.connectionState === "failed") {
       clearTimeout(net.timer); net.timer = 0;
       rtcStatus(turnConfigured()
-        ? "CONNECTION FAILED. CHECK THE TURN SERVICE CONFIGURATION AND TRY AGAIN."
-        : "CONNECTION FAILED. CHECK THE NETWORK OR TURN SERVICE, THEN RETRY.");
+        ? "CONNECTION FAILED EVEN WITH THE RELAY. CANCEL AND TRY AGAIN."
+        : "CONNECTION FAILED. THESE NETWORKS MAY NEED A RELAY. TRY A PHONE HOTSPOT.");
     } else if (pc.connectionState === "disconnected" && net.up) {
       net.status = "CONNECTION PAUSED — TRYING TO RECOVER..."; refreshNetUI();
     }
@@ -1900,8 +1899,8 @@ function createRtcPeer(c, outTopic, id, tok) {
     else if (state === "failed") {
       clearTimeout(net.timer); net.timer = 0;
       rtcStatus(turnConfigured()
-        ? "ICE FAILED. VERIFY THE TURN SERVICE CONFIGURATION AND TRY AGAIN."
-        : "ICE FAILED. THIS NETWORK MAY NEED A WORKING TURN RELAY; CHECK THE TURN SERVICE.");
+        ? "NO ROUTE FOUND EVEN WITH THE RELAY. CANCEL AND TRY AGAIN."
+        : "NO DIRECT ROUTE FOUND. THESE NETWORKS MAY NEED A RELAY. TRY A PHONE HOTSPOT.");
     }
   };
   pc.onicecandidateerror = event => {
@@ -1920,7 +1919,7 @@ function createRtcPeer(c, outTopic, id, tok) {
       return;
     }
     console.warn("WebRTC ICE server error:", code, url, detail);
-    rtcStatus("ICE ERROR " + code + " AT " + url + (detail ? " — " + detail : "") + ". CHECK THE TURN SERVICE CONFIGURATION.");
+    rtcStatus("ICE ERROR " + code + " AT " + url + (detail ? " — " + detail : "") + ". CANCEL AND TRY AGAIN.");
   };
   return pc;
 }
@@ -2033,8 +2032,8 @@ function armRtcTimeout(tok) {
     if (tok === net.tok && net.role && !net.up) {
       net.timer = 0;
       net.status = turnConfigured()
-        ? "CONNECTION TIMED OUT. VERIFY THE ICE SERVER LIST AND TEST THE RELAY."
-        : "CONNECTION TIMED OUT. CHECK THE INTERNET CONNECTION AND TURN SERVICE.";
+        ? "CONNECTION TIMED OUT. CANCEL AND TRY AGAIN."
+        : "CONNECTION TIMED OUT. THESE NETWORKS MAY NEED A RELAY. TRY A PHONE HOTSPOT.";
       refreshNetUI();
     }
   }, 25000);
@@ -2051,7 +2050,8 @@ function leaveNet() {
   net.sigClient = null; net.sigOut = ""; net.sigIn = ""; net.rtcQueuedCandidates = []; net.rtcRemoteSet = false; net.rtcReadyOnce = false;
   net.role = null; net.cfg = null; net.pad = null; net.ev = []; net.gid = "";
   net.rem = [false, false]; net.mk = null; net.padAge = 0; net.snapT = 0; net.pingT = 0; net.pingId = 0; net.pingAt = 0; net.rtt = 0;
-  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 45;
+  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 60;
+  net.seq = 0; net.padSeq = 0; net.lastN = -1; net.padN = -1; net.off = null; net.late = 0; net.evq = [];
   updatePlayerModeUI();
 }
 function netLost(msg) {
@@ -2076,7 +2076,7 @@ async function startHost() {
   refreshNetUI();
   await loadRtcIceServers();
   if (tok !== net.tok || !net.role) return;
-  if (autoIceError && turnEndpointConfigured()) showToast("TURN RELAY COULD NOT LOAD; TRYING DIRECT CONNECTION");
+  if (autoIceError && iceEndpointConfigured() && !getTurnIceServers()) showToast("RELAY COULD NOT LOAD; TRYING DIRECT CONNECTION");
   net.status = "CONNECTING TO ROOM SIGNALING..."; refreshNetUI();
   let open = 0, tried = 0;
   BROKERS.forEach(b => openBroker(b, 7000).then(c => {
@@ -2129,7 +2129,7 @@ async function startJoin(raw) {
   net.status = "PREPARING CONNECTION..."; refreshNetUI();
   await loadRtcIceServers();
   if (tok !== net.tok || !net.role) return;
-  if (autoIceError && turnEndpointConfigured()) showToast("TURN RELAY COULD NOT LOAD; TRYING DIRECT CONNECTION");
+  if (autoIceError && iceEndpointConfigured() && !getTurnIceServers()) showToast("RELAY COULD NOT LOAD; TRYING DIRECT CONNECTION");
   for (let i = 0; i < BROKERS.length; i++) {
     net.status = "LOOKING FOR ROOM " + code + " (SERVER " + (i + 1) + " OF " + BROKERS.length + ")..."; refreshNetUI();
     const c = await openBroker(BROKERS[i], 6000);
@@ -2202,9 +2202,19 @@ function onData(m) {
   if (!net.role || !m || typeof m !== "object") return;
   net.lastRx = performance.now();
   try {
-    if (m.t === "p") { if (net.role === "host") { net.pad = m; net.padAge = 0; } }
+    if (m.t === "p") {
+      if (net.role === "host") {
+        if (Number.isFinite(m.n)) { if (m.n <= net.padN) return; net.padN = m.n; }      // an older packet that arrived late: ignore it
+        net.pad = m; net.padAge = 0;
+      }
+    }
     else if (m.t === "s") { if (net.role === "guest") applySnap(m); }
-    else if (m.t === "ev") { if (net.role === "guest" && Array.isArray(m.ev)) m.ev.forEach(guestEvent); }
+    else if (m.t === "ev") {
+      if (net.role === "guest" && Array.isArray(m.ev)) {
+        if (Number.isFinite(m.ts) && net.off !== null) net.evq.push({ ts: m.ts, ev: m.ev });   // played at the same moment as the pictures it belongs to
+        else m.ev.forEach(guestEvent);
+      }
+    }
     else if (m.t === "hi") {
       net.oppPaddle = own(PADDLES, m.pd) ? m.pd : "classic"; net.oppVfx = own(VFX, m.vx) ? m.vx : "none";
       if (net.role === "host") setTimeout(() => { if (net.role === "host" && net.up && screen !== "playing") startMatch(); }, 600);
@@ -2228,35 +2238,39 @@ function onData(m) {
 // Host: tell the guest where everything is, plus anything that just happened (hits, smashes, coins, points)
 function sendSnap() {
   const events = net.ev.splice(0);
-  send({ t: "s",
+  send({ t: "s", n: ++net.seq, ts: r1(performance.now()),
     b: balls.map(b => [r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), b.smash ? 1 : 0, r2(b.roll), r2(b.sm), r2(b.sa), r2(b.ht), r2(b.glow)]),
     h: [r1(player.x), r1(player.y), r2(player.angle), r2(player.dx), r2(player.dy), r2(player.ik), player.charge, r1(player.h), r2(player.sk), r1(player.vx), r1(player.vy), r2(player.omega)],
     g: [r2(cpu.ik), cpu.charge, r1(cpu.h), r2(cpu.sk)],
     sc: [scoreP, scoreC], rd: round, rdy: r2(ready), cd: countdown ? 1 : 0, wy: r1(wy), by: r1(barrier.y),
     pk: pickups.map(c => [r1(c.x), r1(c.y), r1(c.life), r1(c.id)]),
     m: [...mods].join(","), ra: M.rally, ev: [] });
-  if (events.length) send({ t: "ev", ev: events });
+  if (events.length) send({ t: "ev", ts: r1(performance.now()), ev: events });
 }
 // Guest: tell the host where my paddle is
 function sendPad() {
-  send({ t: "p", x: r1(cpu.x), y: r1(cpu.y), a: r2(cpu.angle), vx: r1(cpu.vx), vy: r1(cpu.vy), om: r2(cpu.omega), dx: r2(cpu.dx), dy: r2(cpu.dy), r: cpu.rot || cpu.power > 0 ? 1 : 0 });
+  send({ t: "p", n: ++net.padSeq, x: r1(cpu.x), y: r1(cpu.y), a: r2(cpu.angle), vx: r1(cpu.vx), vy: r1(cpu.vy), om: r2(cpu.omega), dx: r2(cpu.dx), dy: r2(cpu.dy), r: cpu.rot || cpu.power > 0 ? 1 : 0 });
 }
-// Host: put the guest's paddle where the guest says it is (nudged forward a touch to cover the delay)
-function applyPad() {
+// Host: move the guest's paddle toward where the guest says it is. It glides there instead of jumping, and its speed
+// comes from that smooth motion, so hits don't pick up random speed from network jitter.
+function applyPad(sd) {
   const q = net.pad; if (!q) return;
-  const age = Math.min(net.padAge, .06), f = v => Number.isFinite(v) ? v : 0;
-  cpu.vx = clamp(f(q.vx), -2000, 2000); cpu.vy = clamp(f(q.vy), -2000, 2000);
+  net.padAge += sd;
+  const age = Math.min(net.padAge, .06), f = v => Number.isFinite(v) ? v : 0, ox = cpu.x, oy = cpu.y;
+  const vx = clamp(f(q.vx), -2000, 2000), vy = clamp(f(q.vy), -2000, 2000);
   cpu.omega = clamp(f(q.om), -60, 60);
   cpu.angle = f(q.a) + cpu.omega * age;
   cpu.dx = clamp(f(q.dx) || 1, .5, 1.5); cpu.dy = clamp(f(q.dy) || 1, .5, 1.5);
-  cpu.x = f(q.x) + cpu.vx * age; cpu.y = f(q.y) + cpu.vy * age;
+  const k = 1 - Math.exp(-sd * 40);
+  cpu.x += (f(q.x) + vx * age - cpu.x) * k; cpu.y += (f(q.y) + vy * age - cpu.y) * k;
   cpu.rot = !!q.r;
   clampPaddle(cpu, 1);
+  cpu.vx = (cpu.x - ox) / sd; cpu.vy = (cpu.y - oy) / sd;
 }
 
 function guestStart(m) {
   net.cfg = sanitizeCfg(m.cfg); net.rem = [false, false]; net.mk = null;
-  net.snapshots = []; net.lastSnapArrival = 0; net.jitter = 0; net.interpDelay = 65;
+  net.snapshots = []; net.evq = [];
   scoreP = scoreC = 0; round = 1; M = newStats(); popP = popC = 0; comboT = 0; comboPop = 0;
   sparks = []; rings = []; pops = []; coinPops = []; vfxList = []; pickups = []; balls = []; slowT = 0; flashT = 0;
   mods = new Set();
@@ -2290,30 +2304,26 @@ function guestEvent(e) {
   }
 }
 
-// Guest: take the host's picture of the game
+// Guest: keep the host's pictures of the game in order, each stamped with the host's own clock.
 function applySnap(s) {
   if (screen !== "playing" || !Array.isArray(s.b) || !Array.isArray(s.h) || !Array.isArray(s.g) || !Array.isArray(s.sc)) return;
-
-  // Keep a short history of received snapshots. Rendering a slightly delayed snapshot
-  // between two server updates is much smoother than snapping to each packet as it arrives.
-  const receivedAt = performance.now();
-  if (net.lastSnapArrival) {
-    const interval = receivedAt - net.lastSnapArrival;
-    const deviation = Math.abs(interval - NET_STEP * 1000);
-    net.jitter = net.jitter * 0.85 + deviation * 0.15;
-  }
-  net.lastSnapArrival = receivedAt;
-  net.snapshots.push({ at: receivedAt, state: s });
-  if (net.snapshots.length > 16) net.snapshots.shift();
-
-  // Apply discrete/gameplay metadata as soon as it arrives. Only remote positions are
-  // interpolated; controls and status shouldn't wait for the rendering buffer.
+  if (!Number.isFinite(s.ts) || !Number.isFinite(s.n)) return;
+  if (s.n <= net.lastN) return;                       // a late or repeated packet: the game has already moved past it
+  net.lastN = s.n;
+  const off = performance.now() - s.ts;               // clock difference plus the fastest trip time seen so far
+  net.off = net.off === null ? off : Math.min(net.off + .01, off);
+  net.late = Math.max(off - net.off, net.late * .995);  // how much later than the fastest packet this one was
+  net.snapshots.push({ ts: s.ts, s, done: false });
+  if (net.snapshots.length > 120) net.snapshots.shift();
+}
+// Things that change in steps (scores, sounds, hits...) are applied when playback reaches the picture they came from
+function frameStart(s) {
   const h = s.h;
   player.ik = Math.max(player.ik, h[5] || 0);
   player.charge = h[6]; player.h = h[7]; player.sk = h[8];
-  player.vx = h[9]; player.vy = h[10]; player.omega = h[11];
+  player.dx = h[3]; player.dy = h[4]; player.vx = h[9]; player.vy = h[10]; player.omega = h[11];
   cpu.ik = Math.max(cpu.ik, s.g[0] || 0); cpu.charge = s.g[1]; cpu.h = s.g[2]; cpu.sk = s.g[3];
-  scoreP = s.sc[0]; scoreC = s.sc[1]; round = s.rd; ready = s.rdy; countdown = !!s.cd; wy = s.wy; barrier.y = s.by;
+  scoreP = s.sc[0]; scoreC = s.sc[1]; round = s.rd; ready = s.rdy; countdown = !!s.cd; wy = s.wy;
   pickups = (s.pk || []).map(q => ({ x: q[0], y: q[1], life: q[2], id: q[3] }));
   if (typeof s.m === "string" && s.m !== net.mk) { net.mk = s.m; mods = new Set(s.m ? s.m.split(",").filter(k => own(MODES, k) && k !== "normal") : []); }
   if (s.ra > M.rally) { comboT = 1.15; comboPop = .42; }
@@ -2329,105 +2339,58 @@ function mixAngle(a, b, t) {
 }
 function makeRemoteBall() {
   return { x: W / 2, y: H / 2, r: 10, vx: 0, vy: 0, glow: 0, trail: [], spin: 1,
-    pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, roll: 0 };
+    pc: 0, pd: 0, smash: false, sm: 0, sa: 0, ht: 0, hh: 99, roll: 0 };
 }
 
-// Render on a short adaptive delay so packets arriving with uneven timing still move evenly.
-// If a packet is briefly late, extrapolate only a little; don't let prediction run away.
-function sampleRemoteSnapshot(now) {
-  const buffer = net.snapshots;
-  if (!buffer.length) return;
-
-  const desiredDelay = clamp(24 + net.jitter * 1.5 + (net.rtt || 40) * 0.12, 28, 90);
-  net.interpDelay += (desiredDelay - net.interpDelay) * 0.08;
-  const target = now - net.interpDelay;
-
-  let before = buffer[0], after = buffer[buffer.length - 1];
-  let bracketed = false;
-  if (target <= buffer[0].at) {
-    before = after = buffer[0];
-  } else {
-    for (let i = 1; i < buffer.length; i++) {
-      if (buffer[i].at >= target) {
-        before = buffer[i - 1]; after = buffer[i]; bracketed = true; break;
-      }
-    }
-    if (!bracketed && target <= buffer[buffer.length - 1].at) {
-      before = after = buffer[buffer.length - 1];
-    } else if (!bracketed) {
-      before = after = buffer[buffer.length - 1];
-    }
-  }
-
-  const span = after.at - before.at;
-  const alpha = before === after || span <= 0 ? 0 : clamp((target - before.at) / span, 0, 1);
-  const extrapolate = before === after && target > after.at
-    ? clamp((target - after.at) / 1000, 0, 0.07) : 0;
-  const a = before.state, b = after.state;
-  const useB = alpha >= 0.5;
-  const nearest = useB ? b : a;
-  const hA = a.h, hB = b.h;
-
-  // The host paddle is an interpolated remote object; there's no extra smoothing lag after this.
-  player.x = player.tx = mixNum(hA[0], hB[0], alpha) + (before === after ? (hA[9] || 0) * extrapolate : 0);
-  player.y = player.ty = mixNum(hA[1], hB[1], alpha) + (before === after ? (hA[10] || 0) * extrapolate : 0);
-  player.angle = mixAngle(hA[2], hB[2], alpha) + (before === after ? (hA[11] || 0) * extrapolate : 0);
-  player.dx = mixNum(hA[3], hB[3], alpha);
-  player.dy = mixNum(hA[4], hB[4], alpha);
-  player.vx = mixNum(hA[9], hB[9], alpha);
-  player.vy = mixNum(hA[10], hB[10], alpha);
-  player.omega = mixNum(hA[11], hB[11], alpha);
-
-  // When a ball is added/removed, use the nearest snapshot for that one transition.
-  const ballA = a.b, ballB = b.b;
-  const chosen = ballA.length === ballB.length ? ballA : nearest.b;
-  while (balls.length < chosen.length) balls.push(makeRemoteBall());
-  balls.length = chosen.length;
-  for (let i = 0; i < chosen.length; i++) {
-    const qa = ballA[i] || chosen[i], qb = ballB[i] || qa, q = chosen[i], ball = balls[i];
-    const samePair = !!ballA[i] && !!ballB[i] && ballA.length === ballB.length;
-    const t = samePair ? alpha : 0;
-    const velX = samePair ? mixNum(qa[2], qb[2], t) : q[2];
-    const velY = samePair ? mixNum(qa[3], qb[3], t) : q[3];
-    ball.x = (samePair ? mixNum(qa[0], qb[0], t) : q[0]) + (before === after ? velX * extrapolate : 0);
-    ball.y = (samePair ? mixNum(qa[1], qb[1], t) : q[1]) + (before === after ? velY * extrapolate : 0);
-    ball.vx = velX; ball.vy = velY;
-    ball.r = samePair ? mixNum(qa[4], qb[4], t) : q[4];
-    ball.smash = !!q[5];
-    ball.roll = samePair ? mixNum(qa[6], qb[6], t) : q[6];
-    ball.sm = samePair ? mixNum(qa[7], qb[7], t) : q[7];
-    ball.sa = samePair ? mixAngle(qa[8], qb[8], t) : q[8];
-    ball.ht = samePair ? mixNum(qa[9], qb[9], t) : q[9];
-    ball.glow = samePair ? mixNum(qa[10], qb[10], t) : q[10];
+// Play the host's pictures back a moment late, blending between two of them every frame, so motion stays even when
+// packets arrive unevenly. The wait grows by itself when the connection gets bumpy and shrinks again when it calms down.
+function playBack(dt, now) {
+  const buf = net.snapshots;
+  if (net.off === null || !buf.length) return;
+  const want = clamp(NET_STEP * 1000 * 1.5 + net.late * 1.1 + 12, 45, 170);
+  net.interpDelay += (want - net.interpDelay) * (want > net.interpDelay ? .25 : .02);
+  const rt = now - net.off - net.interpDelay;          // the moment on the host's clock that we are showing right now
+  for (const f of buf) if (!f.done && f.ts <= rt) { f.done = true; frameStart(f.s); }
+  while (net.evq.length && net.evq[0].ts <= rt) net.evq.shift().ev.forEach(guestEvent);
+  while (buf.length > 2 && buf[1].ts <= rt) buf.shift();
+  const a = buf[0], b = buf[1], A = a.s, B = b ? b.s : null;
+  const u = b && rt > a.ts ? clamp((rt - a.ts) / Math.max(1, b.ts - a.ts), 0, 1) : 0;
+  const ex = b ? 0 : clamp((rt - a.ts) / 1000, 0, .07), lp = (p, q) => p + (q - p) * u;
+  while (balls.length < A.b.length) balls.push(makeRemoteBall());
+  balls.length = A.b.length;
+  A.b.forEach((q, i) => {
+    const o = B && B.b[i], ball = balls[i];
+    let x = q[0], y = q[1];
+    if (o && Math.hypot(o[0] - q[0], o[1] - q[1]) < 90) { x = lp(q[0], o[0]); y = lp(q[1], o[1]); }   // (a big jump is a portal, a wrap or a new serve)
+    else if (!B) { x += q[2] * ex; y += q[3] * ex; }
+    ball.x = x; ball.y = y; ball.vx = q[2]; ball.vy = q[3]; ball.r = q[4]; ball.smash = !!q[5]; ball.glow = q[10];
+    ball.roll = o ? lp(q[6], o[6]) : q[6];
+    ball.ht += dt;
+    if (q[9] < ball.hh - .001) { ball.sm = q[7]; ball.sa = q[8]; ball.ht = q[9]; }                    // a new hit: start the squash again
+    ball.hh = q[9];
     const prev = ball.trail.length ? ball.trail[ball.trail.length - 1] : null;
+    if (prev && Math.hypot(ball.x - prev[0], ball.y - prev[1]) > 120) ball.trail = [];
     if (!prev || Math.hypot(ball.x - prev[0], ball.y - prev[1]) > 1.5) {
       ball.trail.push([ball.x, ball.y]);
       if (ball.trail.length > (ball.smash ? 30 : 20)) ball.trail.shift();
     }
-  }
-
-  // Keep one older frame before the target for the next interpolation, discard the rest.
-  while (buffer.length > 2 && buffer[1].at < target) buffer.shift();
+  });
+  const h = A.h, k = B ? B.h : null;
+  player.x = player.tx = k ? lp(h[0], k[0]) : h[0] + (h[9] || 0) * ex;
+  player.y = player.ty = k ? lp(h[1], k[1]) : h[1] + (h[10] || 0) * ex;
+  player.angle = k ? mixAngle(h[2], k[2], u) : h[2];
+  barrier.y = B ? lp(A.by, B.by) : A.by;
 }
 
-// Guest: move my own paddle right away; the ball and the host's paddle come from the latest snapshot
+// Guest: move my own paddle right away; everything else is played back from the host's pictures
 function updateGuest(dt) {
-  sampleRemoteSnapshot(performance.now());
+  playBack(dt, performance.now());
   clock += dt; M.time += dt;
   spin(cpu, dt);
   moveHuman(cpu, 1, dt, inputP1());
   flex(cpu, dt);
-  // Remote paddle position/rotation are already sampled from the buffered host snapshots.
   player.ik = Math.max(0, player.ik - dt * 5.5); player.gh = [];
-  if (ready > 0) {
-    ready -= dt;
-    if (countdown) { const n2 = Math.ceil(Math.max(ready, 0) / .8); if (n2 > 0 && n2 !== cdN) { cdN = n2; sfx("tick"); } }
-  }
-  balls.forEach(b => {
-    // Positions come from snapshot interpolation; only advance cosmetic animation between packets.
-    b.ht += dt;
-    b.roll += (b.vx * dt) / Math.max(6, b.r) * .8;
-  });
+  if (ready > 0 && countdown) { const n2 = Math.ceil(Math.max(ready, 0) / .8); if (n2 > 0 && n2 !== cdN) { cdN = n2; sfx("tick"); } }
 }
 
 // Runs every frame: heartbeat and up to 60-per-second updates while a match is on
@@ -2440,7 +2403,6 @@ function netTick(real) {
     send({ t: "ping", id: net.pingId });
   }
   if (screen !== "playing") return;
-  if (net.role === "host") net.padAge += real;
   net.snapT += real;
   if (net.snapT >= NET_STEP) { net.snapT %= NET_STEP; net.role === "host" ? sendSnap() : sendPad(); }
 }
